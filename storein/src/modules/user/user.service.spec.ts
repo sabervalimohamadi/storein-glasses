@@ -1,0 +1,105 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { getModelToken } from '@nestjs/mongoose';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Types } from 'mongoose';
+import { UserService } from './user.service';
+import { User } from './entities/user.schema';
+
+const addrId = new Types.ObjectId();
+const userId = new Types.ObjectId().toString();
+
+const mockUser = () => ({
+  _id: userId,
+  phone: '09121234567',
+  isActive: true,
+  isAdmin: false,
+  addresses: [] as any[],
+  save: jest.fn().mockResolvedValue(true),
+  toObject: jest.fn().mockReturnThis(),
+});
+
+describe('UserService', () => {
+  let service: UserService;
+  let model: any;
+
+  beforeEach(async () => {
+    model = {
+      findById: jest.fn(),
+      findByIdAndUpdate: jest.fn(),
+      find: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ skip: jest.fn().mockReturnValue({ limit: jest.fn().mockResolvedValue([]) }) }) }),
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        UserService,
+        { provide: getModelToken(User.name), useValue: model },
+      ],
+    }).compile();
+
+    service = module.get(UserService);
+    jest.clearAllMocks();
+  });
+
+  describe('getProfile', () => {
+    it('returns user', async () => {
+      model.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockUser()) }) });
+      const res = await service.getProfile(userId);
+      expect(res.phone).toBe('09121234567');
+    });
+
+    it('throws if user not found', async () => {
+      model.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
+      await expect(service.getProfile(userId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('addAddress', () => {
+    it('adds first address and sets it as default', async () => {
+      const user = mockUser();
+      model.findById.mockResolvedValue(user);
+
+      await service.addAddress(userId, {
+        title: 'خانه', province: 'تهران', city: 'تهران',
+        street: 'خ آزادی', detail: 'پ۱', postalCode: '1234567890',
+        recipientName: 'علی رضایی', recipientPhone: '09121234567',
+      });
+
+      expect(user.addresses[0].isDefault).toBe(true);
+      expect(user.save).toHaveBeenCalled();
+    });
+
+    it('throws if address limit reached', async () => {
+      const user = mockUser();
+      user.addresses = Array(10).fill({ _id: new Types.ObjectId(), isDefault: false });
+      model.findById.mockResolvedValue(user);
+
+      await expect(
+        service.addAddress(userId, {} as any),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('removeAddress', () => {
+    it('sets next address as default when default is removed', async () => {
+      const user = mockUser();
+      const a1 = { _id: addrId, isDefault: true };
+      const a2 = { _id: new Types.ObjectId(), isDefault: false };
+      user.addresses = [a1, a2] as any;
+      model.findById.mockResolvedValue(user);
+
+      await service.removeAddress(userId, addrId.toString());
+      expect(user.addresses[0].isDefault).toBe(true);
+    });
+  });
+
+  describe('toggleActive', () => {
+    it('toggles user active status', async () => {
+      const user = { ...mockUser(), isActive: true };
+      model.findById.mockResolvedValue(user);
+
+      await service.toggleActive(userId);
+      expect(user.isActive).toBe(false);
+    });
+  });
+});

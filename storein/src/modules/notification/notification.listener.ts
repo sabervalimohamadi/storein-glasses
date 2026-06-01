@@ -1,0 +1,102 @@
+import { Injectable, Logger } from '@nestjs/common';
+import { OnEvent } from '@nestjs/event-emitter';
+import { NotificationService } from './notification.service';
+import { NotificationType } from './entities/notification.schema';
+
+// ── Event Payloads ─────────────────────────────────────────────
+export interface OrderStatusChangedEvent {
+  orderId:        string;
+  orderNumber:    string;
+  userId:         string;
+  phone:          string;
+  status:         string;
+  previousStatus: string;
+}
+
+export interface PaymentSuccessEvent {
+  userId:   string;
+  phone:    string;
+  orderId?: string;
+  amount:   number;
+  refId:    string;
+  isTopup:  boolean;
+}
+
+export const EVENTS = {
+  ORDER_STATUS_CHANGED: 'order.status.changed',
+  PAYMENT_SUCCESS:      'payment.success',
+  PAYMENT_FAILED:       'payment.failed',
+} as const;
+
+const STATUS_LABELS: Record<string, string> = {
+  confirmed:  'تایید شد',
+  processing: 'در حال آماده‌سازی',
+  shipped:    'ارسال شد',
+  delivered:  'تحویل داده شد',
+  cancelled:  'لغو شد',
+};
+
+@Injectable()
+export class NotificationListener {
+  private readonly logger = new Logger(NotificationListener.name);
+
+  constructor(private readonly notifService: NotificationService) {}
+
+  @OnEvent(EVENTS.ORDER_STATUS_CHANGED)
+  async handleOrderStatusChanged(event: OrderStatusChangedEvent) {
+    const label = STATUS_LABELS[event.status];
+    if (!label) return;
+
+    try {
+      await this.notifService.create({
+        userId:   event.userId,
+        type:     NotificationType.ORDER_UPDATE,
+        title:    `سفارش ${event.orderNumber}`,
+        body:     `وضعیت سفارش شما ${label}`,
+        data:     { orderId: event.orderId, status: event.status },
+        phone:    event.phone,
+        sendPush: true,
+      });
+    } catch (err: any) {
+      this.logger.error(`Order notification failed: ${err.message}`);
+    }
+  }
+
+  @OnEvent(EVENTS.PAYMENT_SUCCESS)
+  async handlePaymentSuccess(event: PaymentSuccessEvent) {
+    try {
+      const title = event.isTopup ? 'شارژ کیف پول' : 'پرداخت موفق';
+      const body  = event.isTopup
+        ? `کیف پول شما با مبلغ ${event.amount.toLocaleString()} تومان شارژ شد`
+        : `پرداخت سفارش شما با موفقیت انجام شد. کد پیگیری: ${event.refId}`;
+
+      await this.notifService.create({
+        userId:   event.userId,
+        type:     NotificationType.PAYMENT,
+        title,
+        body,
+        data:     { refId: event.refId, orderId: event.orderId },
+        phone:    event.phone,
+        sendPush: true,
+      });
+    } catch (err: any) {
+      this.logger.error(`Payment notification failed: ${err.message}`);
+    }
+  }
+
+  @OnEvent(EVENTS.PAYMENT_FAILED)
+  async handlePaymentFailed(event: { userId: string; phone: string }) {
+    try {
+      await this.notifService.create({
+        userId:   event.userId,
+        type:     NotificationType.PAYMENT,
+        title:    'پرداخت ناموفق',
+        body:     'متأسفانه پرداخت شما انجام نشد. لطفاً مجدداً تلاش کنید',
+        phone:    event.phone,
+        sendPush: true,
+      });
+    } catch (err: any) {
+      this.logger.error(`Failed payment notification failed: ${err.message}`);
+    }
+  }
+}
