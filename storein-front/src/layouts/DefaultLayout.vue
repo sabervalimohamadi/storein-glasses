@@ -8,13 +8,15 @@
 
     <AppFooter class="hidden md:block" />
     <AppMobileNav />
+    <AppMobileDrawer />
     <BaseToast />
   </div>
 </template>
 
 <script setup>
-import AppHeader    from '@/components/layout/AppHeader.vue'
-import AppFooter    from '@/components/layout/AppFooter.vue'
-import AppMobileNav from '@/components/layout/AppMobileNav.vue'
-import BaseToast    from '@/components/common/BaseToast.vue'
+import AppHeader       from '@/components/layout/AppHeader.vue'
+import AppFooter       from '@/components/layout/AppFooter.vue'
+import AppMobileNav    from '@/components/layout/AppMobileNav.vue'
+import AppMobileDrawer from '@/components/layout/AppMobileDrawer.vue'
+import BaseToast       from '@/components/common/BaseToast.vue'
 </script>

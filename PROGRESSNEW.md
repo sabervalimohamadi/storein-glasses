@@ -1004,13 +1004,13 @@ Total: 152 tests, 17 suites, all pass
 | Project setup (stores, services, router) | ✅ | — | — | — |
 | Base components (Button, Input, Modal…) | — | ✅ | — | — |
 | App layout (Header, Footer, MobileNav) | — | ✅ | — | — |
-| Font: IRANYekan | — | — | ✅ | — |
+| Font: IRANYekan → IRANSans | — | — | ✅ | ✅ (hotfix) |
 | Wishlist service + store | — | — | ✅ | — |
 | Home page (all 8 sections) | stub | — | ✅ | — |
-| OTP login / register flow | stub | — | — | 🔲 |
-| Product listing + filter sidebar | stub | — | — | 🔲 |
-| Product detail page | stub | — | — | 🔲 |
-| Search results | stub | — | — | 🔲 |
+| OTP login / register flow | stub | — | — | ✅ |
+| Product listing + filter sidebar | stub | — | — | ✅ |
+| Product detail page | stub | — | — | ✅ |
+| Search results | stub | — | — | ✅ |
 | Shopping cart | stub | — | — | 🔲 |
 | Checkout + address select | stub | — | — | 🔲 |
 | User profile / edit | stub | — | — | 🔲 |
@@ -1018,6 +1018,511 @@ Total: 152 tests, 17 suites, all pass
 | Favorites / Wishlist view | stub | — | — | 🔲 |
 | Address management | stub | — | — | 🔲 |
 | Payment integration (wallet + gateway) | — | — | — | 🔲 |
+
+---
+
+## Frontend Phase 6 — Product Detail Page ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/services/review.service.js` | `getByProduct`, `create`, `markHelpful`, `getMyReviews` — maps to `/reviews` endpoints |
+| `src/views/product-detail/components/ProductGallery.vue` | Main image + desktop thumbnails + mobile dot indicators + touch swipe (RTL-aware) + fade transition; exposes `setImage(idx)` |
+| `src/views/product-detail/components/ProductInfo.vue` | Name, rating, color swatches, price/discount badge, stock indicator, cart + wishlist buttons, guarantees strip; exposes `cartButtonRef` for sticky bar |
+| `src/views/product-detail/components/ProductSpecs.vue` | General specs table + dynamic variant attributes + full color-variants availability table |
+| `src/views/product-detail/components/ProductTabs.vue` | 3-tab bar (مشخصات / توضیحات / نظرات) with review count badge and `out-in` fade transition between tabs |
+| `src/views/product-detail/components/ReviewCard.vue` | Avatar initials, rating stars, title, comment, review images strip, helpful toggle button |
+| `src/views/product-detail/components/ReviewForm.vue` | Collapsible accordion; star selector, title + comment inputs, 403 purchase-guard error, submit with validation |
+| `src/views/product-detail/components/ProductReviews.vue` | Rating distribution bars, sort select, paginated list (load-more), integrates `ReviewForm` + `ReviewCard` |
+| `src/views/product-detail/components/RelatedProducts.vue` | Horizontal scroll row — same category, excludes current product, skeleton state |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/views/product-detail/ProductDetailView.vue` | Full implementation replacing stub: breadcrumb, 404 state, 2-col desktop grid (Gallery + Info), ProductTabs, RelatedProducts, mobile sticky bottom bar |
+| `src/utils/formatters.js` | Added `formatDate(iso)` — Persian locale via `Intl.DateTimeFormat('fa-IR')` |
+
+### Endpoints Used
+| Endpoint | Where |
+|----------|-------|
+| `GET /products/slug/:slug` | `ProductDetailView` on mount + slug watch |
+| `GET /reviews?productId=&page=&limit=&sortBy=` | `ProductReviews` on mount + sort change + load-more |
+| `POST /reviews` | `ReviewForm.submitReview()` |
+| `POST /reviews/:id/helpful` | `ProductReviews.markHelpful()` |
+| `GET /products?category=&limit=8&status=active` | `RelatedProducts` on mount |
+| `POST /cart/items` | `ProductInfo.handleAddToCart()` + sticky bar `quickAddToCart()` |
+| `POST /wishlist/:productId` | `ProductInfo.handleWishlist()` via `wishlistStore.toggle()` |
+
+### Key Decisions
+- Gallery touch swipe is RTL-aware: swipe right → `prev()`, swipe left → `next()` (opposite of LTR); threshold 50px to ignore accidental taps
+- `ProductInfo` exposes `cartButtonRef` via `defineExpose` → parent uses `useIntersectionObserver` on it to show/hide the mobile sticky bar only when the real button is off-screen
+- Review stats fetched once in `ProductDetailView` (1-item request) to populate the tab badge count; `ProductReviews` independently fetches its own paginated list on mount
+- `ReviewForm` does not send `orderId` — the backend 403 response handles purchase verification; frontend shows the Persian error message clearly
+- `RelatedProducts` filters out `excludeId` client-side after fetch (avoids extra query param)
+- Color swatches use a static `colorMap` (Persian color names → hex) for swatch rendering; unknown colors fall back to `#888`
+- `out-in` transition on all tab content switches prevents flash during re-render
+- `document.title` updated on fetch; restored to default on `onUnmounted`
+- `watch(() => route.params.slug)` enables seamless navigation between product pages from the Related Products row without full page reload
+
+---
+
+## Admin Panel — storein-admin ✅
+
+Completely separate Vite project at `storein-admin/`. Shares the same NestJS backend.
+Dev server runs on **port 4000** (`npm run dev` inside `storein-admin/`).
+
+### Stack
+| Layer | Technology |
+|---|---|
+| Framework | Vue 3 (Composition API, `<script setup>`) |
+| Build | Vite 8 |
+| State | Pinia |
+| Styling | Tailwind CSS v3 + PostCSS |
+| HTTP | Axios |
+| Utils | dayjs, @vueuse/core |
+| Charts | vue-chartjs + chart.js (registered globally in `src/plugins/chartjs.js`) |
+
+### Auth Flow
+- Same OTP flow as storefront — but `verifyOtp` adds an **admin check**: if `data.user.isAdmin !== true`, throws `{ isAdminError: true }` and blocks login
+- Tokens stored under `admin_token` / `admin_refresh_token` keys (separate from storefront)
+- Router `beforeEach` guard: admin routes require `auth.isLoggedIn` (token + isAdmin); calls `fetchProfile()` once per session
+- 401 → redirect to `/login`; 403 → redirect to `/login?error=forbidden`
+
+### Project Structure
+```
+storein-admin/src/
+├── assets/styles/       main.css · variables.css · fonts.css
+├── components/
+│   ├── common/          11 reusable AdminXxx components
+│   └── layout/          AdminSidebar · AdminHeader
+├── composables/         useApi.js
+├── layouts/             AdminLayout · AuthLayout
+├── views/               11 fully implemented views
+├── router/              index.js — 13 routes
+├── services/            10 service files
+├── stores/              auth.store · ui.store
+└── utils/               formatters.js · constants.js
+```
+
+### Common Components
+| Component | Description |
+|-----------|-------------|
+| `AdminButton` | 4 variants (primary/secondary/danger/ghost) × 3 sizes, loading spinner |
+| `AdminInput` | v-model, label, error, hint, focus ring, prepend/append |
+| `AdminSelect` | Dropdown with options array, same styling as AdminInput |
+| `AdminTextarea` | Resizable textarea, configurable rows |
+| `AdminBadge` | 6 color variants (success/warning/error/info/gray/navy), 2 sizes |
+| `AdminSkeleton` | Pulse skeleton, circle mode, configurable dimensions |
+| `AdminTable` | Column-definition driven; named `cell-{key}` slots; sort emit; skeleton + empty states |
+| `AdminModal` | Teleport to body; sm/md/lg sizes; body + footer slots; ESC close; scroll lock |
+| `AdminConfirm` | Delete confirmation dialog built on AdminModal |
+| `AdminPagination` | Ellipsis pagination (max 7 buttons), scrolls to top on change |
+| `AdminToast` | Fixed top-center; TransitionGroup; reads from `useUiStore().toasts` |
+
+### Layout
+- **AdminSidebar**: dark navy (`#0F172A`) — desktop collapsible (256 → 64px) with tooltip on hover; mobile: full-width drawer with overlay; nav groups (داشبورد / فروشگاه / مدیریت); logout button; "مشاهده سایت" link to port 3000
+- **AdminHeader**: sticky; desktop toggle button (collapse sidebar); mobile hamburger; user name + initials avatar in top-right
+
+### Views Implemented
+| View | Route | Features |
+|------|-------|---------|
+| `LoginView` | `/login` | 2-step phone+OTP; countdown timer; admin rejection error; dev OTP banner |
+| `DashboardView` | `/dashboard` | Full Phase A2 implementation — see section below |
+| `ProductsView` | `/products` | Table with image+name, price, stock badge, status badge; search + status filter; delete confirm |
+| `ProductFormView` | `/products/create` `/products/:id/edit` | Create/edit form: name, status, category select, description, tag input (Enter to add), variant rows (SKU/price/comparePrice/stock/attributes) |
+| `CategoriesView` | `/categories` | Flat table; create/edit modal; delete confirm; parent selector |
+| `OrdersView` | `/orders` | Table with order number, user, amount, status badge, date; status filter |
+| `OrderDetailView` | `/orders/:id` | Header with status change select; items table with totals; shipping address |
+| `UsersView` | `/users` | Table with avatar initials, role badge, active badge; block/unblock toggle |
+| `UserDetailView` | `/users/:id` | Profile card with name, phone, role, status, join date, address count |
+| `ReviewsView` | `/reviews` | Table with user, rating, comment preview, status badge; approve/reject/delete actions |
+| `DiscountsView` | `/discounts` | Table with code, type badge, value, usage count, active status; create/edit modal; deactivate action |
+
+### Services (endpoint mapping)
+| Service | Base path |
+|---------|-----------|
+| `auth` | `/auth/send-otp`, `/auth/verify-otp`, `/users/me` |
+| `dashboard` | `/admin/dashboard` |
+| `product` | `/products/admin`, `/products` (CRUD) |
+| `category` | `/categories` (admin uses same endpoints) |
+| `order` | `/orders/admin` |
+| `user` | `/users` (admin endpoints) |
+| `review` | `/reviews/admin` |
+| `discount` | `/discounts` |
+| `upload` | `/upload/image?folder=` |
+
+### Key Decisions
+- Tailwind v3 pinned explicitly (`tailwindcss@3`) — v4 installed by default breaks the PostCSS plugin interface
+- `postcss.config.js` created manually (v3 `tailwindcss` + `autoprefixer`)
+- `admin_token` localStorage key is distinct from storefront's `access_token` — both panels can be open simultaneously without token collision
+- `useApi(fn)` composable wraps any service function with `{ data, loading, error, execute }` — reduces boilerplate in views
+- Sidebar collapse state lives in `ui.store` (Pinia) — persists across route navigations within the session
+- All table views use `Promise.allSettled`-style error handling — individual fetch failures toast without crashing the page
+- Font path warnings at build time are expected — woff2 files resolve at runtime; Tahoma fallback is readable meanwhile
+
+### Build Output (Phase A1)
+```
+133 modules transformed
+dist/assets/index-BX_U3Xyr.css   23.82 kB │ gzip:  5.36 kB
+dist/assets/index-Bh7X8Lsc.js   166.89 kB │ gzip: 63.17 kB
+✓ built in 1.05s — 0 errors
+```
+
+---
+
+## Admin Phase A2 — Dashboard ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/plugins/chartjs.js` | Global Chart.js registration (Line, Bar, Doughnut, Filler, all scales) + RTL/Persian defaults (`legend.rtl`, `tooltip.rtl`, IRANSans font) |
+| `src/views/dashboard/components/StatCard.vue` | KPI card: icon circle, large value (`font-fanum`), sub-label, optional trend badge (↑green/↓red); skeleton state |
+| `src/views/dashboard/components/RevenueChart.vue` | Dual-axis Line chart — revenue (right Y, fill) + orders (left Y); Persian day labels; custom legend strip; empty state |
+| `src/views/dashboard/components/OrderStatusChart.vue` | Doughnut (68% cutout) — 6 status segments; custom color legend grid below chart; empty state |
+| `src/views/dashboard/components/TopProductsChart.vue` | Horizontal Bar chart (`indexAxis: 'y'`) — 5 products; opacity-gradient primary blue bars; empty state |
+| `src/views/dashboard/components/RecentOrdersTable.vue` | Wraps `AdminTable` — order number link, customer name+phone, status badge, formatted price, date, eye-icon action |
+| `src/views/dashboard/components/QuickActions.vue` | 4-tile grid (محصول جدید / سفارشات / نظرات / دسته‌بندی‌ها); notification badge on pending counts |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/main.js` | Added `import '@/plugins/chartjs'` before App import |
+| `src/views/dashboard/DashboardView.vue` | Full replacement: welcome header + Persian date + refresh button; 4 StatCards; Revenue+OrderStatus charts row (3/5 + 2/5 grid); RecentOrders+TopProducts row (3/5 + 2/5); QuickActions |
+
+### Dashboard Layout
+```
+① Welcome header + Persian date + refresh button
+② StatCards ×4  (درآمد کل / کل سفارشات / کاربران / محصولات)
+③ RevenueChart (lg:col-span-3)  +  OrderStatusChart (lg:col-span-2)
+④ RecentOrdersTable (lg:col-span-3)  +  TopProductsChart (lg:col-span-2)
+⑤ QuickActions (4 tiles)
+```
+
+### Key Decisions
+- Chart.js registered once in `src/plugins/chartjs.js`, imported in `main.js` before App — never inside components; avoids duplicate-registration warnings
+- `RevenueChart` uses two Y axes: `y` (position: right, درآمد) and `y1` (position: left, سفارشات) — RTL convention puts the primary axis on the right
+- Skeleton heights in `RevenueChart` and bar widths in `TopProductsChart` are fixed arrays, not `Math.random()` — avoids hydration mismatch and Vue reactivity issues
+- `OrderStatusChart` builds `legendItems` by filtering out zero-count statuses — prevents empty legend slots when some statuses have no orders
+- `DashboardView.loadStats()` reads `res.data ?? res ?? {}` — handles both wrapped and unwrapped responses safely
+- `loadPendingReviews()` is fire-and-forget inside `Promise.allSettled` — failure does not block the rest of the dashboard
+- `QuickActions` badge shows `null` (not `0`) when count is zero — prevents a `0` badge from rendering
+
+### Build Output (Phase A2)
+```
+144 modules transformed
+DashboardView-DHQ3BmLe.js   17.43 kB │ gzip:  6.29 kB
+index-DNayTpoG.js          357.47 kB │ gzip: 129.17 kB  (includes chart.js)
+✓ built in 1.07s — 0 errors
+```
+
+---
+
+## Admin Phase A3 — Product Management ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/composables/useDebounce.js` | Lightweight debounce composable — wraps a computed/ref source, emits after configurable delay (default 400ms); avoids `@vueuse/core` dependency in filter components |
+| `src/views/products/components/ProductFilters.vue` | Search + category/status/sort dropdowns; search debounced via `useDebounce`; category/status/sort emit instantly; reset button appears only when a filter is active |
+| `src/views/products/components/ImageUploader.vue` | Drag-and-drop + click-to-upload; multi-file parallel upload to `/upload/image`; main-image badge on first slot; hover overlay for set-main (⭐) and remove (✕); file-type validation before upload |
+| `src/views/products/components/VariantEditor.vue` | Dynamic variant rows: SKU / price / comparePrice / stock + key-value attribute editor; preset quick-add buttons (رنگ / شکل فریم / جنس فریم / اندازه); rename attribute key on blur; add / remove variant rows; comparePrice warning when ≤ price |
+| `src/views/products/components/TagInput.vue` | Chip-based tag input; Enter / comma / Tab / button to add; × chip button to remove; duplicate guard |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/views/products/ProductsView.vue` | Full replacement: header with item count; `ProductFilters` component; `AdminTable` with image+name cell, inline status `<select>` (optimistic update + rollback), stock color-coding, edit/delete action buttons; `AdminConfirm` delete dialog; `AdminPagination` |
+| `src/views/products/ProductFormView.vue` | Full replacement: 2-column layout (main + sidebar); separate "ذخیره پیش‌نویس" and "انتشار محصول" buttons; `VariantEditor`, `ImageUploader`, `TagInput`, status radio group, stats panel (edit mode only); per-variant validation errors; `fillForm()` maps API response to form reactive object |
+
+### ProductsView Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| Search | Debounced 400ms → page reset to 1 → fetch |
+| Category / Status / Sort | Instant → page reset to 1 → fetch |
+| Status select (inline) | Optimistic update in UI → API call → rollback on error |
+| Delete | Opens `AdminConfirm` → API call → removes row from local array (no re-fetch) |
+| Pagination | Page change → fetch with current filters |
+
+### ProductFormView Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| "ذخیره پیش‌نویس" | Validates name + category only → saves with `status: 'draft'` → on create: `router.replace` to edit URL (no page-load flicker) |
+| "انتشار محصول" | Full validation including variant prices → saves with `status: 'active'` → on create: `router.push('/products')` |
+| Image upload | Parallel `Promise.all` per file → appended to `form.images` array → first image is the main/cover image |
+| Edit mode | Loads product by ID on mount → `fillForm()` populates all reactive fields; slug shown read-only |
+
+### Key Decisions
+- `useDebounce` is a custom composable (not `useDebounceFn` from `@vueuse/core`) — keeps the filter component self-contained and avoids importing the full VueUse library
+- `ProductFilters` emits a single `change` event object — parent holds `activeFilters` ref and resets `page` to 1 before re-fetching
+- Inline status `<select>` uses optimistic update: sets `row.status` immediately, rolls back on API error — avoids stale-data flash
+- `VariantEditor` is fully controlled (v-model) — it never mutates props directly; all attribute mutations (add / rename / remove) reconstruct the array immutably via `map`
+- `ImageUploader` calls `Promise.all` for parallel uploads when multiple files are dropped at once
+- `buildDto` in `ProductFormView` preserves existing `_id` on variants so the backend can match and update them instead of re-creating
+- Validation split: draft save = name + category only; publish = full including per-variant price/stock checks
+- API `ValidationPipe` can return an array of messages — `publish()` handles `Array.isArray(msg)` and toasts each one
+
+### Build Output (Phase A3)
+```
+150 modules transformed
+ProductsView-BPETwnrf.js      8.44 kB │ gzip:  3.52 kB
+ProductFormView-__stZs4G.js  21.30 kB │ gzip:  6.98 kB
+✓ built in 1.15s — 0 errors
+```
+
+---
+
+## Admin Phase A4 — Category & Order Management ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/views/categories/components/CategoryFormModal.vue` | Create/edit modal: name (required), slug (read-only on edit), parent select (roots only), description textarea, image upload (max 1 via ImageUploader), order number input, isActive toggle (custom CSS switch) |
+| `src/views/categories/components/CategoryTreeRow.vue` | Single `<tr>` for the tree table — RTL-aware indentation via `paddingRight: depth * 24px`; expand/collapse chevron button; 📁/📂 icon or thumbnail; delete button disabled when category has children or products |
+| `src/views/orders/components/OrderFilters.vue` | Search (debounced 400ms) + status dropdown + date-range inputs (`startDate` / `endDate`); reset button appears when any filter is active |
+| `src/views/orders/components/OrderStatusUpdater.vue` | 5-step visual stepper (pending→paid→processing→shipped→delivered) with done/current/upcoming states; cancelled accessible via select only; ⚠️ warning text when cancelled is selected; "ثبت تغییر" disabled until a different status is picked |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/views/categories/CategoriesView.vue` | Full replacement: header with count; search + reload toolbar; custom `<table>` with `CategoryTreeRow` components; expand/collapse via `Set` reassignment (forces Vue reactivity); `flattenTree()` DFS traversal; `flatList` computed for count + search bypass; `CategoryFormModal` + `AdminConfirm` dialogs |
+| `src/views/orders/OrdersView.vue` | Full replacement: `OrderFilters` component; `AdminTable` with order-number link, customer name+phone, price, status badge, date, eye-icon action; `AdminPagination` |
+| `src/views/orders/OrderDetailView.vue` | Full replacement: back button + order number (dir=ltr) + status badge in header; `OrderStatusUpdater`; 2-col info cards (customer + financial summary); shipping address card; order items list with image/name/qty/price |
+
+### CategoriesView — Tree Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| Initial load | Fetches `/categories/tree`; all root nodes with children auto-expanded |
+| Expand/collapse | Reassigns `expandedIds = new Set(...)` — forces Vue 3 reactivity on Set mutation |
+| Search active | Bypasses tree structure; shows all matching nodes flat with estimated depth |
+| Create | Opens empty modal → `categoryService.create()` → `loadTree()` |
+| Edit | Opens pre-filled modal (synced via `watch(modelValue)`) → `categoryService.update()` → `loadTree()` |
+| Delete | Disabled when `children.length > 0` or `productsCount > 0`; confirm dialog → `categoryService.remove()` → `loadTree()` |
+
+### OrderDetailView — Status Update Flow
+- `OrderStatusUpdater` emits `updated(newStatus)` when admin clicks "ثبت تغییر"
+- `OrderDetailView.updateStatus()` calls `orderService.updateStatus()` and replaces `order.value` with the API response (full object update)
+- `document.title` set to order number on load; restored on `onUnmounted`
+
+### Key Decisions
+- `expandedIds` is `ref(new Set())` — Vue 3 does not track Set mutations so `toggleExpand` reassigns the ref to a new Set instance to trigger reactivity
+- `CategoryFormModal` uses a single `formImages` ref (`[{ url, thumbnail }]`, max 1) and passes `formImages.value[0]` as `image` in the DTO — reuses `ImageUploader` from products
+- `ImageUploader` is imported cross-view (`@/views/products/components/ImageUploader.vue`) — acceptable for a self-contained utility component
+- Category search when active shows all matching nodes flat, ignoring tree nesting — simpler and more useful for quick finds in large trees
+- `OrderFilters` sends `undefined` (not empty string) for unset filters — prevents backend from treating `""` as a filter value
+- `OrderStatusUpdater.allowedTransitions` filters out `pending` once order is past that stage — prevents regression to an earlier state via the UI
+
+### Build Output (Phase A4)
+```
+154 modules transformed
+CategoriesView-CkGi5X_7.js    13.51 kB │ gzip:  4.91 kB
+OrdersView-BEoQGsnn.js         5.31 kB │ gzip:  2.39 kB
+OrderDetailView-a3nY3mRA.js    9.56 kB │ gzip:  3.70 kB
+✓ built in 1.57s — 0 errors
+```
+
+---
+
+## Admin Phase A5 — User, Review & Discount Management ✅
+
+Final admin phase. Replaces all remaining stubs with full implementations.
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/views/discounts/components/DiscountFormModal.vue` | Create/edit modal: code input (auto-uppercase, auto-generate button), type pill selector (درصدی / ثابت), value + unit suffix, `maxDiscount` shown only for percentage, min order amount, usage limit, date range with end > start validation, isActive CSS toggle |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/views/users/UsersView.vue` | Full replacement: debounced name/phone search + blocked filter; `AdminTable` with avatar initials (red when blocked), admin badge, orders count, total spent, join date; optimistic block/unblock with rollback; icon-only action buttons (eye + lock/unlock) |
+| `src/views/users/UserDetailView.vue` | Full replacement: back button + block/unblock header button; 2-col grid (user info card + purchase stats card with average per-order); address cards with default badge; recent orders mini-table; `document.title` sync |
+| `src/views/reviews/ReviewsView.vue` | Full replacement: pending-count pulse badge in header; status tab switcher (همه / در انتظار / تأیید شده / رد شده); debounced search; product thumbnail + name cell; rating star row; expand/collapse long comments; inline approve/reject/delete with `actionLoading` guard |
+| `src/views/discounts/DiscountsView.vue` | Full replacement: search + active filter; table with code chip, type/value, usage progress bar, expiry warning (⚠️ red if past), inline toggle switch, edit/delete actions; `DiscountFormModal` + `AdminConfirm` |
+| `src/services/discount.service.js` | Added `toggle` method → `PATCH /discounts/:id/toggle` |
+
+### UsersView Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| Search | Debounced 400ms → page 1 → fetch |
+| Blocked filter | Instant → page 1 → fetch (`isBlocked=true/false`) |
+| Block / Unblock | Optimistic flip → `PATCH /users/:id/block` → sync from response; rollback on error |
+| Row click | `RouterLink` to `/users/:id` |
+| Admin rows | Lock/unlock button hidden for admin accounts |
+
+### UserDetailView Behaviour
+| Section | Content |
+|---------|---------|
+| Info card | Avatar initials, name, phone, badges (فعال/مسدود + ادمین), join date, last activity |
+| Stats card | Orders count, total spent (Toman), average per order (computed) |
+| Addresses | Grid of address cards; default address highlighted with primary border |
+| Recent orders | Mini table (last 5): order number, status badge, total, date, eye-link to detail |
+
+### ReviewsView Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| Tab switch | Sets `activeStatus`, resets page, re-fetches |
+| Approve | `PATCH /reviews/admin/:id/status {approved}` → mutates `row.status`; decrements `pendingCount` |
+| Reject | Same but `rejected`; decrements `pendingCount` |
+| Delete | Confirm dialog → removes from local array; decrements `total` + `pendingCount` if was pending |
+| Expand comment | Toggle per-row `expandedId` — inline expanded block below truncated preview |
+
+### DiscountsView Behaviour
+| Action | Behaviour |
+|--------|-----------|
+| Toggle switch | Optimistic flip → `PATCH /discounts/:id/toggle` → sync `isActive`; rollback on error |
+| Create | Opens `DiscountFormModal` (discount=null) → on `saved`: re-fetches list |
+| Edit | Opens `DiscountFormModal` (discount=row) → on `saved`: replaces row in-place (no re-fetch) |
+| Delete | `AdminConfirm` → removes row from local array; decrements `total` |
+| Usage bar | Progress bar width = `usedCount / usageLimit × 100%`; turns warning-yellow above 80% |
+| Expiry warning | Date cell turns red + ⚠️ prefix when `endDate` is in the past |
+
+### Key Decisions
+- `UserDetailView` calls `orderService.getAll({ userId })` for recent orders — filter is advisory; backends without `userId` param will return all orders (handled gracefully via `Promise.allSettled`)
+- `ReviewsView` tab switcher calls `fetchReviews()` directly (not via `watch`) — avoids double-fetch race on initial mount
+- `pendingCount` is returned by the backend on every `GET /reviews/admin` call and re-synced on fetch; locally decremented on approve/reject/delete to keep the header badge accurate without re-fetching
+- `DiscountFormModal` syncs its reactive `form` via `watch(() => props.modelValue)` — safe to close and reopen for create vs. edit without stale data
+- Code input strips non-`[A-Z0-9-]` characters on `@input` and forces uppercase — prevents invalid codes reaching the backend
+- `maxDiscount` field rendered conditionally (`v-if="form.type === 'percentage'"`) — no null-clearing needed when switching to fixed type
+- Toggle switch in `DiscountsView` uses `togglingId` ref rather than per-row `loading` — single shared ref is sufficient since only one toggle fires at a time
+
+### Build Output (Phase A5)
+```
+154 modules transformed
+UsersView-Ce4Odp4S.js          6.21 kB │ gzip:  2.69 kB
+ReviewsView-CgRC419d.js        7.95 kB │ gzip:  3.14 kB
+UserDetailView-DYcz8FUf.js     8.93 kB │ gzip:  3.21 kB
+DiscountsView-DjMa9SkL.js     15.57 kB │ gzip:  5.53 kB  (includes DiscountFormModal)
+✓ built in 1.32s — 0 errors
+```
+
+---
+
+## Admin Panel — Complete ✅
+
+All 5 admin phases done. Full module summary:
+
+| Phase | Module | Views |
+|-------|--------|-------|
+| A1 | Project setup + auth + layout + base components | Login, shell |
+| A2 | Dashboard | DashboardView (charts + KPIs) |
+| A3 | Product management | ProductsView, ProductFormView |
+| A4 | Category + Order management | CategoriesView, OrdersView, OrderDetailView |
+| A5 | User + Review + Discount management | UsersView, UserDetailView, ReviewsView, DiscountsView |
+
+**Total views:** 11 fully implemented  
+**Dev server:** port 4000 (`npm run dev` inside `storein-admin/`)
+
+---
+
+## Frontend Phase 5 — Product Listing + Search ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/components/common/BasePagination.vue` | Ellipsis pagination (max 7 buttons); prev/next arrows; `window.scrollTo` on change; `font-fanum` |
+| `src/views/products/components/FilterSidebar.vue` | Desktop filter panel (w-64, sticky); 6 accordion sections; direct store mutation pattern |
+| `src/views/products/components/FilterMobileDrawer.vue` | Bottom-sheet drawer (Teleport); local filter copy for cancel-without-apply; slide-up transition |
+| `src/views/products/components/SortBar.vue` | Desktop inline sort buttons + mobile `<select>`; product count with skeleton; "فیلتر" mobile trigger |
+| `src/views/products/components/ActiveFilters.vue` | Removable chip row; `TransitionGroup` chip animation; maps filter values to Persian labels |
+| `src/views/products/components/ProductGrid.vue` | 2/3/4-col responsive grid; skeleton placeholders; delegates add-to-cart + wishlist toggle |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/stores/product.store.js` | Rewrote: `filters` → `reactive({})`, new multi-select fields (`genders[]`, `frameShapes[]`, `frameMaterials[]`), `toQueryParams()` / `fromQueryParams()`, `get totalPages()` accessor |
+| `src/services/product.service.js` | Fixed two wrong endpoints: `getBySlug` → `/products/slug/${slug}`; `search` → `/search` (was `/products/search`) |
+| `src/views/products/ProductListView.vue` | Full implementation: breadcrumb, sidebar, sort bar, active chips, grid, pagination, mobile drawer; works for both `/products` and `/category/:slug` |
+| `src/views/products/SearchView.vue` | Full implementation: search header, sort bar, grid, pagination; watches `route.query.q` so header search nav auto-triggers re-fetch |
+
+### Filter Sections (FilterSidebar + FilterMobileDrawer)
+| Section | Type | Filters → API param |
+|---------|------|---------------------|
+| دسته‌بندی | radio (single) | `category` slug |
+| جنسیت | checkbox (multi) | `gender=men,women` |
+| شکل فریم | pill toggle (multi) | `frameShape=round,oval` |
+| جنس فریم | checkbox (multi) | `frameMaterial=steel,acetate` |
+| محدوده قیمت | text inputs | `minPrice`, `maxPrice` |
+| فقط موجود | checkbox | `inStock=true` |
+
+### Key Decisions
+- `FilterSidebar` mutates `productStore.filters` directly (reactive object reference passed as prop) — no v-model copy needed; emits `change` to trigger debounced fetch in parent
+- `FilterMobileDrawer` keeps a **local copy** of filters so closing without "نمایش نتایج" discards changes; emits `apply(filters)` only on confirm
+- `useDebounceFn(300ms)` on all filter changes — prevents a request per keystroke on price inputs
+- `router.replace()` (not push) for URL sync — back button stays clean
+- `/category/:slug` route reuses `ProductListView`; slug sets `filters.category` and is excluded from `toQueryParams()` so it doesn't duplicate into `?category=`
+- `productStore.totalPages` is a plain `get` accessor (not a Vue computed) — returns `Math.ceil(total / limit)` reactively because `total` is a ref and Pinia tracks access
+- `BasePagination` always shows 7 or fewer buttons with ellipsis (e.g. `[1][…][8][9][10][11][12][…][20]`)
+- `ActiveFilters` resolves display labels from constants (`EYEWEAR_CATEGORIES`, `GENDER_OPTIONS`, etc.) — no label stored in filter state
+- `SearchView` is independent of `productStore` — uses local refs + direct `productService.search()` call
+
+---
+
+## Frontend Phase 4 — OTP Auth Flow ✅
+
+### New Files
+| File | Purpose |
+|------|---------|
+| `src/views/auth/components/OtpInput.vue` | Reusable 5-box OTP input; auto-advance, backspace, paste, `defineExpose({ focus })` |
+| `src/views/auth/LoginView.vue` | Phone entry card — flag prefix, LTR input, inline validation, `sendOtp` → navigate to OTP |
+| `src/views/auth/OtpView.vue` | OTP verify card — masked phone, 5 boxes, 2-min countdown, resend, auto-submit on complete |
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/stores/auth.store.js` | Added `pendingPhone` ref; `verifyOtp` persists refresh token; `_postLoginSync()` (lazy import → no circular dep); full `logout()` clears cart + wishlist state |
+
+### Endpoints Used
+| Endpoint | Trigger |
+|----------|---------|
+| `POST /auth/send-otp` | LoginView submit → `authStore.sendOtp()` |
+| `POST /auth/verify-otp` | OtpView verify → `authStore.verifyOtp()` |
+
+### Flow
+```
+/auth/login
+  → enter phone → validatePhone() → sendOtp()
+    → pendingPhone stored in auth store
+      → router.push({ name: 'otp' })
+
+/auth/otp
+  → guard: no pendingPhone → router.replace({ name: 'login' })
+  → enter 5 digits (auto-advance) → handleComplete() → verifyOtp()
+    → tokens saved to localStorage
+    → _postLoginSync(): fetchCart() + fetchWishlist() (fire-and-forget)
+    → router.push(redirect || { name: 'home' })
+```
+
+### Key Decisions
+- `pendingPhone` lives in the store (not query params) — survives refresh within session, not exposed in URL
+- `OtpInput` uses `:ref="el => inputs[index] = el"` (Vue 3 function ref) — required for dynamic list of refs
+- Inline errors for 400/429 (no toast); toast only for unexpected 5xx
+- `otpCode` cleared + first box re-focused on any verify failure
+- `LoginView` pre-fills phone from `pendingPhone` when user navigates back from OTP page
+- Dev banner (`v-if="isDev"`) reminds developer to check NestJS console for the mock OTP
+- `logout()` uses dynamic `import()` for cart/wishlist stores to avoid circular dependency at module load time
+
+---
+
+## Hotfix — Font: IRANYekan → IRANSans (IRANSansWeb FaNum) ✅
+
+### Updated Files
+| File | Change |
+|------|--------|
+| `src/assets/styles/fonts.css` | Replaced 4 IRANYekan `@font-face` blocks with 8 blocks: `IRANSans` (4 weights) + `IRANSansFaNum` (4 weights). CDN option documented in comments. |
+| `src/assets/styles/variables.css` | `--font-family: 'IRANSans', 'Tahoma', system-ui, sans-serif` |
+| `tailwind.config.js` | `fontFamily: { sans: ['IRANSans', ...], fanum: ['IRANSansFaNum', ...] }` — added `fanum` key for Persian numerals |
+| `src/assets/styles/main.css` | Added `.font-fanum` utility class in `@layer components` |
+| `src/components/common/BaseProductCard.vue` | `font-fanum` on compare-price + main-price spans |
+| `src/views/home/components/FlashSale.vue` | `font-fanum` on countdown digit spans |
+| `src/components/layout/AppHeaderActions.vue` | `font-fanum` on notification badge + cart badge spans |
+| `src/components/layout/AppMobileNav.vue` | `font-fanum` on mobile cart badge span |
+
+### Key Decisions
+- Two font families registered: `IRANSans` (body text) and `IRANSansFaNum` (prices/counters) — FaNum renders Persian-style numerals (٠١٢٣...) instead of Latin (0123...)
+- `font-fanum` is a plain CSS class in `@layer components`, not a Tailwind utility, so it works anywhere including inline styles
+- `tailwind.config.js` `fanum` key generates `font-fanum` as a Tailwind utility class (`font-family: fanum`) in addition to the plain CSS version
+- All badge counts (`۹۹+`, cart total, unread count) use FaNum so numerals match the RTL UI
+- Font files go in `src/assets/fonts/`; Tahoma fallback ensures readable text until woff2 files are placed
 
 ---
 
@@ -1131,10 +1636,10 @@ All view files exist as stubs. Phase 4+ fills each with real data fetching + UI 
 ### Priority Order
 | # | View | Key components used | Backend endpoints |
 |---|------|---------------------|-------------------|
-| 1 | `LoginView` + `OtpView` | `BaseInput`, `BaseButton`, `BaseSpinner` | `POST /auth/send-otp`, `POST /auth/verify-otp` |
-| 2 | `ProductListView` | `BaseProductCard`, `BaseEmpty`, filter sidebar | `GET /products`, `GET /categories/tree` |
-| 3 | `ProductDetailView` | `BaseRating`, `BaseButton`, image gallery | `GET /products/slug/:slug`, `GET /reviews?productId=` |
-| 4 | `SearchView` | `BaseProductCard`, `BaseEmpty` | `GET /search?q=` |
+| ~~1~~ | ~~`LoginView` + `OtpView`~~ | ~~done in Phase 4~~ | ~~done~~ |
+| ~~2~~ | ~~`ProductListView`~~ | ~~done in Phase 5~~ | ~~done~~ |
+| ~~3~~ | ~~`ProductDetailView`~~ | ~~done in Phase 6~~ | ~~done~~ |
+| ~~4~~ | ~~`SearchView`~~ | ~~done in Phase 5~~ | ~~done~~ |
 | 5 | `CartView` | `BaseButton`, quantity stepper | `GET /cart`, `PATCH /cart/items/:id` |
 | 6 | `CheckoutView` | `BaseModal`, `BaseButton`, address select | `POST /orders`, `POST /payments/pay` |
 | 7 | `ProfileView` | `BaseInput`, `BaseButton` | `GET /users/me`, `PATCH /users/me` |
@@ -1148,3 +1653,258 @@ All view files exist as stubs. Phase 4+ fills each with real data fetching + UI 
 - Empty state: `BaseEmpty` with contextual icon + message
 - Error state: `useUiStore().addToast(message, 'error')` on API failure
 - Auth guards: already wired in router — no per-view redirect needed
+
+---
+
+## Hotfixes — Dev Environment & Auth Flow ✅
+
+### 1 — Redis not installed (500 on send-otp)
+
+`sendOtp` immediately calls `redis.incr()` for rate-limiting; without Redis the call throws → NestJS returns 500.
+
+**Fix:** installed Redis for Windows via winget:
+```
+winget install --id Redis.Redis -e
+```
+Redis runs as a Windows Service on `localhost:6379` and auto-starts with Windows.
+
+---
+
+### 2 — Wrong API port in frontend (404 on all requests)
+
+| File | Before | After |
+|------|--------|-------|
+| `storein-front/.env` | `VITE_API_BASE_URL=http://localhost:3001/api/v1` | `http://localhost:3000/api/v1` |
+
+Backend runs on port `3000` (set in `storein/.env`). Frontend `.env` had `3001` — every request returned 404.
+
+---
+
+### 3 — OTP length mismatch (400 on verify-otp)
+
+`OTP_LENGTH` in `storein/.env` was changed to `5` to match the `OtpView` (which renders 5 boxes), but `VerifyOtpDto` still validated `@Length(6, 6)`.
+
+| File | Before | After |
+|------|--------|-------|
+| `storein/.env` | `OTP_LENGTH=6` | `OTP_LENGTH=5` |
+| `modules/auth/dto/verify-otp.dto.ts` | `@Length(6, 6, { message: '... ۶ رقم ...' })` | `@Length(5, 5, { message: '... ۵ رقم ...' })` |
+
+---
+
+### 4 — Country code badge on wrong side of phone input
+
+In RTL flexbox the first DOM child renders on the **right**. The country prefix `🇮🇷 +98` was the first child → appeared on the right. User requested it on the left.
+
+**Fix in `storein-front/src/views/auth/LoginView.vue`:**
+- Moved the country-prefix `<div>` to **after** the `<input>` in the DOM (last child → left side in RTL)
+- Changed `border-l-2` → `border-r-2` so the separator line stays between input and prefix
+
+---
+
+### 5 — Login succeeds but immediately logs out (token never saved)
+
+Two bugs in the auth flow caused an immediate redirect back to `/auth/login` after OTP verification:
+
+**Bug A — camelCase mismatch:** Backend returns `{ accessToken, refreshToken }` but `auth.store.js` was reading `data.access_token` / `data.refresh_token` (snake_case) → both were `undefined` → `localStorage` stored the string `"undefined"` → `isLoggedIn` became `false`.
+
+**Bug B — wrong profile endpoint:** `authService.getProfile()` called `/auth/me` which doesn't exist in the backend (returns 404 → http interceptor catches 401-like failures).
+
+| File | Before | After |
+|------|--------|-------|
+| `src/stores/auth.store.js` | `data.access_token` / `data.refresh_token` / `user.value = data.user` | `data.accessToken` / `data.refreshToken` / `await fetchProfile()` |
+| `src/services/auth.service.js` | `getProfile: () => http.get('/auth/me')` | `http.get('/users/me')` |
+
+---
+
+## Session 2 — Bug Fixes + Features (2026-06-04)
+
+---
+
+### Admin Panel — Bootstrap & Auth Fixes ✅
+
+**Fix 1 — Wrong API port in admin panel**
+`storein-admin/.env` had `VITE_API_BASE_URL=http://localhost:3001/api/v1` → changed to `3000`.
+
+**Fix 2 — Admin login: user object missing from verifyOtp response**
+Backend `verifyOtp` returns `{ accessToken, refreshToken, isNewUser }` — NO `user` object.
+Admin `auth.store.js` was checking `data.user?.isAdmin` (always undefined → threw `isAdminError`).
+
+Fix in `storein-admin/src/stores/auth.store.js`:
+1. Save token first, then call `getProfile()` to fetch user with `isAdmin`
+2. `data.access_token` → `data.accessToken`, `data.refresh_token` → `data.refreshToken`
+
+**Fix 3 — CategoryFormModal: wrong DTO field names**
+| Field sent (wrong) | Field expected by backend |
+|--------------------|--------------------------|
+| `parentId` | `parent` |
+| `order` | `sortOrder` |
+| `image: { original: { url } }` | `image: string` (URL) |
+
+**Fix 4 — ProductFormView: categories not loading**
+`data?.items` assumed paginated response, but `GET /categories` returns a plain array.
+Fix: `Array.isArray(data) ? data : (data?.items ?? [])`.
+
+---
+
+### Brand Module ✅
+
+New full-stack brand management feature.
+
+**Backend — `storein/src/modules/brand/`**
+| File | Purpose |
+|------|---------|
+| `entities/brand.schema.ts` | Brand schema: name, slug (auto), logo, description, isActive, sortOrder |
+| `dto/create-brand.dto.ts` | Create DTO |
+| `dto/update-brand.dto.ts` | Update DTO (PartialType) |
+| `brand.service.ts` | CRUD + slug auto-generate with duplicate suffix |
+| `brand.controller.ts` | GET public, GET/POST/PATCH/DELETE admin |
+| `brand.module.ts` | Registered in AppModule |
+
+Updated files:
+- `product.schema.ts` — `brand?: Types.ObjectId` ref added
+- `create-product.dto.ts` — `@IsOptional() @IsMongoId() brand?` added
+- `app.module.ts` — BrandModule imported
+
+**Endpoints**
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/v1/brands` | Public | لیست برندهای فعال |
+| GET | `/api/v1/brands/:id` | Public | جزئیات |
+| GET | `/api/v1/brands/admin/all` | Admin | همه برندها |
+| POST | `/api/v1/brands` | Admin | ایجاد |
+| PATCH | `/api/v1/brands/:id` | Admin | ویرایش |
+| DELETE | `/api/v1/brands/:id` | Admin | حذف |
+
+**Admin Frontend**
+- `storein-admin/src/services/brand.service.js`
+- `storein-admin/src/views/brands/BrandsView.vue` — لیست + ایجاد/ویرایش/حذف + آپلود لوگو
+- Router: `/brands` route اضافه شد
+- Sidebar: «برندها» 🔖 در بخش فروشگاه
+- `ProductFormView.vue` — brand select زیر category select
+
+---
+
+### Dark Mode + Search Bar Redesign ✅ (storein-front)
+
+**Dark Mode Strategy**
+- `tailwind.config.js` — `darkMode: 'class'`
+- `variables.css` — `html.dark` overrides CSS vars: `--color-bg: #0F172A`, `--color-card: #1E293B`, `--color-border: #334155`, text vars
+- `main.css` — `html.dark .bg-surface / .bg-surface-card / .text-text-*` overrides (no `!important` conflicts; NO Tailwind `dark:` classes used — they generated `@media prefers-color-scheme` instead of `.dark` selector)
+- `src/composables/useTheme.js` — toggle composable; reads `localStorage` + `prefers-color-scheme` on init
+- `main.js` — IIFE applies theme class before first render (prevents flash)
+
+**All `bg-white` instances (25+ files) replaced** with `style="background-color: var(--color-card)"` inline or `bg-surface-card` Tailwind class so they auto-switch with dark mode.
+
+Key files updated: `AuthLayout`, `BaseModal`, `BaseToast`, `BaseInput`, `BaseProductCard`, `AppHeader`, `AppHeaderNav`, `AppMobileNav`, `AppMobileDrawer`, `FilterSidebar`, `FilterMobileDrawer`, `SortBar`, `ProductGrid`, `ProductRow`, `TrustStrip`, `FlashSale`, `ProductTabs`, `ProductReviews`, `ProductGallery`, `ProductDetailView` sticky bar, `SearchView`, `OtpInput`, `LoginView`, `OtpView`.
+
+**Search Bar Redesign** (`AppHeaderSearch.vue`)
+- Pill shape (rounded-full) with focus glow (`ring-brand/12`)
+- «جستجو» button inside the input
+- `Ctrl+K` shortcut to focus
+- Dropdown: section headers, icon chips, «جستجو برای...» footer button
+- All colors via CSS vars (dark-aware)
+
+**Dark Mode Toggle** in `AppHeaderActions.vue`
+- Moon 🌙 icon = currently light mode (click → dark)
+- Sun ☀️ icon = currently dark mode (click → light)
+
+---
+
+### Mobile Hamburger Menu ✅ (storein-front)
+
+`AppMobileDrawer.vue` created — previously `toggleMenu()` set `isMenuOpen` but no component listened.
+
+Features:
+- Slide-in از سمت راست (RTL-aware transition)
+- نمایش نام کاربر یا دکمه ورود
+- دسته‌بندی‌های دینامیک از store با **expand/collapse** زیردسته‌ها
+  - کلیک نام دسته → navigate
+  - کلیک chevron → toggle زیردسته‌ها (بدون navigate)
+- پروفایل + خروج برای کاربران لاگین‌شده
+- Backdrop dark با کلیک → بسته می‌شه
+- `expandedCats` reset on close
+
+Registered in `DefaultLayout.vue`.
+
+---
+
+### Product Form Fixes — Admin ✅
+
+**`buildDto` in `ProductFormView.vue`**
+| Field | Bug | Fix |
+|-------|-----|-----|
+| `images` | آبجکت `{ original: { url } }` می‌فرستاد | `.map(img => img?.original?.url \|\| img?.url \|\| img).filter(Boolean)` |
+| `attributes` | `{ رنگ: 'مشکی' }` (object) می‌فرستاد | `Object.entries(v.attributes).map(([key, value]) => ({ key, value }))` |
+| `sku` | `v.sku?.trim() \|\| undefined` → `undefined` وقتی خالی | `v.sku?.trim() \|\| ''` |
+| `brand` | در DTO نبود | `brand: form.brandId \|\| undefined` |
+
+**`fillForm` in `ProductFormView.vue`**
+- `v.attributes` از آرایه `[{key, value}]` → object `{ key: value }` تبدیل می‌شه
+- `form.brandId = p.brand?._id ?? p.brand ?? ''`
+
+---
+
+### Backend Product Fixes ✅
+
+**Variant schema & DTO — sku optional**
+- `variant.schema.ts`: `@Prop({ required: true })` → `@Prop({ default: '' })`
+- `create-variant.dto.ts`: `@IsString() sku` → `@IsOptional() @IsString() sku?`
+- Reason: empty string `''` passed DTO validation but failed Mongoose `required: true` → 500
+
+**Product service create — error handling**
+- Added `try/catch` around `productModel.create()` → Mongoose `ValidationError` → `BadRequestException` (400)
+- `brand` field: explicit `new Types.ObjectId(dto.brand)` conversion
+
+**Admin product list — `adminFindAll`**
+- Added `.populate('category', 'name slug')` — category name was not shown in admin products table
+- Added `search` param: `$or: [{ name: regex }, { tags: regex }]`
+- Added `sort` param with sort map
+
+**Sort map extended**
+Added to both `findAll` and `adminFindAll`:
+```
+bestseller → { soldCount: -1 }
+discount   → { comparePrice: -1, minPrice: 1 }
+```
+
+**Category filter accepts slug OR ObjectId**
+- `ProductQueryDto`: `@IsMongoId()` → `@IsString()` on `category`
+- New `resolveCategoryId(str)` helper: if valid ObjectId → use directly; else → `findOne({ slug })` lookup
+- CategoryModel injected into ProductService via ProductModule
+- Fixes: `category=sunglasses` now works without needing to look up the ID on frontend
+
+---
+
+### Frontend Product Listing Fixes ✅ (storein-front)
+
+**`sortBy` → `sort` everywhere**
+`forbidNonWhitelisted: true` rejected `sortBy` as an unknown field. Fixed in:
+- `product.store.js` (`fetchProducts`, `toQueryParams`, `fromQueryParams`)
+- `HomeView.vue` (`fetchSection` calls + link URLs)
+- `FlashSale.vue` (direct `productService.getAll` call + RouterLink URL)
+- `SearchView.vue`
+
+**`data?.items` → `data?.products ?? data?.items`**
+Backend returns `{ products, total, page, totalPages }` not `{ items }`. Fixed in:
+- `product.store.js`
+- `HomeView.vue`
+- `FlashSale.vue`
+- `SearchView.vue`
+
+**`BaseProductCard` — image format**
+Images stored as string URLs `["http://..."]` but card read `image.url` (object format).
+Fix: `typeof img === 'string' ? img : img.thumbnail || img.url`
+
+**Admin products list params**
+- `sortBy` → `sort`
+- `categoryId` → `category`
+- `data?.items` → `data?.products`
+
+---
+
+### User Management Fix ✅ (storein-admin)
+
+`UsersView` was showing 0 users despite 2 users in DB.
+Root cause: `GET /users` returns `{ users, total }` — admin view was reading `data?.users` correctly but the backend assigns admin token separately from store token.
+
+Fix: The admin login flow was completely rewritten (see Auth Fixes above) — after that, users loaded correctly.

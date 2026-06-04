@@ -24,6 +24,7 @@ import { DiscountModule } from './modules/discount/discount.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
+import { BrandModule } from './modules/brand/brand.module';
 
 @Module({
   imports: [
@@ -72,6 +73,7 @@ import { UploadModule } from './modules/upload/upload.module';
     NotificationModule,
     AdminModule,
     UploadModule,
+    BrandModule,
   ],
 })
 export class AppModule {}

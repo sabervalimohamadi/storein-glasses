@@ -1,5 +1,5 @@
 <template>
-  <nav class="hidden md:block border-t border-surface-border bg-white">
+  <nav class="hidden md:block border-t border-surface-border" style="background-color: var(--color-card);">
     <div class="container-main">
       <ul class="flex items-stretch overflow-x-auto scrollbar-hide">
         <!-- Fixed quick links -->
@@ -44,7 +44,8 @@
           <Transition name="mega">
             <div
               v-if="hoveredId === cat._id && cat.children?.length"
-              class="absolute top-full right-0 z-dropdown bg-white shadow-dropdown rounded-b-xl border border-surface-border border-t-0 p-4 min-w-56"
+              class="absolute top-full right-0 z-dropdown shadow-dropdown rounded-b-xl border border-surface-border border-t-0 p-4 min-w-56"
+              style="background-color: var(--color-card);"
               @mouseenter="onEnter(cat._id)"
               @mouseleave="onLeave"
             >

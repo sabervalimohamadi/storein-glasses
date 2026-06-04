@@ -1,10 +1,14 @@
 <template>
-  <header class="sticky top-0 z-header bg-white border-b border-surface-border shadow-sm">
+  <header
+    class="sticky top-0 z-header shadow-sm transition-colors duration-200"
+    style="background-color: var(--color-header-bg); border-bottom: 1px solid var(--color-header-border);"
+  >
     <!-- Main row -->
     <div class="container-main flex items-center gap-3 h-14 md:h-16">
       <!-- Mobile hamburger -->
       <button
-        class="md:hidden p-2 -ml-1 rounded-lg text-text-secondary hover:text-brand hover:bg-surface transition-colors"
+        class="md:hidden p-2 -ml-1 rounded-lg transition-colors"
+        style="color: var(--color-text-secondary);"
         @click="uiStore.toggleMenu()"
         aria-label="منو"
       >
@@ -16,7 +20,7 @@
       <!-- Logo -->
       <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight">
         <span class="text-brand font-bold text-xl tracking-tight">استورین</span>
-        <span class="text-text-secondary text-xs hidden md:block -mt-0.5">فروشگاه تخصصی عینک</span>
+        <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">فروشگاه تخصصی عینک</span>
       </RouterLink>
 
       <!-- Search (desktop) -->
@@ -27,7 +31,7 @@
       <!-- Spacer for mobile -->
       <div class="flex-1 md:hidden" />
 
-      <!-- Actions (cart, user, bell) -->
+      <!-- Actions (cart, user, bell, theme) -->
       <AppHeaderActions />
     </div>
 
@@ -43,10 +47,10 @@
 
 <script setup>
 import { onMounted } from 'vue'
-import { useUiStore }      from '@/stores/ui.store'
-import { useAuthStore }    from '@/stores/auth.store'
+import { useUiStore }       from '@/stores/ui.store'
+import { useAuthStore }     from '@/stores/auth.store'
 import { useCategoryStore } from '@/stores/category.store'
-import { useCartStore }    from '@/stores/cart.store'
+import { useCartStore }     from '@/stores/cart.store'
 import AppHeaderSearch  from './AppHeaderSearch.vue'
 import AppHeaderActions from './AppHeaderActions.vue'
 import AppHeaderNav     from './AppHeaderNav.vue'

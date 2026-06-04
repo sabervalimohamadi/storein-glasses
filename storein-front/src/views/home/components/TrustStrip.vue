@@ -4,7 +4,8 @@
       <div
         v-for="item in trustItems"
         :key="item.id"
-        class="bg-white rounded-xl p-4 flex items-start gap-3 shadow-card hover:shadow-md transition-shadow duration-200"
+        class="rounded-xl p-4 flex items-start gap-3 shadow-card hover:shadow-md transition-shadow duration-200"
+        style="background-color: var(--color-card);"
       >
         <div
           class="w-11 h-11 rounded-xl flex items-center justify-center shrink-0 text-2xl"

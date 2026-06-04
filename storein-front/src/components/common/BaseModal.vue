@@ -6,7 +6,8 @@
         <Transition name="modal-panel" appear>
           <div
             v-if="modelValue"
-            :class="['relative bg-white rounded-2xl shadow-modal w-full flex flex-col max-h-[90vh]', sizeClass[size] || sizeClass.md]"
+            :class="['relative rounded-2xl shadow-modal w-full flex flex-col max-h-[90vh]', sizeClass[size] || sizeClass.md]"
+            style="background-color: var(--color-card);"
           >
             <!-- Header -->
             <div v-if="title || $slots.header" class="flex items-center justify-between px-5 py-4 border-b border-surface-border shrink-0">

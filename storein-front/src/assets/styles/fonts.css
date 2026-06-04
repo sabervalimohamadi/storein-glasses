@@ -1,46 +1,70 @@
-/*
-  IRANYekan Web Font (FaNum variant — renders Persian/Arabic digits natively)
-
-  Option A — CDN (works immediately, no local files needed):
-    Replace everything below with:
-    @import url('https://cdn.fontcdn.ir/Font/Persian/IRANYekan/IRANYekanWebFaNum.css');
-
-  Option B — Local files (used here):
-    Download woff2 files from https://github.com/aminrashidbeigi/IRANYekan/releases
-    Place in src/assets/fonts/:
-      IRANYekanWebFaNum-Regular.woff2
-      IRANYekanWebFaNum-Medium.woff2
-      IRANYekanWebFaNum-Bold.woff2
-      IRANYekanWebFaNum-Black.woff2
-*/
+/* ── IRANSans Web Font — local files ── */
 
 @font-face {
-  font-family: 'IRANYekan';
-  src: url('../fonts/IRANYekanWebFaNum-Regular.woff2') format('woff2');
+  font-family: 'IRANSans';
+  src: url('../fonts/IRANSansWeb-Light.woff2') format('woff2');
+  font-weight: 300;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANSans';
+  src: url('../fonts/IRANSansWeb-Regular.woff2') format('woff2');
   font-weight: 400;
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
-  font-family: 'IRANYekan';
-  src: url('../fonts/IRANYekanWebFaNum-Medium.woff2') format('woff2');
+  font-family: 'IRANSans';
+  src: url('../fonts/IRANSansWeb-Medium.woff2') format('woff2');
   font-weight: 500;
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
-  font-family: 'IRANYekan';
-  src: url('../fonts/IRANYekanWebFaNum-Bold.woff2') format('woff2');
+  font-family: 'IRANSans';
+  src: url('../fonts/IRANSansWeb-Bold.woff2') format('woff2');
   font-weight: 700;
   font-style: normal;
   font-display: swap;
 }
-
 @font-face {
-  font-family: 'IRANYekan';
-  src: url('../fonts/IRANYekanWebFaNum-Black.woff2') format('woff2');
+  font-family: 'IRANSans';
+  src: url('../fonts/IRANSansWeb-Black.woff2') format('woff2');
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+/*
+  IRANSansFaNum — used for prices, counters, badges (font-fanum class).
+  FaNum variant not available; mapped to the same IRANSans files.
+  Numerals will display in Western (0-9) style.
+*/
+@font-face {
+  font-family: 'IRANSansFaNum';
+  src: url('../fonts/IRANSansWeb-Regular.woff2') format('woff2');
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANSansFaNum';
+  src: url('../fonts/IRANSansWeb-Medium.woff2') format('woff2');
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANSansFaNum';
+  src: url('../fonts/IRANSansWeb-Bold.woff2') format('woff2');
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'IRANSansFaNum';
+  src: url('../fonts/IRANSansWeb-Black.woff2') format('woff2');
   font-weight: 900;
   font-style: normal;
   font-display: swap;

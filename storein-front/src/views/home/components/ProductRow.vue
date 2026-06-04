@@ -21,7 +21,7 @@
     <div class="relative group">
       <!-- Right arrow (scroll toward start in RTL) -->
       <button
-        class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-10 h-10 bg-white shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0"
+        class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-10 h-10 shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0" style="background-color: var(--color-card);"
         :disabled="atStart"
         @click="scrollToStart"
       >
@@ -41,7 +41,7 @@
           <div
             v-for="i in skeletonCount"
             :key="i"
-            class="min-w-[200px] max-w-[200px] bg-white rounded-xl flex-shrink-0 overflow-hidden"
+            class="min-w-[200px] max-w-[200px] rounded-xl flex-shrink-0 overflow-hidden" style="background-color: var(--color-card);"
           >
             <BaseSkeleton height="160px" class="rounded-none" />
             <div class="p-3 space-y-2">
@@ -78,7 +78,7 @@
 
       <!-- Left arrow (scroll toward end in RTL) -->
       <button
-        class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-10 h-10 bg-white shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0"
+        class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-10 h-10 shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0" style="background-color: var(--color-card);"
         :disabled="atEnd"
         @click="scrollToEnd"
       >

@@ -1,5 +1,21 @@
 <template>
   <div class="flex items-center gap-1 shrink-0">
+    <!-- Dark mode toggle -->
+    <button
+      @click="toggleTheme"
+      class="p-2 rounded-lg transition-colors"
+      style="color: var(--color-text-secondary);"
+      :title="isDark ? 'حالت روشن' : 'حالت تاریک'"
+    >
+      <!-- Moon (light mode → click for dark) -->
+      <svg v-if="!isDark" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.718 9.718 0 0118 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 003 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 009.002-5.998z"/>
+      </svg>
+      <!-- Sun (dark mode → click for light) -->
+      <svg v-else xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386l-1.591 1.591M21 12h-2.25m-.386 6.364l-1.591-1.591M12 18.75V21m-4.773-4.227l-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0z"/>
+      </svg>
+    </button>
     <!-- Notification bell (logged in only) -->
     <RouterLink
       v-if="authStore.isLoggedIn"
@@ -12,7 +28,7 @@
       </svg>
       <span
         v-if="unreadCount > 0"
-        class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none"
+        class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
       >
         {{ unreadCount > 99 ? '۹۹+' : unreadCount }}
       </span>
@@ -29,7 +45,7 @@
       </svg>
       <span
         v-if="cartStore.totalItems > 0"
-        class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none"
+        class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
       >
         {{ cartStore.totalItems > 99 ? '۹۹+' : cartStore.totalItems }}
       </span>
@@ -78,27 +94,31 @@
       <Transition name="dropdown">
         <div
           v-if="isOpen && authStore.isLoggedIn"
-          class="absolute top-full start-0 mt-2 w-52 bg-white rounded-xl shadow-dropdown border border-surface-border z-dropdown overflow-hidden"
+          class="absolute top-full end-0 mt-2 w-56 rounded-xl shadow-dropdown z-dropdown overflow-hidden"
+          style="background-color: var(--color-card); border: 1px solid var(--color-border); max-width: calc(100vw - 1rem);"
         >
-          <div class="px-4 py-3 border-b border-surface-border">
-            <p class="text-xs text-text-secondary">سلام،</p>
-            <p class="text-sm font-semibold text-text-primary truncate">{{ userName }}</p>
+          <div class="px-4 py-3" style="border-bottom: 1px solid var(--color-border);">
+            <p class="text-xs" style="color: var(--color-text-secondary);">سلام،</p>
+            <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">{{ userName }}</p>
           </div>
           <nav class="py-1">
             <RouterLink
               v-for="item in userMenuItems"
               :key="item.name"
               :to="{ name: item.name }"
-              class="flex items-center gap-3 px-4 py-2.5 text-sm text-text-primary hover:bg-surface transition-colors"
+              class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
+              style="color: var(--color-text-primary);"
+              @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
+              @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
               @click="isOpen = false"
             >
-              <component :is="item.icon" class="w-4 h-4 text-text-secondary shrink-0" />
+              <component :is="item.icon" class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
               {{ item.label }}
             </RouterLink>
           </nav>
-          <div class="border-t border-surface-border py-1">
+          <div class="py-1" style="border-top: 1px solid var(--color-border);">
             <button
-              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error hover:bg-red-50 transition-colors"
+              class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-error transition-colors hover:bg-red-50"
               @click="handleLogout"
             >
               <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 shrink-0">
@@ -119,6 +139,7 @@ import { useRouter } from 'vue-router'
 import { onClickOutside } from '@vueuse/core'
 import { useAuthStore } from '@/stores/auth.store'
 import { useCartStore } from '@/stores/cart.store'
+import { useTheme } from '@/composables/useTheme'
 import http from '@/services/http.service'
 
 const authStore = useAuthStore()
@@ -128,6 +149,9 @@ const router    = useRouter()
 const userRef     = ref(null)
 const isOpen      = ref(false)
 const unreadCount = ref(0)
+
+const { isDark, toggle: toggleTheme, init: initTheme } = useTheme()
+onMounted(() => initTheme())
 
 onClickOutside(userRef, () => { isOpen.value = false })
 

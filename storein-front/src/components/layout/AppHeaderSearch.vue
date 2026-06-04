@@ -1,76 +1,145 @@
 <template>
   <div ref="wrapper" class="relative w-full">
-    <!-- Input -->
-    <div class="relative">
-      <span class="absolute inset-y-0 right-3 flex items-center pointer-events-none text-text-secondary">
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor" class="w-5 h-5">
+    <!-- Search input wrapper -->
+    <div
+      :class="[
+        'flex items-center rounded-full border transition-all duration-200',
+        isFocused
+          ? 'border-brand shadow-[0_0_0_3px_rgba(27,79,138,0.12)] bg-[var(--color-card)]'
+          : 'border-[var(--color-border)] bg-[var(--color-bg)] hover:border-gray-300',
+      ]"
+    >
+      <!-- Search icon -->
+      <span class="pr-3.5 pl-1 text-text-secondary pointer-events-none shrink-0">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4.5 h-4.5 w-[18px] h-[18px]">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
         </svg>
       </span>
+
+      <!-- Input -->
       <input
+        ref="inputEl"
         v-model="query"
         type="text"
         dir="rtl"
+        autocomplete="off"
         placeholder="جستجو در عینک، فریم، لنز ..."
-        class="w-full pr-10 pl-4 py-2.5 bg-surface rounded-xl border border-surface-border text-sm text-text-primary placeholder:text-text-disabled focus:outline-none focus:border-brand focus:ring-2 focus:ring-brand/20 transition-colors"
+        class="flex-1 min-w-0 py-2.5 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-disabled)] focus:outline-none"
         @focus="onFocus"
         @keydown.enter="handleSearch"
         @keydown.esc="close"
       />
+
+      <!-- Keyboard shortcut hint — desktop only -->
+      <div class="hidden lg:flex items-center gap-1 ml-2 shrink-0">
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded border border-[var(--color-border)] text-[var(--color-text-disabled)] bg-[var(--color-bg)] leading-none">Ctrl</kbd>
+        <span class="text-[var(--color-text-disabled)] text-[10px]">+</span>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono rounded border border-[var(--color-border)] text-[var(--color-text-disabled)] bg-[var(--color-bg)] leading-none">K</kbd>
+      </div>
+
+      <!-- Search button -->
+      <button
+        type="button"
+        @click="handleSearch"
+        class="m-1 px-4 py-1.5 bg-brand hover:bg-brand-dark active:scale-95 text-white text-sm font-medium rounded-full transition-all duration-150 shrink-0"
+      >
+        جستجو
+      </button>
     </div>
 
-    <!-- Dropdown -->
+    <!-- Suggestions dropdown -->
     <Transition name="search-drop">
       <div
         v-if="isOpen && query.trim().length >= 1"
-        class="absolute top-full mt-1 w-full bg-white rounded-xl shadow-dropdown z-dropdown border border-surface-border overflow-hidden"
+        class="absolute top-full mt-2 w-full rounded-2xl shadow-dropdown z-dropdown overflow-hidden"
+        style="background-color: var(--color-card); border: 1px solid var(--color-border);"
       >
         <!-- Loading -->
-        <div v-if="loading" class="p-3 space-y-2">
-          <BaseSkeleton v-for="i in 5" :key="i" height="1.5rem" />
+        <div v-if="loading" class="p-4 space-y-3">
+          <div v-for="i in 4" :key="i" class="flex items-center gap-3">
+            <div class="w-7 h-7 rounded-lg skeleton shrink-0" />
+            <div class="flex-1 h-3.5 skeleton rounded-full" />
+          </div>
         </div>
 
-        <!-- Results -->
         <template v-else>
           <template v-if="hasResults">
             <!-- Product suggestions -->
             <div v-if="suggestions.products?.length">
-              <div class="px-3 pt-3 pb-1 text-xs font-semibold text-text-secondary">پیشنهادات</div>
+              <div class="px-4 pt-3 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-disabled)]">
+                محصولات
+              </div>
               <button
-                v-for="item in suggestions.products"
+                v-for="item in suggestions.products.slice(0, 5)"
                 :key="item.slug"
                 type="button"
-                class="w-full text-right px-3 py-2.5 hover:bg-surface text-sm text-text-primary flex items-center gap-2 transition-colors"
+                class="w-full text-right px-4 py-2.5 flex items-center gap-3 transition-colors duration-100 group"
+                style="color: var(--color-text-primary);"
+                :style="{ '--hover-bg': 'var(--color-bg)' }"
+                @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
+                @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
                 @click="goToProduct(item)"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-text-secondary shrink-0">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
-                </svg>
-                {{ item.name }}
+                <span class="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-brand">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+                  </svg>
+                </span>
+                <span class="text-sm truncate">{{ item.name }}</span>
               </button>
             </div>
 
             <!-- Category suggestions -->
             <div v-if="suggestions.categories?.length">
-              <div class="px-3 pt-3 pb-1 text-xs font-semibold text-text-secondary">دسته‌بندی‌ها</div>
+              <div
+                v-if="suggestions.products?.length"
+                class="mx-4 my-1"
+                style="border-top: 1px solid var(--color-border);"
+              />
+              <div class="px-4 pt-2 pb-1.5 text-[11px] font-semibold uppercase tracking-wider text-[var(--color-text-disabled)]">
+                دسته‌بندی‌ها
+              </div>
               <button
-                v-for="cat in suggestions.categories"
+                v-for="cat in suggestions.categories.slice(0, 3)"
                 :key="cat.slug"
                 type="button"
-                class="w-full text-right px-3 py-2.5 hover:bg-surface text-sm text-text-primary flex items-center gap-2 transition-colors"
+                class="w-full text-right px-4 py-2.5 flex items-center gap-3 transition-colors duration-100"
+                style="color: var(--color-text-primary);"
+                @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
+                @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
                 @click="goToCategory(cat)"
               >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4 text-text-secondary shrink-0">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
-                </svg>
-                {{ cat.name }}
+                <span class="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
+                  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-3.5 h-3.5 text-brand">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6A2.25 2.25 0 016 3.75h2.25A2.25 2.25 0 0110.5 6v2.25a2.25 2.25 0 01-2.25 2.25H6a2.25 2.25 0 01-2.25-2.25V6zM3.75 15.75A2.25 2.25 0 016 13.5h2.25a2.25 2.25 0 012.25 2.25V18a2.25 2.25 0 01-2.25 2.25H6A2.25 2.25 0 013.75 18v-2.25zM13.5 6a2.25 2.25 0 012.25-2.25H18A2.25 2.25 0 0120.25 6v2.25A2.25 2.25 0 0118 10.5h-2.25a2.25 2.25 0 01-2.25-2.25V6zM13.5 15.75a2.25 2.25 0 012.25-2.25H18a2.25 2.25 0 012.25 2.25V18A2.25 2.25 0 0118 20.25h-2.25A2.25 2.25 0 0113.5 18v-2.25z"/>
+                  </svg>
+                </span>
+                <span class="text-sm truncate">{{ cat.name }}</span>
+                <span class="mr-auto text-xs px-2 py-0.5 rounded-full text-brand" style="background-color: rgba(27,79,138,0.08);">دسته‌بندی</span>
               </button>
             </div>
           </template>
 
           <!-- No results -->
-          <div v-else class="py-8 text-center text-sm text-text-secondary">
-            نتیجه‌ای یافت نشد
+          <div v-else class="py-10 text-center">
+            <div class="text-3xl mb-2">🔍</div>
+            <p class="text-sm text-[var(--color-text-secondary)]">نتیجه‌ای برای «{{ query }}» یافت نشد</p>
+          </div>
+
+          <!-- Search all -->
+          <div style="border-top: 1px solid var(--color-border);">
+            <button
+              type="button"
+              class="w-full px-4 py-3 text-sm text-brand flex items-center justify-center gap-2 font-medium transition-colors duration-100"
+              @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
+              @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
+              @click="handleSearch"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 5.196a7.5 7.5 0 0010.607 10.607z"/>
+              </svg>
+              جستجو برای «{{ query }}»
+            </button>
           </div>
         </template>
       </div>
@@ -79,16 +148,17 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { onClickOutside, useDebounceFn } from '@vueuse/core'
 import http from '@/services/http.service'
-import BaseSkeleton from '@/components/common/BaseSkeleton.vue'
 
 const router    = useRouter()
 const wrapper   = ref(null)
+const inputEl   = ref(null)
 const query     = ref('')
 const isOpen    = ref(false)
+const isFocused = ref(false)
 const loading   = ref(false)
 const suggestions = ref({ products: [], categories: [] })
 
@@ -98,8 +168,15 @@ const hasResults = computed(() =>
 
 onClickOutside(wrapper, close)
 
-function onFocus() { isOpen.value = true }
-function close()   { isOpen.value = false }
+function onFocus() {
+  isFocused.value = true
+  isOpen.value = true
+}
+
+function close() {
+  isFocused.value = false
+  isOpen.value = false
+}
 
 const fetchSuggestions = useDebounceFn(async (q) => {
   if (!q.trim()) { suggestions.value = { products: [], categories: [] }; return }
@@ -133,11 +210,22 @@ function goToCategory(cat) {
   close()
   query.value = ''
 }
+
+// Ctrl+K shortcut
+function onKeydown(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault()
+    inputEl.value?.focus()
+  }
+}
+
+onMounted(() => window.addEventListener('keydown', onKeydown))
+onUnmounted(() => window.removeEventListener('keydown', onKeydown))
 </script>
 
 <style scoped>
-.search-drop-enter-active,
-.search-drop-leave-active { transition: all 0.15s ease; }
+.search-drop-enter-active { transition: all 0.15s ease; }
+.search-drop-leave-active { transition: all 0.1s ease; }
 .search-drop-enter-from,
-.search-drop-leave-to { opacity: 0; transform: translateY(-6px); }
+.search-drop-leave-to { opacity: 0; transform: translateY(-6px) scale(0.98); }
 </style>

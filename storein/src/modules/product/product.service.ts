@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import slugify from 'slugify';
 import { Product, ProductDocument, ProductStatus } from './entities/product.schema';
+import { Category, CategoryDocument } from '../category/entities/category.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -15,10 +16,18 @@ import { ProductQueryDto } from './dto/product-query.dto';
 @Injectable()
 export class ProductService {
   constructor(
-    @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(Product.name)   private productModel:   Model<ProductDocument>,
+    @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
   ) {}
 
   // ── Helpers ───────────────────────────────────────────────────
+  private async resolveCategoryId(category: string): Promise<Types.ObjectId | null> {
+    if (!category) return null;
+    if (Types.ObjectId.isValid(category)) return new Types.ObjectId(category);
+    const cat = await this.categoryModel.findOne({ slug: category }).select('_id').lean();
+    return cat ? (cat._id as Types.ObjectId) : null;
+  }
+
   private makeSlug(name: string): string {
     return slugify(name, { lower: true, strict: true, locale: 'fa' });
   }
@@ -68,7 +77,8 @@ export class ProductService {
       status: ProductStatus.ACTIVE,
     };
 
-    if (category) filter.category = new Types.ObjectId(category);
+    const catId = category ? await this.resolveCategoryId(category) : null;
+    if (catId) filter.category = catId;
     if (minPrice !== undefined) filter.minPrice = { $gte: minPrice };
     if (maxPrice !== undefined) filter.maxPrice = { ...filter.maxPrice, $lte: maxPrice };
     if (inStock) filter.totalStock = { $gt: 0 };
@@ -78,6 +88,8 @@ export class ProductService {
       price_asc:  { minPrice: 1 },
       price_desc: { minPrice: -1 },
       popular:    { soldCount: -1, viewCount: -1 },
+      bestseller: { soldCount: -1 },
+      discount:   { comparePrice: -1, minPrice: 1 },
     };
     const sortObj = sortMap[sort ?? 'newest'] ?? { createdAt: -1 };
 
@@ -120,17 +132,30 @@ export class ProductService {
     page: number;
     totalPages: number;
   }> {
-    const { status, category, page = 1, limit = 20 } = query;
+    const { status, category, search, sort, page = 1, limit = 20 } = query;
     const filter: Record<string, any> = {};
     if (status) filter.status = status;
-    if (category) filter.category = new Types.ObjectId(category);
+    const catId2 = category ? await this.resolveCategoryId(category) : null;
+    if (catId2) filter.category = catId2;
+    if (search) filter.$or = [
+      { name: { $regex: search, $options: 'i' } },
+      { tags: { $regex: search, $options: 'i' } },
+    ];
+
+    const sortMap: Record<string, any> = {
+      newest:     { createdAt: -1 },
+      price_asc:  { minPrice: 1 },
+      price_desc: { minPrice: -1 },
+    };
+    const sortObj = sortMap[sort ?? 'newest'] ?? { createdAt: -1 };
 
     const skip = (page - 1) * limit;
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
         .select('-__v')
-        .sort({ createdAt: -1 })
+        .populate('category', 'name slug')
+        .sort(sortObj)
         .skip(skip)
         .limit(limit)
         .lean<ProductDocument[]>(),
@@ -157,14 +182,20 @@ export class ProductService {
     const slug = await this.uniqueSlug(base);
     const denorm = this.calcDenormalized(dto.variants ?? []);
 
-    const product = await this.productModel.create({
-      ...dto,
-      slug,
-      category: new Types.ObjectId(dto.category),
-      ...denorm,
-    });
-
-    return product.toObject();
+    try {
+      const product = await this.productModel.create({
+        ...dto,
+        slug,
+        category: new Types.ObjectId(dto.category),
+        ...(dto.brand && { brand: new Types.ObjectId(dto.brand) }),
+        ...denorm,
+      });
+      return product.toObject();
+    } catch (err: any) {
+      if (err.name === 'ValidationError')
+        throw new BadRequestException(Object.values(err.errors).map((e: any) => e.message).join(', '));
+      throw err;
+    }
   }
 
   async update(id: string, dto: UpdateProductDto): Promise<ProductDocument> {

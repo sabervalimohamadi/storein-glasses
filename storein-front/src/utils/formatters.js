@@ -19,3 +19,10 @@ export function truncate(text, length = 60) {
   if (!text) return ''
   return text.length > length ? text.slice(0, length) + '...' : text
 }
+
+export function formatDate(iso) {
+  if (!iso) return '—'
+  return new Intl.DateTimeFormat('fa-IR', {
+    year: 'numeric', month: 'long', day: 'numeric',
+  }).format(new Date(iso))
+}

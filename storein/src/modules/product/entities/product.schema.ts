@@ -37,6 +37,9 @@ export class Product {
   @Prop({ required: true, type: Types.ObjectId, ref: 'Category', index: true })
   category: Types.ObjectId;
 
+  @Prop({ type: Types.ObjectId, ref: 'Brand', index: true })
+  brand?: Types.ObjectId;
+
   @Prop({ trim: true })
   shortDescription?: string;
 

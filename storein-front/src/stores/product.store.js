@@ -1,63 +1,121 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
 import { productService } from '@/services/product.service'
 
 export const useProductStore = defineStore('product', () => {
   const products       = ref([])
   const currentProduct = ref(null)
   const loading        = ref(false)
-  const pagination     = ref({ page: 1, limit: 24, total: 0 })
+  const total          = ref(0)
+  const page           = ref(1)
+  const limit          = ref(24)
 
-  const filters = ref({
-    sortBy:        'newest',
-    minPrice:      null,
-    maxPrice:      null,
-    inStock:       false,
-    category:      null,
-    gender:        null,
-    frameShape:    null,
-    frameMaterial: null,
-    brand:         null,
-    color:         null,
+  const filters = reactive({
+    sortBy:         'newest',
+    category:       null,
+    genders:        [],
+    frameShapes:    [],
+    frameMaterials: [],
+    minPrice:       null,
+    maxPrice:       null,
+    inStock:        false,
   })
 
-  async function fetchProducts(params = {}) {
+  // ── Fetch products ─────────────────────────────────────────────
+  async function fetchProducts(extraParams = {}) {
     loading.value = true
     try {
-      const { data } = await productService.getAll({
-        ...filters.value,
-        page:  pagination.value.page,
-        limit: pagination.value.limit,
-        ...params,
-      })
-      products.value         = data.items
-      pagination.value.total = data.total
-    } finally { loading.value = false }
+      const params = {
+        page:   page.value,
+        limit:  limit.value,
+        status: 'active',
+        sort: filters.sortBy,
+        ...extraParams,
+      }
+      if (filters.category)               params.category      = filters.category
+      if (filters.genders?.length)        params.gender        = filters.genders.join(',')
+      if (filters.frameShapes?.length)    params.frameShape    = filters.frameShapes.join(',')
+      if (filters.frameMaterials?.length) params.frameMaterial = filters.frameMaterials.join(',')
+      if (filters.minPrice)               params.minPrice      = filters.minPrice
+      if (filters.maxPrice)               params.maxPrice      = filters.maxPrice
+      if (filters.inStock)                params.inStock       = true
+
+      const { data } = await productService.getAll(params)
+      products.value = data?.products ?? data?.items ?? []
+      total.value    = data?.total ?? 0
+    } catch {
+      products.value = []
+      total.value    = 0
+    } finally {
+      loading.value = false
+    }
   }
 
+  // ── Fetch single product ────────────────────────────────────────
   async function fetchProductBySlug(slug) {
     loading.value = true
     try {
       const { data } = await productService.getBySlug(slug)
       currentProduct.value = data
-    } finally { loading.value = false }
+    } finally {
+      loading.value = false
+    }
   }
 
+  // ── Filter helpers ──────────────────────────────────────────────
   function setFilter(key, value) {
-    filters.value[key]    = value
-    pagination.value.page = 1
+    filters[key] = value
+    page.value   = 1
   }
 
   function resetFilters() {
-    Object.keys(filters.value).forEach((k) => {
-      filters.value[k] = k === 'sortBy' ? 'newest' : null
-    })
-    filters.value.inStock = false
-    pagination.value.page = 1
+    filters.sortBy         = 'newest'
+    filters.category       = null
+    filters.genders        = []
+    filters.frameShapes    = []
+    filters.frameMaterials = []
+    filters.minPrice       = null
+    filters.maxPrice       = null
+    filters.inStock        = false
+    page.value             = 1
+  }
+
+  function setPage(p) {
+    page.value = p
+  }
+
+  // ── URL sync helpers ────────────────────────────────────────────
+  function toQueryParams() {
+    const q = {}
+    if (filters.sortBy && filters.sortBy !== 'newest') q.sort        = filters.sortBy
+    if (filters.category)               q.category      = filters.category
+    if (filters.genders?.length)        q.gender        = filters.genders.join(',')
+    if (filters.frameShapes?.length)    q.frameShape    = filters.frameShapes.join(',')
+    if (filters.frameMaterials?.length) q.frameMaterial = filters.frameMaterials.join(',')
+    if (filters.minPrice)               q.minPrice      = filters.minPrice
+    if (filters.maxPrice)               q.maxPrice      = filters.maxPrice
+    if (filters.inStock)                q.inStock       = '1'
+    if (page.value > 1)                 q.page          = page.value
+    return q
+  }
+
+  function fromQueryParams(query) {
+    filters.sortBy         = query.sort          || query.sortBy || 'newest'
+    filters.category       = query.category      || null
+    filters.genders        = query.gender        ? query.gender.split(',')        : []
+    filters.frameShapes    = query.frameShape    ? query.frameShape.split(',')    : []
+    filters.frameMaterials = query.frameMaterial ? query.frameMaterial.split(',') : []
+    filters.minPrice       = query.minPrice      ? Number(query.minPrice)         : null
+    filters.maxPrice       = query.maxPrice      ? Number(query.maxPrice)         : null
+    filters.inStock        = query.inStock       === '1'
+    page.value             = query.page          ? Number(query.page)             : 1
   }
 
   return {
-    products, currentProduct, loading, pagination, filters,
-    fetchProducts, fetchProductBySlug, setFilter, resetFilters,
+    products, currentProduct, loading, total, page, limit, filters,
+    fetchProducts, fetchProductBySlug,
+    setFilter, resetFilters, setPage,
+    toQueryParams, fromQueryParams,
+    get totalPages() { return Math.ceil(total.value / limit.value) },
   }
 })

@@ -14,7 +14,7 @@ export const VariantAttributeSchema = SchemaFactory.createForClass(VariantAttrib
 export class Variant {
   _id: Types.ObjectId;
 
-  @Prop({ required: true, trim: true })
+  @Prop({ trim: true, default: '' })
   sku: string;
 
   @Prop({ required: true, min: 0 })

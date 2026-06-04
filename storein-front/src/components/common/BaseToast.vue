@@ -33,7 +33,7 @@ function typeClass(type) {
     error:   'bg-red-50 text-red-800 border border-red-200',
     warning: 'bg-yellow-50 text-yellow-800 border border-yellow-200',
     info:    'bg-blue-50 text-blue-800 border border-blue-200',
-  }[type] || 'bg-white text-text-primary border border-surface-border'
+  }[type] || 'bg-surface-card text-text-primary border border-surface-border'
 }
 
 function iconBg(type) {

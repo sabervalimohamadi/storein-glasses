@@ -23,6 +23,9 @@ export class CreateProductDto {
   @IsMongoId()
   category: string;
 
+  @IsOptional() @IsMongoId()
+  brand?: string;
+
   @IsOptional() @IsString() @MaxLength(500)
   shortDescription?: string;
 

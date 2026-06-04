@@ -3,7 +3,7 @@ import { Transform, Type } from 'class-transformer';
 import { ProductStatus } from '../entities/product.schema';
 
 export class ProductQueryDto {
-  @IsOptional() @IsMongoId()
+  @IsOptional() @IsString()
   category?: string;
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
@@ -19,7 +19,10 @@ export class ProductQueryDto {
   status?: ProductStatus;
 
   @IsOptional() @IsString()
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular';
+  sort?: string;
+
+  @IsOptional() @IsString()
+  search?: string;
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
   page?: number = 1;

@@ -3,39 +3,81 @@ import { ref, computed } from 'vue'
 import { authService } from '@/services/auth.service'
 
 export const useAuthStore = defineStore('auth', () => {
-  const user    = ref(null)
-  const token   = ref(localStorage.getItem('access_token') || null)
-  const loading = ref(false)
+  const user         = ref(null)
+  const token        = ref(localStorage.getItem('access_token') || null)
+  const loading      = ref(false)
+  const pendingPhone = ref('')    // carried from LoginView → OtpView
 
   const isLoggedIn = computed(() => !!token.value)
 
+  // ── Send OTP ─────────────────────────────────────────────────
   async function sendOtp(phone) {
     loading.value = true
-    try   { await authService.sendOtp(phone) }
-    finally { loading.value = false }
+    try {
+      await authService.sendOtp(phone)
+      pendingPhone.value = phone
+    } finally {
+      loading.value = false
+    }
   }
 
+  // ── Verify OTP ───────────────────────────────────────────────
   async function verifyOtp(phone, code) {
     loading.value = true
     try {
       const { data } = await authService.verifyOtp(phone, code)
-      token.value = data.access_token
-      user.value  = data.user
-      localStorage.setItem('access_token', data.access_token)
-    } finally { loading.value = false }
+      token.value = data.accessToken
+      localStorage.setItem('access_token', data.accessToken)
+      if (data.refreshToken) {
+        localStorage.setItem('refresh_token', data.refreshToken)
+      }
+      await fetchProfile()
+      pendingPhone.value = ''
+      await _postLoginSync()
+      return data
+    } finally {
+      loading.value = false
+    }
   }
 
+  // ── Post-login: sync cart + wishlist in background ───────────
+  async function _postLoginSync() {
+    const { useCartStore }     = await import('@/stores/cart.store')
+    const { useWishlistStore } = await import('@/stores/wishlist.store')
+    Promise.allSettled([
+      useCartStore().fetchCart(),
+      useWishlistStore().fetchWishlist(),
+    ])
+  }
+
+  // ── Fetch profile ────────────────────────────────────────────
   async function fetchProfile() {
     if (!token.value) return
-    const { data } = await authService.getProfile()
-    user.value = data
+    try {
+      const { data } = await authService.getProfile()
+      user.value = data
+    } catch {
+      // Token expired — http interceptor handles redirect
+    }
   }
 
-  function logout() {
-    user.value  = null
-    token.value = null
+  // ── Logout ───────────────────────────────────────────────────
+  async function logout() {
+    try { await authService.logout() } catch { /* silent */ }
+    user.value         = null
+    token.value        = null
+    pendingPhone.value = ''
     localStorage.removeItem('access_token')
+    localStorage.removeItem('refresh_token')
+    const { useCartStore }     = await import('@/stores/cart.store')
+    const { useWishlistStore } = await import('@/stores/wishlist.store')
+    useCartStore().items           = []
+    useWishlistStore().wishlistIds = new Set()
   }
 
-  return { user, token, loading, isLoggedIn, sendOtp, verifyOtp, fetchProfile, logout }
+  return {
+    user, token, loading, pendingPhone,
+    isLoggedIn,
+    sendOtp, verifyOtp, fetchProfile, logout,
+  }
 })

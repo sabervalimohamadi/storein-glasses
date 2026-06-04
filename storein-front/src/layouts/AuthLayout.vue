@@ -1,6 +1,6 @@
 <template>
   <div class="min-h-screen flex flex-col bg-surface">
-    <header class="h-16 flex items-center justify-center bg-white border-b border-surface-border shrink-0">
+    <header class="h-16 flex items-center justify-center border-b border-surface-border shrink-0" style="background-color: var(--color-card);">
       <RouterLink :to="{ name: 'home' }" class="flex flex-col items-center leading-tight">
         <span class="text-brand font-bold text-xl">استورین</span>
         <span class="text-text-secondary text-xs">فروشگاه تخصصی عینک</span>

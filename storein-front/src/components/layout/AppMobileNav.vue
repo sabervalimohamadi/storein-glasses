@@ -1,5 +1,6 @@
 <template>
-  <nav class="md:hidden fixed bottom-0 inset-x-0 z-header bg-white border-t border-surface-border shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-14">
+  <nav class="md:hidden fixed bottom-0 inset-x-0 z-header shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-14 transition-colors duration-200"
+    style="background-color: var(--color-card); border-top: 1px solid var(--color-border);">
     <div class="flex items-stretch h-full">
       <RouterLink
         v-for="item in navItems"
@@ -14,7 +15,7 @@
         <!-- Cart badge -->
         <span
           v-if="item.badge && item.badge > 0"
-          class="absolute top-1.5 left-1/2 translate-x-2 min-w-[16px] h-4 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none"
+          class="absolute top-1.5 left-1/2 translate-x-2 min-w-[16px] h-4 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
         >
           {{ item.badge > 9 ? '۹+' : item.badge }}
         </span>

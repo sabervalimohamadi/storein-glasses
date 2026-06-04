@@ -14,7 +14,7 @@
         <div class="flex items-center gap-1">
           <template v-for="(unit, index) in timerUnits" :key="unit.key">
             <div class="bg-white/20 rounded-lg min-w-[34px] py-1 text-center px-1.5">
-              <span class="text-white font-black text-base tabular-nums leading-none">{{ unit.value }}</span>
+              <span class="text-white font-black text-base tabular-nums leading-none font-fanum">{{ unit.value }}</span>
             </div>
             <span v-if="index < timerUnits.length - 1" class="text-white/70 font-bold text-sm">:</span>
           </template>
@@ -23,7 +23,7 @@
 
       <!-- See all -->
       <RouterLink
-        to="/products?sortBy=discount"
+        to="/products?sort=discount"
         class="text-white/80 hover:text-white text-sm flex items-center gap-1 transition-colors"
       >
         مشاهده همه
@@ -40,7 +40,7 @@
         <div
           v-for="i in 5"
           :key="i"
-          class="min-w-[180px] bg-white rounded-xl flex-shrink-0 overflow-hidden"
+          class="min-w-[180px] rounded-xl flex-shrink-0 overflow-hidden" style="background-color: var(--color-card);"
         >
           <BaseSkeleton height="140px" class="rounded-none" />
           <div class="p-3 space-y-2">
@@ -136,12 +136,12 @@ onMounted(async () => {
 
   try {
     const { data } = await productService.getAll({
-      sortBy: 'discount',
+      sort: 'discount',
       inStock: true,
       limit: 10,
       status: 'active',
     })
-    products.value = data?.items ?? []
+    products.value = data?.products ?? data?.items ?? []
   } catch {
     products.value = []
   } finally {

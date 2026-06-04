@@ -2,11 +2,13 @@ import rtl from 'tailwindcss-rtl'
 
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: ['./index.html', './src/**/*.{vue,js}'],
   theme: {
     extend: {
       fontFamily: {
-        sans: ['IRANYekan', 'Tahoma', 'system-ui', 'sans-serif'],
+        sans:   ['IRANSans',      'Tahoma', 'system-ui', 'sans-serif'],
+        fanum:  ['IRANSansFaNum', 'Tahoma', 'system-ui', 'sans-serif'],
       },
       colors: {
         brand: {

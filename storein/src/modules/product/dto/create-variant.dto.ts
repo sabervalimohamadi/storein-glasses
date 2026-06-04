@@ -10,8 +10,8 @@ class VariantAttributeDto {
 }
 
 export class CreateVariantDto {
-  @IsString()
-  sku: string;
+  @IsOptional() @IsString()
+  sku?: string;
 
   @IsNumber() @Min(0)
   price: number;

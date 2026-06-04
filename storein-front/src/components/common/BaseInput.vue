@@ -21,7 +21,7 @@
           $slots.prepend || prepend ? 'pr-10' : '',
           $slots.append || append ? 'pl-10' : '',
           error ? '!border-error !ring-error/20' : '',
-          disabled ? 'opacity-50 cursor-not-allowed bg-gray-50' : '',
+          disabled ? 'opacity-50 cursor-not-allowed' : '',
         ]"
         @input="$emit('update:modelValue', $event.target.value)"
         @focus="$emit('focus', $event)"

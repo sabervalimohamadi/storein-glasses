@@ -15,7 +15,7 @@
       <!-- ④ New Arrivals -->
       <ProductRow
         title="جدیدترین عینک‌ها"
-        link="/products?sortBy=newest"
+        link="/products?sort=newest"
         :products="newArrivals"
         :loading="loadingNew"
         class="mb-6"
@@ -27,7 +27,7 @@
       <!-- ⑥ Bestsellers -->
       <ProductRow
         title="پرفروش‌ترین‌ها"
-        link="/products?sortBy=bestseller"
+        link="/products?sort=bestseller"
         :products="bestsellers"
         :loading="loadingBest"
         class="mb-6"
@@ -79,7 +79,7 @@ async function fetchSection(params, target, loadingRef) {
   loadingRef.value = true
   try {
     const { data } = await productService.getAll({ status: 'active', limit: 8, ...params })
-    target.value = data?.items ?? []
+    target.value = data?.products ?? data?.items ?? []
   } catch {
     ui.addToast('خطا در بارگذاری محصولات', 'error')
     target.value = []
@@ -91,9 +91,9 @@ async function fetchSection(params, target, loadingRef) {
 // ── Lifecycle ─────────────────────────────────────────
 onMounted(() => {
   Promise.allSettled([
-    fetchSection({ sortBy: 'newest' },                           newArrivals, loadingNew),
-    fetchSection({ sortBy: 'bestseller' },                       bestsellers, loadingBest),
-    fetchSection({ sortBy: 'newest', category: 'sunglasses' },  sunglasses,  loadingSun),
+    fetchSection({ sort: 'newest' },                           newArrivals, loadingNew),
+    fetchSection({ sort: 'bestseller' },                       bestsellers, loadingBest),
+    fetchSection({ sort: 'newest', category: 'sunglasses' },  sunglasses,  loadingSun),
     wishlistStore.fetchWishlist(),
   ])
 })

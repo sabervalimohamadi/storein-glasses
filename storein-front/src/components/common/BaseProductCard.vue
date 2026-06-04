@@ -1,6 +1,6 @@
 <template>
   <!-- Skeleton -->
-  <div v-if="loading" class="bg-white rounded-xl shadow-card overflow-hidden">
+  <div v-if="loading" class="rounded-xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
     <BaseSkeleton height="200px" class="rounded-none" />
     <div class="p-3 space-y-2">
       <BaseSkeleton height="1rem" />
@@ -13,11 +13,12 @@
   <!-- Product card -->
   <article
     v-else
-    class="bg-white rounded-xl shadow-card overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col"
+    class="rounded-xl shadow-card overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col"
+    style="background-color: var(--color-card);"
     @click="handleClick"
   >
     <!-- Image -->
-    <div class="aspect-square relative bg-gray-50 p-3 shrink-0">
+    <div class="aspect-square relative p-3 shrink-0" style="background-color: var(--color-bg);">
       <!-- Heart: always visible, filled if in wishlist -->
       <button
         type="button"
@@ -75,10 +76,10 @@
       <!-- Price block -->
       <div class="mt-auto pt-1">
         <div v-if="discount > 0" class="flex items-center gap-2 mb-0.5">
-          <span class="text-xs text-text-secondary line-through">{{ formatPrice(product.comparePrice) }}</span>
+          <span class="text-xs text-text-secondary line-through font-fanum">{{ formatPrice(product.comparePrice) }}</span>
           <BaseBadge variant="red" size="sm">{{ discount }}%</BaseBadge>
         </div>
-        <span class="text-base font-bold text-text-primary">{{ formatPrice(product.minPrice) }}</span>
+        <span class="text-base font-bold text-text-primary font-fanum">{{ formatPrice(product.minPrice) }}</span>
       </div>
 
       <BaseButton
@@ -116,11 +117,12 @@ const router = useRouter()
 
 const placeholder = PRODUCT_PLACEHOLDER
 
-const imgSrc = ref(
-  props.product.images?.[0]?.thumbnail ||
-  props.product.images?.[0]?.url ||
-  PRODUCT_PLACEHOLDER
-)
+const imgSrc = ref(() => {
+  const img = props.product.images?.[0]
+  if (!img) return PRODUCT_PLACEHOLDER
+  if (typeof img === 'string') return img
+  return img.thumbnail || img.url || PRODUCT_PLACEHOLDER
+})()
 
 const discount = computed(() => {
   const { minPrice, comparePrice } = props.product

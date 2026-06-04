@@ -14,6 +14,10 @@
   --color-text-secondary: #6B7280;
   --color-text-disabled:  #C4CBD6;
 
+  /* Header */
+  --color-header-bg:      #FFFFFF;
+  --color-header-border:  #DDE3EC;
+
   /* Status */
   --color-success: #059669;
   --color-warning: #D97706;
@@ -26,7 +30,7 @@
   --sidebar-width:        260px;
 
   /* Typography */
-  --font-family:    'IRANYekan', 'Tahoma', system-ui, sans-serif;
+  --font-family:    'IRANSans', 'Tahoma', system-ui, sans-serif;
   --font-size-xs:   0.75rem;
   --font-size-sm:   0.875rem;
   --font-size-base: 1rem;
@@ -38,4 +42,17 @@
   --transition-fast:   150ms ease;
   --transition-normal: 250ms ease;
   --transition-slow:   400ms ease;
+}
+
+html.dark {
+  --color-bg:          #0F172A;
+  --color-card:        #1E293B;
+  --color-border:      #334155;
+
+  --color-text-primary:   #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-disabled:  #475569;
+
+  --color-header-bg:     #1E293B;
+  --color-header-border: #334155;
 }
