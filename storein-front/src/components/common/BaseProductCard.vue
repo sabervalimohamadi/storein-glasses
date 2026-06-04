@@ -117,12 +117,12 @@ const router = useRouter()
 
 const placeholder = PRODUCT_PLACEHOLDER
 
-const imgSrc = ref(() => {
+const imgSrc = ref((() => {
   const img = props.product.images?.[0]
   if (!img) return PRODUCT_PLACEHOLDER
   if (typeof img === 'string') return img
   return img.thumbnail || img.url || PRODUCT_PLACEHOLDER
-})()
+})())
 
 const discount = computed(() => {
   const { minPrice, comparePrice } = props.product
