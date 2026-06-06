@@ -1,4 +1,4 @@
-import { http } from './http.service'
+import http from './http.service'
 
 export const colorService = {
   getAll:      ()        => http.get('/colors/admin/all'),
