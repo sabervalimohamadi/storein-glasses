@@ -47,35 +47,44 @@
       </div>
 
       <!-- ③ Variant color swatches -->
-      <div v-if="colorVariants.length > 1" class="pb-4 border-b border-surface-border">
+      <div v-if="colorVariants.length > 0" class="pb-4 border-b border-surface-border">
         <div class="flex items-center gap-2 mb-3">
           <span class="text-sm font-medium text-text-primary">رنگ:</span>
-          <span class="text-sm text-text-secondary">
+          <span class="text-sm text-brand font-medium">
             {{ selectedVariant?.attributes?.['رنگ'] || '' }}
           </span>
         </div>
-        <div class="flex flex-wrap gap-2">
+        <div class="flex flex-wrap gap-3">
           <button
             v-for="variant in colorVariants"
             :key="variant._id"
             @click="selectVariant(variant)"
-            :title="variant.attributes?.['رنگ']"
+            :disabled="variant.stock === 0"
             :class="[
-              'w-9 h-9 rounded-full border-2 transition-all duration-150 flex items-center justify-center relative',
-              selectedVariant?._id === variant._id
-                ? 'border-brand scale-110 shadow-md'
-                : 'border-transparent hover:border-gray-300',
+              'flex flex-col items-center gap-1 transition-all duration-150',
               variant.stock === 0 ? 'opacity-40 cursor-not-allowed' : '',
             ]"
           >
             <span
-              class="w-7 h-7 rounded-full border border-black/10 block"
-              :style="{ backgroundColor: colorMap[variant.attributes?.['رنگ']] || '#888' }"
-            />
-            <span v-if="variant.stock === 0" class="absolute inset-0 flex items-center justify-center">
-              <svg class="w-4 h-4 text-error" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
-              </svg>
+              :class="[
+                'w-9 h-9 rounded-full border-2 flex items-center justify-center relative transition-all',
+                selectedVariant?._id === variant._id
+                  ? 'border-brand scale-110 shadow-md'
+                  : 'border-transparent hover:border-gray-300',
+              ]"
+            >
+              <span
+                class="w-7 h-7 rounded-full border border-black/10 block"
+                :style="{ backgroundColor: getColorHex(variant.attributes?.['رنگ']) }"
+              />
+              <span v-if="variant.stock === 0" class="absolute inset-0 flex items-center justify-center">
+                <svg class="w-3.5 h-3.5 text-error" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </span>
+            </span>
+            <span class="text-xs text-text-secondary leading-none">
+              {{ variant.attributes?.['رنگ'] }}
             </span>
           </button>
         </div>
@@ -176,11 +185,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useCartStore }     from '@/stores/cart.store'
 import { useWishlistStore } from '@/stores/wishlist.store'
 import { useUiStore }       from '@/stores/ui.store'
 import { formatPrice, formatNumber, calcDiscount } from '@/utils/formatters'
+import { colorService } from '@/services/color.service'
 import BaseRating   from '@/components/common/BaseRating.vue'
 import BaseBadge    from '@/components/common/BaseBadge.vue'
 import BaseButton   from '@/components/common/BaseButton.vue'
@@ -252,17 +262,20 @@ async function handleAddToCart() {
   }
 }
 
-// ── Color map ─────────────────────────────────────────────────────
-const colorMap = {
-  'مشکی':    '#1a1a1a',
-  'سفید':    '#f5f5f5',
-  'طلایی':   '#D4AF37',
-  'نقره‌ای': '#C0C0C0',
-  'قهوه‌ای': '#8B4513',
-  'آبی':     '#1B4F8A',
-  'قرمز':    '#DC2626',
-  'صورتی':   '#EC4899',
-  'سبز':     '#059669',
+// ── Colors from API ───────────────────────────────────────────────
+const colorsFromApi = ref([])
+
+onMounted(async () => {
+  try {
+    const { data } = await colorService.getActive()
+    colorsFromApi.value = Array.isArray(data) ? data : []
+  } catch { /* silent */ }
+})
+
+function getColorHex(name) {
+  if (!name) return '#888'
+  const found = colorsFromApi.value.find(c => c.name === name)
+  return found?.hex ?? '#888'
 }
 
 const guarantees = [
