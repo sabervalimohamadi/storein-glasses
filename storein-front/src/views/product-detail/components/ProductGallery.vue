@@ -35,17 +35,17 @@
         <template v-if="normalizedImages.length > 1">
           <button
             @click.stop="prev"
-            class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-9 h-9 bg-white/90 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
+            class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
           >
-            <svg class="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
             </svg>
           </button>
           <button
             @click.stop="next"
-            class="hidden md:flex absolute top-1/2 left-3 -translate-y-1/2 w-9 h-9 bg-white/90 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
+            class="hidden md:flex absolute top-1/2 left-3 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
           >
-            <svg class="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
