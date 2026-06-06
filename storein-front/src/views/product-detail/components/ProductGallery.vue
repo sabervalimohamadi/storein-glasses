@@ -31,7 +31,7 @@
         </Transition>
 
         <!-- Desktop nav arrows -->
-        <template v-if="images.length > 1">
+        <template v-if="normalizedImages.length > 1">
           <button
             @click="prev"
             class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-9 h-9 bg-white/90 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
@@ -55,14 +55,14 @@
           v-if="images.length > 1"
           class="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full font-fanum"
         >
-          {{ activeIndex + 1 }}/{{ images.length }}
+          {{ activeIndex + 1 }}/{{ normalizedImages.length }}
         </div>
       </div>
 
       <!-- Desktop thumbnails -->
-      <div v-if="images.length > 1" class="hidden md:flex gap-2 overflow-x-auto scrollbar-hide pb-1">
+      <div v-if="normalizedImages.length > 1" class="hidden md:flex gap-2 overflow-x-auto scrollbar-hide pb-1">
         <button
-          v-for="(img, idx) in images"
+          v-for="(img, idx) in normalizedImages"
           :key="idx"
           @click="activeIndex = idx"
           :class="[
@@ -77,9 +77,9 @@
       </div>
 
       <!-- Mobile dot indicators -->
-      <div v-if="images.length > 1" class="md:hidden flex justify-center gap-1.5 py-1">
+      <div v-if="normalizedImages.length > 1" class="md:hidden flex justify-center gap-1.5 py-1">
         <button
-          v-for="(_, idx) in images"
+          v-for="(_, idx) in normalizedImages"
           :key="idx"
           @click="activeIndex = idx"
           :class="[
@@ -107,15 +107,23 @@ const props = defineProps({
 const activeIndex   = ref(0)
 const mainContainer = ref(null)
 
+function normalizeImg(img) {
+  if (!img) return { url: PRODUCT_PLACEHOLDER, thumbnail: PRODUCT_PLACEHOLDER }
+  if (typeof img === 'string') return { url: img, thumbnail: img }
+  return img
+}
+
+const normalizedImages = computed(() => props.images.map(normalizeImg))
+
 const activeImage = computed(() =>
-  props.images[activeIndex.value] || { url: PRODUCT_PLACEHOLDER }
+  normalizedImages.value[activeIndex.value] || { url: PRODUCT_PLACEHOLDER }
 )
 
 function next() {
-  activeIndex.value = (activeIndex.value + 1) % props.images.length
+  activeIndex.value = (activeIndex.value + 1) % normalizedImages.value.length
 }
 function prev() {
-  activeIndex.value = (activeIndex.value - 1 + props.images.length) % props.images.length
+  activeIndex.value = (activeIndex.value - 1 + normalizedImages.value.length) % normalizedImages.value.length
 }
 
 let touchStartX = 0
