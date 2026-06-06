@@ -15,8 +15,7 @@
       <!-- Main image -->
       <div
         class="relative rounded-2xl overflow-hidden border border-surface-border group cursor-zoom-in"
-        style="background-color: var(--color-card);"
-        style="aspect-ratio: 1 / 1;"
+        style="background-color: var(--color-card); aspect-ratio: 1 / 1;"
         ref="mainContainer"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd"
