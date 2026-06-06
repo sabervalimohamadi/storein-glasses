@@ -17,6 +17,7 @@
         class="relative rounded-2xl overflow-hidden border border-surface-border group cursor-zoom-in"
         style="background-color: var(--color-card); aspect-ratio: 1 / 1;"
         ref="mainContainer"
+        @click="openLightbox"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd"
       >
@@ -33,7 +34,7 @@
         <!-- Desktop nav arrows -->
         <template v-if="normalizedImages.length > 1">
           <button
-            @click="prev"
+            @click.stop="prev"
             class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-9 h-9 bg-white/90 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
           >
             <svg class="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -41,7 +42,7 @@
             </svg>
           </button>
           <button
-            @click="next"
+            @click.stop="next"
             class="hidden md:flex absolute top-1/2 left-3 -translate-y-1/2 w-9 h-9 bg-white/90 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-white z-10"
           >
             <svg class="w-5 h-5 text-text-primary" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -52,7 +53,7 @@
 
         <!-- Mobile counter badge -->
         <div
-          v-if="images.length > 1"
+          v-if="normalizedImages.length > 1"
           class="md:hidden absolute bottom-3 left-1/2 -translate-x-1/2 bg-black/50 text-white text-xs px-2 py-0.5 rounded-full font-fanum"
         >
           {{ activeIndex + 1 }}/{{ normalizedImages.length }}
@@ -91,10 +92,72 @@
 
     </template>
   </div>
+
+  <!-- Lightbox -->
+  <Teleport to="body">
+    <Transition name="lb-fade">
+      <div
+        v-if="lightboxOpen"
+        class="fixed inset-0 z-[999] flex items-center justify-center bg-black/90"
+        @click.self="closeLightbox"
+        @keydown.esc="closeLightbox"
+        tabindex="0"
+        ref="lightboxEl"
+      >
+        <!-- Close button -->
+        <button
+          @click="closeLightbox"
+          class="absolute top-4 left-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+
+        <!-- Prev -->
+        <button
+          v-if="normalizedImages.length > 1"
+          @click="prev"
+          class="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </button>
+
+        <!-- Image -->
+        <img
+          :src="activeImage.url || activeImage.thumbnail"
+          :alt="name"
+          class="max-w-[90vw] max-h-[90vh] object-contain select-none"
+          @error="onImgError"
+        />
+
+        <!-- Next -->
+        <button
+          v-if="normalizedImages.length > 1"
+          @click="next"
+          class="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
+          </svg>
+        </button>
+
+        <!-- Counter -->
+        <div
+          v-if="normalizedImages.length > 1"
+          class="absolute bottom-5 left-1/2 -translate-x-1/2 bg-black/50 text-white text-sm px-3 py-1 rounded-full font-fanum"
+        >
+          {{ activeIndex + 1 }} / {{ normalizedImages.length }}
+        </div>
+      </div>
+    </Transition>
+  </Teleport>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, nextTick } from 'vue'
 import BaseSkeleton from '@/components/common/BaseSkeleton.vue'
 import { PRODUCT_PLACEHOLDER } from '@/utils/constants'
 
@@ -106,6 +169,8 @@ const props = defineProps({
 
 const activeIndex   = ref(0)
 const mainContainer = ref(null)
+const lightboxOpen  = ref(false)
+const lightboxEl    = ref(null)
 
 function normalizeImg(img) {
   if (!img) return { url: PRODUCT_PLACEHOLDER, thumbnail: PRODUCT_PLACEHOLDER }
@@ -124,6 +189,17 @@ function next() {
 }
 function prev() {
   activeIndex.value = (activeIndex.value - 1 + normalizedImages.value.length) % normalizedImages.value.length
+}
+
+async function openLightbox() {
+  lightboxOpen.value = true
+  document.body.style.overflow = 'hidden'
+  await nextTick()
+  lightboxEl.value?.focus()
+}
+function closeLightbox() {
+  lightboxOpen.value = false
+  document.body.style.overflow = ''
 }
 
 let touchStartX = 0
@@ -147,6 +223,15 @@ defineExpose({ setImage: (idx) => { activeIndex.value = idx } })
 }
 .gallery-fade-enter-from,
 .gallery-fade-leave-to {
+  opacity: 0;
+}
+
+.lb-fade-enter-active,
+.lb-fade-leave-active {
+  transition: opacity 0.2s ease;
+}
+.lb-fade-enter-from,
+.lb-fade-leave-to {
   opacity: 0;
 }
 </style>
