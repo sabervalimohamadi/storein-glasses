@@ -4,45 +4,41 @@ import { CreateBrandDto } from './dto/create-brand.dto';
 import { UpdateBrandDto } from './dto/update-brand.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
-import { Public } from '../../common/decorators/public.decorator';
 
 @Controller('brands')
-@UseGuards(JwtAuthGuard)
 export class BrandController {
   constructor(private readonly brandService: BrandService) {}
 
-  @Public()
   @Get()
   findActive() {
     return this.brandService.findActive();
   }
 
-  @Public()
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.brandService.findById(id);
   }
 
-  @UseGuards(AdminGuard)
   @Get('admin/all')
+  @UseGuards(JwtAuthGuard, AdminGuard)
   findAll() {
     return this.brandService.findAll();
   }
 
-  @UseGuards(AdminGuard)
   @Post()
+  @UseGuards(JwtAuthGuard, AdminGuard)
   create(@Body() dto: CreateBrandDto) {
     return this.brandService.create(dto);
   }
 
-  @UseGuards(AdminGuard)
   @Patch(':id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
   update(@Param('id') id: string, @Body() dto: UpdateBrandDto) {
     return this.brandService.update(id, dto);
   }
 
-  @UseGuards(AdminGuard)
   @Delete(':id')
+  @UseGuards(JwtAuthGuard, AdminGuard)
   remove(@Param('id') id: string) {
     return this.brandService.remove(id);
   }
