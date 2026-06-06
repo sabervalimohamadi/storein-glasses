@@ -73,10 +73,10 @@
 
               <!-- Color picker when key === 'رنگ' -->
               <template v-if="key === 'رنگ'">
-                <div class="flex-1 relative" ref="colorDropdownRef">
+                <div class="flex-1 relative" data-color-picker>
                   <button
                     type="button"
-                    @click="toggleColorDropdown(idx, key)"
+                    @click.stop="toggleColorDropdown(idx, key)"
                     class="field-input w-full flex items-center gap-2 text-sm text-right"
                   >
                     <span
@@ -94,6 +94,7 @@
                   <div
                     v-if="openDropdown === `${idx}-${key}`"
                     class="absolute top-full mt-1 right-0 left-0 z-50 bg-white border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto py-1"
+                    @click.stop
                   >
                     <!-- Search -->
                     <div class="px-2 pb-1 sticky top-0 bg-white">
@@ -225,14 +226,17 @@ function selectColor(variantIdx, key, color) {
 }
 
 function closeOnOutside(e) {
-  if (!e.target.closest('[ref="colorDropdownRef"]')) openDropdown.value = null
+  if (!e.target.closest('[data-color-picker]')) openDropdown.value = null
 }
 
 onMounted(async () => {
   try {
-    const { data } = await colorService.getActive()
+    const res = await colorService.getActive()
+    const data = res.data
     colors.value = Array.isArray(data) ? data : []
-  } catch { /* silent */ }
+  } catch (e) {
+    console.error('خطا در بارگذاری رنگ‌ها:', e?.response?.status, e?.response?.data)
+  }
   document.addEventListener('click', closeOnOutside)
 })
 onBeforeUnmount(() => document.removeEventListener('click', closeOnOutside))
