@@ -53,7 +53,7 @@
       />
 
       <!-- Out of stock overlay -->
-      <div v-if="!product.inStock" class="absolute inset-0 bg-white/75 flex items-center justify-center">
+      <div v-if="product.totalStock === 0" class="absolute inset-0 bg-white/75 flex items-center justify-center">
         <span class="text-text-secondary font-semibold text-sm px-3 py-1 bg-white rounded-full shadow-sm">ناموجود</span>
       </div>
     </div>
@@ -86,7 +86,7 @@
         block
         size="sm"
         class="mt-2"
-        :disabled="!product.inStock"
+        :disabled="product.totalStock === 0"
         @click.stop="$emit('add-to-cart')"
       >
         + افزودن به سبد
