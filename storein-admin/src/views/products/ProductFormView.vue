@@ -274,6 +274,12 @@ function buildDto(statusOverride) {
     images:      form.images.map(img =>
       img?.original?.url || img?.url || (typeof img === 'string' ? img : null)
     ).filter(Boolean),
+    thumbnail:   (() => {
+      const first = form.images[0]
+      if (!first) return undefined
+      if (typeof first === 'string') return first
+      return first.thumbnail?.url || first.original?.url
+    })(),
     variants:    form.variants.map(v => ({
       ...(v._id ? { _id: v._id } : {}),
       sku:          v.sku?.trim() || '',

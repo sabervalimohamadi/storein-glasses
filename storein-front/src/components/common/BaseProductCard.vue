@@ -118,6 +118,7 @@ const router = useRouter()
 const placeholder = PRODUCT_PLACEHOLDER
 
 const imgSrc = ref((() => {
+  if (props.product.thumbnail) return props.product.thumbnail
   const img = props.product.images?.[0]
   if (!img) return PRODUCT_PLACEHOLDER
   if (typeof img === 'string') return img
