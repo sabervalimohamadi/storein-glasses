@@ -147,6 +147,7 @@ const navGroups = [
       { name: 'products',   icon: '📦', label: 'محصولات' },
       { name: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
       { name: 'brands',     icon: '🔖', label: 'برندها' },
+      { name: 'colors',     icon: '🎨', label: 'رنگ‌ها' },
       { name: 'orders',     icon: '🛒', label: 'سفارشات' },
       { name: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
     ],

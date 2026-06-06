@@ -70,12 +70,75 @@
                 class="field-input flex-1 text-sm"
               />
               <span class="text-text-disabled flex-shrink-0">:</span>
-              <input
-                :value="val"
-                @input="variant.attributes[key] = $event.target.value"
-                type="text" placeholder="مقدار (مثلاً: مشکی)"
-                class="field-input flex-1 text-sm"
-              />
+
+              <!-- Color picker when key === 'رنگ' -->
+              <template v-if="key === 'رنگ'">
+                <div class="flex-1 relative" ref="colorDropdownRef">
+                  <button
+                    type="button"
+                    @click="toggleColorDropdown(idx, key)"
+                    class="field-input w-full flex items-center gap-2 text-sm text-right"
+                  >
+                    <span
+                      v-if="getColorHex(val)"
+                      class="w-5 h-5 rounded-full border border-black/15 flex-shrink-0"
+                      :style="{ backgroundColor: getColorHex(val) }"
+                    />
+                    <span class="flex-1 text-right">{{ val || 'انتخاب رنگ...' }}</span>
+                    <svg class="w-4 h-4 text-text-disabled flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
+                    </svg>
+                  </button>
+
+                  <!-- Dropdown -->
+                  <div
+                    v-if="openDropdown === `${idx}-${key}`"
+                    class="absolute top-full mt-1 right-0 left-0 z-50 bg-white border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto py-1"
+                  >
+                    <!-- Search -->
+                    <div class="px-2 pb-1 sticky top-0 bg-white">
+                      <input
+                        v-model="colorSearch"
+                        type="text"
+                        placeholder="جستجو..."
+                        class="w-full text-xs px-2 py-1.5 border border-border rounded-lg outline-none focus:border-primary"
+                        @click.stop
+                      />
+                    </div>
+                    <button
+                      v-for="color in filteredColors"
+                      :key="color._id"
+                      type="button"
+                      @click="selectColor(idx, key, color)"
+                      :class="[
+                        'w-full flex items-center gap-2.5 px-3 py-2 text-sm hover:bg-surface transition-colors text-right',
+                        variant.attributes[key] === color.name ? 'bg-primary/5 text-primary font-medium' : 'text-text-primary'
+                      ]"
+                    >
+                      <span
+                        class="w-5 h-5 rounded-full border border-black/10 flex-shrink-0"
+                        :style="{ backgroundColor: color.hex }"
+                      />
+                      {{ color.name }}
+                      <span class="text-xs text-text-disabled font-mono mr-auto">{{ color.hex }}</span>
+                    </button>
+                    <p v-if="filteredColors.length === 0" class="text-xs text-text-disabled px-3 py-2 text-center">
+                      رنگی یافت نشد
+                    </p>
+                  </div>
+                </div>
+              </template>
+
+              <!-- Plain text for other attributes -->
+              <template v-else>
+                <input
+                  :value="val"
+                  @input="variant.attributes[key] = $event.target.value"
+                  type="text" placeholder="مقدار (مثلاً: مشکی)"
+                  class="field-input flex-1 text-sm"
+                />
+              </template>
+
               <button @click="removeAttr(idx, key)"
                 class="text-text-disabled hover:text-error transition-colors flex-shrink-0 p-1">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -122,6 +185,9 @@
 </template>
 
 <script setup>
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import { colorService } from '@/services/color.service'
+
 const props = defineProps({
   modelValue: { type: Array,  default: () => [] },
   errors:     { type: Object, default: () => ({}) },
@@ -130,6 +196,48 @@ const emit = defineEmits(['update:modelValue'])
 
 const presetAttrs = ['رنگ', 'شکل فریم', 'جنس فریم', 'اندازه']
 
+// ── Colors ────────────────────────────────────────────────
+const colors      = ref([])
+const colorSearch = ref('')
+const openDropdown = ref(null)
+
+const filteredColors = computed(() => {
+  if (!colorSearch.value.trim()) return colors.value
+  return colors.value.filter(c => c.name.includes(colorSearch.value))
+})
+
+function getColorHex(name) {
+  return colors.value.find(c => c.name === name)?.hex ?? null
+}
+
+function toggleColorDropdown(variantIdx, key) {
+  const id = `${variantIdx}-${key}`
+  openDropdown.value = openDropdown.value === id ? null : id
+  colorSearch.value  = ''
+}
+
+function selectColor(variantIdx, key, color) {
+  const updated = props.modelValue.map((v, i) =>
+    i === variantIdx ? { ...v, attributes: { ...v.attributes, [key]: color.name } } : v
+  )
+  emit('update:modelValue', updated)
+  openDropdown.value = null
+}
+
+function closeOnOutside(e) {
+  if (!e.target.closest('[ref="colorDropdownRef"]')) openDropdown.value = null
+}
+
+onMounted(async () => {
+  try {
+    const { data } = await colorService.getActive()
+    colors.value = Array.isArray(data) ? data : []
+  } catch { /* silent */ }
+  document.addEventListener('click', closeOnOutside)
+})
+onBeforeUnmount(() => document.removeEventListener('click', closeOnOutside))
+
+// ── Variant helpers ────────────────────────────────────────
 function newVariant() {
   return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }
 }

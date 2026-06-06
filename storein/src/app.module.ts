@@ -25,6 +25,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { BrandModule } from './modules/brand/brand.module';
+import { ColorModule } from './modules/color/color.module';
 
 @Module({
   imports: [
@@ -74,6 +75,7 @@ import { BrandModule } from './modules/brand/brand.module';
     AdminModule,
     UploadModule,
     BrandModule,
+    ColorModule,
   ],
 })
 export class AppModule {}

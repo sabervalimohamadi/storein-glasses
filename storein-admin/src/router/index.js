@@ -46,6 +46,12 @@ const routes = [
     meta: { layout: 'admin', title: 'برندها' },
   },
   {
+    path: '/colors',
+    name: 'colors',
+    component: () => import('@/views/colors/ColorsView.vue'),
+    meta: { layout: 'admin', title: 'رنگ‌ها' },
+  },
+  {
     path: '/orders',
     name: 'orders',
     component: () => import('@/views/orders/OrdersView.vue'),
