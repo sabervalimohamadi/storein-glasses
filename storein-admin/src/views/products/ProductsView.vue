@@ -29,12 +29,19 @@
         <!-- Image + name -->
         <template #cell-name="{ row }">
           <div class="flex items-center gap-3">
-            <img
-              :src="row.images?.[0]?.thumbnail || row.images?.[0]?.url"
-              :alt="row.name"
-              class="w-10 h-10 rounded-lg object-cover border border-border bg-surface flex-shrink-0"
-              @error="e => (e.target.style.display = 'none')"
-            />
+            <!-- thumbnail (string) is the dedicated small image; images[0] is the full-size fallback -->
+            <div class="w-12 h-12 rounded-lg border border-border bg-surface flex-shrink-0 overflow-hidden flex items-center justify-center">
+              <img
+                v-if="row.thumbnail || row.images?.[0]"
+                :src="row.thumbnail || row.images?.[0]"
+                :alt="row.name"
+                class="w-full h-full object-contain"
+                @error="e => e.target.closest('div').innerHTML = noImagePlaceholder"
+              />
+              <svg v-else class="w-6 h-6 text-text-disabled" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M6.75 7.5h.008v.008H6.75V7.5zm10.5 0h.008v.008h-.008V7.5zM3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z"/>
+              </svg>
+            </div>
             <div class="min-w-0">
               <RouterLink
                 :to="{ name: 'product-edit', params: { id: row._id } }"
@@ -146,6 +153,9 @@ import AdminConfirm    from '@/components/common/AdminConfirm.vue'
 
 const ui = useUiStore()
 
+// SVG shown inside the image container when the image URL fails to load
+const noImagePlaceholder = `<svg class="w-6 h-6" style="color:#CBD5E1" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M6.75 7.5h.008v.008H6.75V7.5zm10.5 0h.008v.008h-.008V7.5zM3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z"/></svg>`
+
 const products      = ref([])
 const categories    = ref([])
 const loading       = ref(true)
@@ -157,7 +167,7 @@ const deleteDialog  = ref({ open: false, product: null, loading: false })
 const totalPages = computed(() => Math.ceil(total.value / ITEMS_PER_PAGE))
 
 const columns = [
-  { key: 'name',       label: 'نام محصول',  width: '280px' },
+  { key: 'name',       label: 'نام محصول',  width: '300px' },
   { key: 'category',   label: 'دسته‌بندی',  width: '120px' },
   { key: 'minPrice',   label: 'قیمت',        width: '130px', align: 'center' },
   { key: 'totalStock', label: 'موجودی',      width: '90px',  align: 'center', sortable: true },
