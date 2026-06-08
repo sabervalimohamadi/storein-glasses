@@ -1908,3 +1908,323 @@ Fix: `typeof img === 'string' ? img : img.thumbnail || img.url`
 Root cause: `GET /users` returns `{ users, total }` — admin view was reading `data?.users` correctly but the backend assigns admin token separately from store token.
 
 Fix: The admin login flow was completely rewritten (see Auth Fixes above) — after that, users loaded correctly.
+
+---
+
+## Session 3 — Storefront Views + Admin Fix + Logging System (2026-06-08)
+
+---
+
+### Cart Module — variantId + slug Fixes ✅
+
+**Problem:** `POST /cart/items` returned 400 — `variantId` was not being sent.
+
+**Root cause:** `cart.service.js` called `addItem(productId, quantity)` — `variantId` was never forwarded to the backend. The `AddToCartDto` requires `variantId`.
+
+**Backend fix — `cart.interface.ts`:**
+Added `slug` field to `CartItem` interface (required for RouterLink in CartView):
+```ts
+export interface CartItem {
+  productId: string; variantId: string; sku: string;
+  name: string; slug: string; thumbnail: string | null;
+  price: number; comparePrice: number | null;
+  quantity: number; stock: number;
+  attributes: { key: string; value: string }[];
+}
+```
+
+**Backend fix — `cart.service.ts`:**
+- `.select('name slug thumbnail variants')` — added `slug` to DB projection
+- `addItem`: stores `slug: product.slug` in the Redis cart item
+
+**Backend fix — `product.service.ts`:**
+Added `variants` to public `findAll` select so list-view cards have variant IDs available for add-to-cart.
+
+**Frontend fix — `cart.service.js`:**
+```js
+addItem:    (productId, variantId, quantity) => http.post('/cart/items', { productId, variantId, quantity }),
+updateItem: (productId, variantId, quantity) => http.patch(`/cart/items/${productId}`, { variantId, quantity }),
+removeItem: (productId, variantId)           => http.delete(`/cart/items/${productId}/${variantId}`),
+```
+
+**Frontend fix — `cart.store.js`:**
+Updated function signatures to pass `variantId` through all cart operations.
+
+**All add-to-cart call sites updated:**
+`ProductInfo.vue`, `RelatedProducts.vue`, `ProductGrid.vue`, `FlashSale.vue`, `ProductRow.vue` — all use `product.variants?.find(v => v.stock > 0 && v.isActive !== false) ?? product.variants?.[0]` with null guard.
+
+**Redis flush required** after backend schema change to drop old items missing `slug`.
+
+---
+
+### CartView ✅ (storein-front)
+
+Full implementation of `/cart` replacing the stub.
+
+**Features:**
+- 2-column layout: items list (lg:col-span-2) + order summary sidebar
+- Quantity stepper (+/−) with min=1, max=stock
+- Remove item with per-row spinner during async delete
+- Inline clear-all confirm (no modal) — dismiss on cancel
+- Subtotal + savings (comparePrice difference) calculations
+- Trust badges strip (ضمانت اصالت / تحویل سریع / پرداخت امن / ۷ روز مرجوعی)
+- Skeleton loading state (3 cards) during fetch
+- Empty state with `BaseEmpty` + RouterLink to products
+- `TransitionGroup` list animations on add/remove
+- `component :is` guard: uses `RouterLink` when `item.slug` exists, falls back to `div` for old cart items
+- Uses `item.thumbnail` (not `item.image`)
+- Checkout button → `/checkout`
+
+---
+
+### FlashSale Fix ✅ (storein-front)
+
+**Problem:** `handleAddToCart` in `FlashSale.vue` tried to access `product.variants[0]._id` but `findAll` didn't return `variants`.
+
+**Fix:** Added `variants` to `product.service.ts` public `findAll` select (backend). Added null guard in `FlashSale.vue`: `const variant = product.variants?.find(...) ?? product.variants?.[0]`. Same fix applied to `ProductRow.vue` and `ProductGrid.vue`.
+
+---
+
+### ProfileView ✅ (storein-front)
+
+Full implementation of `/user/profile` replacing the stub.
+
+**Features:**
+- Sidebar: avatar initials circle, full name, phone, nav links (پروفایل / سفارش‌ها / علاقه‌مندی‌ها / آدرس‌ها), logout button
+- Edit form: `firstName`, `lastName`, `email` with dirty-state check (save button disabled until changed)
+- Account stats cards: سفارش‌ها / علاقه‌مندی‌ها / آدرس‌ها with RouterLink
+- Quick action tiles grid
+- `onMounted(() => authStore.fetchProfile())` to keep data fresh
+
+**`user.service.js` fix:**
+Wrong endpoints corrected:
+```js
+getProfile:    () => http.get('/users/me'),
+updateProfile: (data) => http.patch('/users/me', data),
+addAddress:    (data) => http.post('/users/me/addresses', data),
+updateAddress: (id, data) => http.patch(`/users/me/addresses/${id}`, data),
+deleteAddress: (id) => http.delete(`/users/me/addresses/${id}`),
+setDefault:    (id) => http.patch(`/users/me/addresses/${id}/default`),
+```
+
+---
+
+### OrdersView + OrderDetailView ✅ (storein-front)
+
+New file: `src/services/order.service.js`:
+```js
+export const orderService = {
+  getMyOrders: (params) => http.get('/orders/my', { params }),
+  getMyOrder:  (id)     => http.get(`/orders/my/${id}`),
+  cancelOrder: (id)     => http.patch(`/orders/my/${id}/cancel`),
+}
+```
+
+**`OrdersView` features:**
+- Status filter tabs (همه / در انتظار / تایید شده / ارسال شده / تحویل شده / لغو شده)
+- Order cards with thumbnail strip (up to 3 images + count overflow)
+- Status badge (color-coded), order number, date, item count, total
+- Cancel dialog via `<Teleport to="body">`
+- Pagination via `BasePagination`
+
+**`OrderDetailView` features:**
+- 5-step visual status stepper (pending→confirmed→processing→shipped→delivered)
+- Items list with image/name/variant attrs/qty/price
+- Financial summary (subtotal / discount / total)
+- Shipping address card
+- Inline cancel button with confirm dialog (only when status=pending)
+
+---
+
+### FavoritesView ✅ (storein-front)
+
+Full implementation of `/user/favorites`.
+
+**Features:**
+- Responsive grid using `BaseProductCard` with `wishlist=true`
+- Remove overlay on hover with heart icon button
+- Clear all button with inline confirm
+- `handleAddToCart`: navigates to product detail page (wishlist response has no variants)
+- Pagination support
+- `wishlist.service.js` updated: `getAll(params)` now accepts `{ page, limit }` params
+
+---
+
+### AddressesView ✅ (storein-front)
+
+Full implementation of `/user/addresses`.
+
+**Features:**
+- Address cards grid with «پیش‌فرض» badge
+- Set-default, edit, delete actions per card
+- Bottom-sheet modal (Teleport) for create/edit form
+- Full form fields: title (preset buttons: منزل/محل کار/سایر), province, city, street, detail, postalCode, recipientName, recipientPhone
+- Phone validation: `/^(\+98|0)?9\d{9}$/`, postalCode: `/^\d{10}$/`
+- `isDefault` CSS toggle (no checkbox)
+- Delete confirm dialog
+- All mutations also update `authStore.user.addresses` to keep profile data in sync
+
+---
+
+### Admin ProductFormView — Image Preview Fix ✅
+
+**Problem:** Edit mode showed blank image previews despite images saved in DB.
+
+**Two bugs found:**
+
+**Bug 1 — `ImageUploader.vue`** didn't handle string URL format from DB:
+Added `resolveUrl(img)` function handling all three shapes:
+```js
+function resolveUrl(img) {
+  if (!img) return ''
+  if (typeof img === 'string') return img                           // DB string
+  if (img.thumbnail?.url) return img.thumbnail.url                 // upload API
+  if (typeof img.thumbnail === 'string' && img.thumbnail) return img.thumbnail
+  if (img.url) return img.url                                       // normalized
+  if (img.original?.url) return img.original.url
+  return ''
+}
+```
+
+**Bug 2 — `ProductFormView.vue` `fillForm()`:** DB images are raw strings, but `ImageUploader` expected objects.
+Fix: normalize strings to objects on load:
+```js
+form.images = (p.images ?? []).map(img =>
+  typeof img === 'string' ? { url: img, thumbnail: img } : img
+)
+```
+
+Also fixed `buildDto` thumbnail extraction to handle all image shape variants.
+
+---
+
+### Color Module ✅
+
+New full-stack color management feature.
+
+**Backend — `storein/src/modules/color/`**
+| File | Purpose |
+|------|---------|
+| `entities/color.schema.ts` | Color schema: name, hex, isActive |
+| `dto/create-color.dto.ts` | Create DTO |
+| `dto/update-color.dto.ts` | Update DTO (PartialType) |
+| `color.service.ts` | CRUD |
+| `color.controller.ts` | GET public (all active), GET/POST/PATCH/DELETE admin |
+| `color.module.ts` | Registered in AppModule |
+
+**Frontend**
+- `storein-front/src/services/color.service.js` — `getAll()` → `/colors`
+- `ProductInfo.vue` — color swatches fetched from API instead of static map
+
+**Bug fixes for color/brand endpoints:**
+- `@UseGuards(JwtAuthGuard)` removed from class level on `ColorController` and `BrandController`; `@Public()` added only to public GET methods — prevented 403 on unauthenticated GET requests
+
+---
+
+### Logging System ✅
+
+Complete structured logging across all three projects. Committed as `f95627d`.
+
+#### Backend (`storein/`) — Winston
+
+**New packages:** `winston`, `winston-daily-rotate-file`, `nest-winston`, `uuid`, `@types/uuid`
+
+**New files:**
+| File | Purpose |
+|------|---------|
+| `src/common/logger/logger.module.ts` | Global Winston module — console (colorized) + DailyRotateFile transports |
+| `src/common/logger/app-logger.service.ts` | Injectable Transient logger — `setContext()`, `log/info/warn/error/debug()` |
+| `src/common/middleware/request-id.middleware.ts` | Assigns UUID to every request; sets `x-request-id` response header |
+| `src/common/middleware/http-logger.middleware.ts` | Logs every request/response: method, url, statusCode, duration; slow request warn (>2s) |
+| `src/common/interceptors/logging.interceptor.ts` | Catches handler errors; warns on slow handlers (>1s) |
+
+**Updated files:**
+| File | Change |
+|------|--------|
+| `src/common/filters/http-exception.filter.ts` | 4xx logged as `warn`, 5xx as `error` with stack; `sanitizeBody()` removes passwords/OTPs/tokens |
+| `src/app.module.ts` | `LoggerModule` added to imports; `RequestIdMiddleware` + `HttpLoggerMiddleware` wired globally |
+| `src/main.ts` | `bufferLogs: true`, `app.useLogger(WINSTON_MODULE_NEST_PROVIDER)`, global filter+interceptor injected with logger via `app.get()` |
+| `src/modules/auth/auth.service.ts` | Phone numbers masked in all log calls: `phone.slice(0,-4) + '****'` |
+| `src/modules/order/order.service.ts` | Logs: order created (orderId, total, itemCount), order cancelled, status updated by admin |
+| `src/modules/order/order.module.ts` | `AppLoggerService` added to providers |
+| `src/modules/payment/payment.service.ts` | Logs: payment initiated, verification failed (warn), verification success |
+| `src/modules/payment/payment.module.ts` | `AppLoggerService` added to providers |
+
+**Log files (auto-created in `storein/logs/`, git-ignored):**
+| File | Content | Retention |
+|------|---------|-----------|
+| `error-YYYY-MM-DD.log` | Errors only | 30 days |
+| `combined-YYYY-MM-DD.log` | All levels | 14 days |
+
+Log rotation: daily, gzip compressed, max 20MB/50MB per file.
+
+**Log entry format (JSON in files, colorized in console):**
+```json
+{
+  "timestamp": "2026-06-08 11:33:11.108",
+  "level": "info",
+  "context": "HTTP",
+  "message": "Response Sent",
+  "requestId": "46d5fc98-...",
+  "method": "GET",
+  "url": "/api/v1/products",
+  "statusCode": 200,
+  "duration": "11ms"
+}
+```
+
+**requestId flow:** Every request gets a UUID via `RequestIdMiddleware` → same ID in HTTP log, handler error log, and exception filter log → traceable end-to-end.
+
+**Security:** `sanitizeBody()` strips `password`, `token`, `secret`, `code`, `otp` fields. Phone numbers always masked last 4 digits.
+
+#### Frontend — `storein-front/` + `storein-admin/`
+
+**New files:**
+| File | Purpose |
+|------|---------|
+| `src/utils/logger.js` | Buffered logger (last 50 errors in memory); level-filtered by env (dev: debug+, prod: warn+) |
+
+**Updated files:**
+| File | Change |
+|------|--------|
+| `src/services/http.service.js` | `apiError()` on all API failures; slow-call warn (>3s); network error detection; request `startTime` in metadata |
+| `src/main.js` | `app.config.errorHandler` (Vue component crashes); `warnHandler` (dev only); `unhandledrejection`; `window.error`; `router.onError` |
+
+**Admin uses `admin_token` key; storefront uses `access_token` key.**
+
+**Development usage:**
+```js
+import { logger } from '@/utils/logger'
+console.table(logger.getErrors())  // see last 50 errors
+logger.clearErrors()
+```
+
+---
+
+## Frontend Status Summary (2026-06-08)
+
+| View | Route | Status |
+|------|-------|--------|
+| `HomeView` | `/` | ✅ Full |
+| `ProductListView` | `/products`, `/category/:slug` | ✅ Full |
+| `SearchView` | `/search` | ✅ Full |
+| `ProductDetailView` | `/product/:slug` | ✅ Full |
+| `LoginView` | `/auth/login` | ✅ Full |
+| `OtpView` | `/auth/otp` | ✅ Full |
+| `CartView` | `/cart` | ✅ Full |
+| `ProfileView` | `/user/profile` | ✅ Full |
+| `OrdersView` | `/user/orders` | ✅ Full |
+| `OrderDetailView` | `/user/orders/:id` | ✅ Full |
+| `FavoritesView` | `/user/favorites` | ✅ Full |
+| `AddressesView` | `/user/addresses` | ✅ Full |
+| `CheckoutView` | `/checkout` | 🔲 Stub — pending |
+
+**Remaining:** `CheckoutView` (address selection + payment integration).
+
+---
+
+## GitHub
+
+Repository: `https://github.com/sabervalimohamadi/storein-glasses.git`  
+Branch: `master`  
+Latest commit: `f95627d` — Add complete logging system across all three projects
