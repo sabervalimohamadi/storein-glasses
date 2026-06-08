@@ -57,6 +57,17 @@
 
     <!-- Footer -->
     <div class="border-t border-sidebar-border px-2 py-3 space-y-1">
+      <!-- Role badge -->
+      <div v-if="!ui.sidebarCollapsed && auth.user"
+           class="flex items-center gap-2 px-3 py-1.5">
+        <span class="text-xs text-sidebar-text">{{ auth.user.phone }}</span>
+        <span :class="[
+          'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
+          auth.isAdmin ? 'bg-primary/20 text-primary' : 'bg-yellow-500/20 text-yellow-400',
+        ]">
+          {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
+        </span>
+      </div>
       <a href="http://localhost:3000" target="_blank"
          :class="[
            'flex items-center gap-3 px-3 py-2.5 rounded-lg',
@@ -127,6 +138,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useUiStore }   from '@/stores/ui.store'
 import { useAuthStore } from '@/stores/auth.store'
@@ -136,7 +148,7 @@ const router = useRouter()
 const ui     = useUiStore()
 const auth   = useAuthStore()
 
-const navGroups = [
+const navGroups = computed(() => [
   {
     label: '',
     items: [{ name: 'dashboard', icon: '📊', label: 'داشبورد' }],
@@ -148,6 +160,7 @@ const navGroups = [
       { name: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
       { name: 'brands',     icon: '🔖', label: 'برندها' },
       { name: 'colors',     icon: '🎨', label: 'رنگ‌ها' },
+      { name: 'banners',    icon: '🖼', label: 'بنرها' },
       { name: 'orders',     icon: '🛒', label: 'سفارشات' },
       { name: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
     ],
@@ -155,11 +168,12 @@ const navGroups = [
   {
     label: 'مدیریت',
     items: [
-      { name: 'users',   icon: '👥', label: 'کاربران' },
-      { name: 'reviews', icon: '⭐', label: 'نظرات' },
+      { name: 'users',    icon: '👥', label: 'کاربران' },
+      { name: 'reviews',  icon: '⭐', label: 'نظرات' },
+      ...(auth.isAdmin ? [{ name: 'settings', icon: '⚙️', label: 'تنظیمات سایت' }] : []),
     ],
   },
-]
+])
 
 function isActive(item) {
   return route.name === item.name ||

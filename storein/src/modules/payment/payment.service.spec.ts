@@ -12,6 +12,12 @@ import {
 import { PaymentGateway } from './gateway/payment-gateway.abstract';
 import { OrderService } from '../order/order.service';
 import { OrderStatus } from '../order/entities/order.schema';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
 
 const userId  = new Types.ObjectId().toString();
 const orderId = new Types.ObjectId().toString();
@@ -86,6 +92,7 @@ describe('PaymentService', () => {
         { provide: PaymentGateway,                  useValue: gateway },
         { provide: OrderService,                    useValue: orderService },
         { provide: EventEmitter2,                   useValue: eventEmitter },
+        { provide: AppLoggerService,                useValue: mockLogger },
       ],
     }).compile();
 

@@ -8,7 +8,13 @@ export const useAuthStore = defineStore('auth', () => {
   const loading      = ref(false)
   const pendingPhone = ref('')
 
-  const isLoggedIn = computed(() => !!token.value && user.value?.isAdmin === true)
+  const isAdmin    = computed(() => user.value?.isAdmin === true)
+  const isManager  = computed(() => user.value?.role === 'manager')
+  const isLoggedIn = computed(() => !!token.value && (user.value?.isAdmin === true || user.value?.role === 'manager'))
+
+  function hasAdminAccess(profile) {
+    return profile?.isAdmin === true || profile?.role === 'manager'
+  }
 
   async function sendOtp(phone) {
     loading.value = true
@@ -29,9 +35,9 @@ export const useAuthStore = defineStore('auth', () => {
         localStorage.setItem('admin_refresh_token', data.refreshToken)
 
       const { data: profile } = await authService.getProfile()
-      if (!profile.isAdmin) {
+      if (!hasAdminAccess(profile)) {
         logout()
-        throw { isAdminError: true, message: 'شما دسترسی ادمین ندارید' }
+        throw { isAdminError: true, message: 'شما دسترسی به پنل مدیریت ندارید' }
       }
 
       user.value         = profile
@@ -44,7 +50,7 @@ export const useAuthStore = defineStore('auth', () => {
     if (!token.value) return
     try {
       const { data } = await authService.getProfile()
-      if (!data.isAdmin) { logout(); return }
+      if (!hasAdminAccess(data)) { logout(); return }
       user.value = data
     } catch { logout() }
   }
@@ -57,5 +63,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('admin_refresh_token')
   }
 
-  return { user, token, loading, pendingPhone, isLoggedIn, sendOtp, verifyOtp, fetchProfile, logout }
+  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, sendOtp, verifyOtp, fetchProfile, logout }
 })

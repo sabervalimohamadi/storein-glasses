@@ -24,8 +24,10 @@ import { DiscountModule } from './modules/discount/discount.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
-import { BrandModule } from './modules/brand/brand.module';
-import { ColorModule } from './modules/color/color.module';
+import { BrandModule }  from './modules/brand/brand.module';
+import { ColorModule }  from './modules/color/color.module';
+import { BannerModule }   from './modules/banner/banner.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { LoggerModule }          from './common/logger/logger.module';
 import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
 import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middleware';
@@ -80,6 +82,8 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     UploadModule,
     BrandModule,
     ColorModule,
+    BannerModule,
+    SettingsModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -1,12 +1,20 @@
 import {
-  Controller, Get, Param,
+  Body, Controller, Get, Param,
   Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
+import { IsIn } from 'class-validator';
 import { AdminService } from './admin.service';
 import { DateRangeDto, LowStockDto } from './dto/date-range.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../../common/guards/admin.guard';
-import { Public } from '../../common/decorators/public.decorator';
+import { JwtAuthGuard }    from '../auth/guards/jwt-auth.guard';
+import { AdminGuard }      from '../../common/guards/admin.guard';
+import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
+import { Public }          from '../../common/decorators/public.decorator';
+import { UserRole }        from '../user/entities/user.schema';
+
+class SetRoleDto {
+  @IsIn(Object.values(UserRole))
+  role: string;
+}
 
 @UseGuards(JwtAuthGuard, AdminGuard)
 @Controller('admin')
@@ -52,12 +60,20 @@ export class AdminController {
     return this.adminService.getAdminUsers();
   }
 
+  @Patch('users/:id/role')
+  @UseGuards(SuperAdminGuard)
+  setUserRole(@Param('id') id: string, @Body() dto: SetRoleDto) {
+    return this.adminService.setUserRole(id, dto.role);
+  }
+
   @Patch('users/:id/promote')
+  @UseGuards(SuperAdminGuard)
   promoteToAdmin(@Param('id') id: string) {
     return this.adminService.promoteToAdmin(id);
   }
 
   @Patch('users/:id/demote')
+  @UseGuards(SuperAdminGuard)
   demoteFromAdmin(@Param('id') id: string) {
     return this.adminService.demoteFromAdmin(id);
   }

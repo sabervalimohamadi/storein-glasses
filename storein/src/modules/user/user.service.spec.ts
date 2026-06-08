@@ -93,13 +93,14 @@ describe('UserService', () => {
     });
   });
 
-  describe('toggleActive', () => {
-    it('toggles user active status', async () => {
-      const user = { ...mockUser(), isActive: true };
+  describe('toggleBlock', () => {
+    it('toggles user active status and returns isBlocked', async () => {
+      const user = { ...mockUser(), isActive: true, save: jest.fn().mockResolvedValue(undefined), toObject: jest.fn().mockReturnThis() };
       model.findById.mockResolvedValue(user);
 
-      await service.toggleActive(userId);
+      const result = await service.toggleBlock(userId);
       expect(user.isActive).toBe(false);
+      expect(result.isBlocked).toBe(true);
     });
   });
 });

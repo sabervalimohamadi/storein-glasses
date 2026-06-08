@@ -2,6 +2,12 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 import { Address, AddressSchema } from './address.schema';
 
+export enum UserRole {
+  USER    = 'user',
+  MANAGER = 'manager',
+  ADMIN   = 'admin',
+}
+
 export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
@@ -17,6 +23,9 @@ export class User {
   @Prop({ trim: true, lowercase: true }) email?: string;
   @Prop() avatar?: string;
   @Prop({ default: false }) isAdmin: boolean;
+
+  @Prop({ enum: Object.values(UserRole), default: UserRole.USER })
+  role: string;
 
   @Prop({ type: [AddressSchema], default: [] })
   addresses: Address[];

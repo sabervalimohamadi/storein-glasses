@@ -101,13 +101,34 @@ export class UserService {
   }
 
   // ── Admin ─────────────────────────────────────────────────────
-  async findAll(page = 1, limit = 20): Promise<{ users: UserDocument[]; total: number }> {
-    const skip = (page - 1) * limit;
+  async findAll(
+    page = 1,
+    limit = 20,
+    search?: string,
+    isBlocked?: string,
+  ): Promise<{ items: any[]; total: number }> {
+    const skip    = (page - 1) * limit;
+    const filter: Record<string, unknown> = {};
+
+    if (search) {
+      const re = new RegExp(search, 'i');
+      filter['$or'] = [
+        { phone: re },
+        { firstName: re },
+        { lastName: re },
+      ];
+    }
+
+    if (isBlocked === 'true')  filter['isActive'] = false;
+    if (isBlocked === 'false') filter['isActive'] = true;
+
     const [users, total] = await Promise.all([
-      this.userModel.find().select('-__v').skip(skip).limit(limit).lean<UserDocument[]>(),
-      this.userModel.countDocuments(),
+      this.userModel.find(filter).select('-__v').sort({ createdAt: -1 }).skip(skip).limit(limit).lean<UserDocument[]>(),
+      this.userModel.countDocuments(filter),
     ]);
-    return { users, total };
+
+    const items = users.map(u => ({ ...u, isBlocked: !u.isActive }));
+    return { items, total };
   }
 
   async findById(userId: string): Promise<UserDocument> {
@@ -115,15 +136,17 @@ export class UserService {
       throw new BadRequestException('شناسه کاربر معتبر نیست');
     const user = await this.userModel.findById(userId).select('-__v').lean<UserDocument>();
     if (!user) throw new NotFoundException('کاربر یافت نشد');
-    return user;
+    return { ...user, isBlocked: !user.isActive } as any;
   }
 
-  async toggleActive(userId: string): Promise<UserDocument> {
+  async toggleBlock(userId: string): Promise<any> {
+    if (!Types.ObjectId.isValid(userId))
+      throw new BadRequestException('شناسه کاربر معتبر نیست');
     const user = await this.userModel.findById(userId);
     if (!user) throw new NotFoundException('کاربر یافت نشد');
     user.isActive = !user.isActive;
     await user.save();
     this.logger.log(`User ${userId} isActive → ${user.isActive}`);
-    return user.toObject();
+    return { ...user.toObject(), isBlocked: !user.isActive };
   }
 }

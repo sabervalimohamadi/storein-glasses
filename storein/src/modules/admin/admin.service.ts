@@ -1,9 +1,9 @@
-import { Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
-import { User, UserDocument } from '../user/entities/user.schema';
+import { User, UserDocument, UserRole } from '../user/entities/user.schema';
 import { Order, OrderDocument, OrderStatus } from '../order/entities/order.schema';
 import { Product, ProductDocument, ProductStatus } from '../product/entities/product.schema';
 import { Transaction, TransactionDocument } from '../payment/entities/transaction.schema';
@@ -210,38 +210,35 @@ export class AdminService {
   }
 
   // ── User Management ───────────────────────────────────────────
-  async promoteToAdmin(userId: string): Promise<UserDocument> {
+  async setUserRole(userId: string, role: string): Promise<UserDocument> {
     if (!Types.ObjectId.isValid(userId))
       throw new NotFoundException('کاربر یافت نشد');
+    if (!Object.values(UserRole).includes(role as UserRole))
+      throw new BadRequestException(`نقش نامعتبر: ${role}`);
 
+    const isAdmin = role === UserRole.ADMIN;
     const user = await this.userModel
-      .findByIdAndUpdate(userId, { isAdmin: true }, { new: true })
+      .findByIdAndUpdate(userId, { role, isAdmin }, { new: true })
       .select('-__v')
       .lean<UserDocument>();
 
     if (!user) throw new NotFoundException('کاربر یافت نشد');
-    this.logger.log(`User ${userId} promoted to admin`);
+    this.logger.log(`User ${userId} role set to ${role}`);
     return user;
   }
 
+  async promoteToAdmin(userId: string): Promise<UserDocument> {
+    return this.setUserRole(userId, UserRole.ADMIN);
+  }
+
   async demoteFromAdmin(userId: string): Promise<UserDocument> {
-    if (!Types.ObjectId.isValid(userId))
-      throw new NotFoundException('کاربر یافت نشد');
-
-    const user = await this.userModel
-      .findByIdAndUpdate(userId, { isAdmin: false }, { new: true })
-      .select('-__v')
-      .lean<UserDocument>();
-
-    if (!user) throw new NotFoundException('کاربر یافت نشد');
-    this.logger.log(`User ${userId} demoted from admin`);
-    return user;
+    return this.setUserRole(userId, UserRole.USER);
   }
 
   async getAdminUsers(): Promise<UserDocument[]> {
     return this.userModel
-      .find({ isAdmin: true })
-      .select('phone firstName lastName isActive createdAt')
+      .find({ $or: [{ isAdmin: true }, { role: UserRole.MANAGER }] })
+      .select('phone firstName lastName isAdmin role isActive createdAt')
       .lean<UserDocument[]>();
   }
 

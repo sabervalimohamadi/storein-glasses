@@ -55,8 +55,13 @@ export class UserController {
   // ── Admin ─────────────────────────────────────────────────────
   @UseGuards(AdminGuard)
   @Get()
-  findAll(@Query('page') page = 1, @Query('limit') limit = 20) {
-    return this.userService.findAll(+page, +limit);
+  findAll(
+    @Query('page')      page      = 1,
+    @Query('limit')     limit     = 20,
+    @Query('search')    search?: string,
+    @Query('isBlocked') isBlocked?: string,
+  ) {
+    return this.userService.findAll(+page, +limit, search, isBlocked);
   }
 
   @UseGuards(AdminGuard)
@@ -66,8 +71,8 @@ export class UserController {
   }
 
   @UseGuards(AdminGuard)
-  @Patch(':id/toggle-active')
-  toggleActive(@Param('id') id: string) {
-    return this.userService.toggleActive(id);
+  @Patch(':id/block')
+  block(@Param('id') id: string) {
+    return this.userService.toggleBlock(id);
   }
 }

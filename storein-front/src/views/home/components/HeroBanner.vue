@@ -5,8 +5,15 @@
       <div
         :key="current"
         class="absolute inset-0 flex items-center"
-        :style="{ background: `linear-gradient(135deg, ${slides[current].bgFrom} 0%, ${slides[current].bgTo} 100%)` }"
+        :style="slideBackground(slides[current])"
       >
+        <!-- Image overlay when imageUrl is set -->
+        <div v-if="slides[current].imageUrl"
+             class="absolute inset-0 bg-cover bg-center"
+             :style="{ backgroundImage: `url(${slides[current].imageUrl})` }">
+          <div class="absolute inset-0 bg-black/40"></div>
+        </div>
+
         <!-- Text content -->
         <div class="container-main w-full z-10 relative">
           <div class="max-w-xs md:max-w-md">
@@ -19,12 +26,12 @@
             <p class="text-white/75 text-sm md:text-base mb-6 leading-relaxed hidden md:block">
               {{ slides[current].subtitle }}
             </p>
-            <RouterLink :to="slides[current].ctaLink">
+            <RouterLink :to="slides[current].ctaLink || '/'">
               <button
                 class="inline-flex items-center gap-2 font-bold text-sm px-5 py-2.5 rounded-xl transition-all duration-200 hover:scale-105 active:scale-95"
                 :style="{ backgroundColor: slides[current].accent, color: slides[current].bgFrom }"
               >
-                {{ slides[current].cta }}
+                {{ slides[current].cta || 'مشاهده محصولات' }}
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 rtl:rotate-180">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                 </svg>
@@ -33,9 +40,9 @@
           </div>
         </div>
 
-        <!-- Decorative glasses SVG — left side (RTL) -->
-        <div class="absolute left-0 top-1/2 -translate-y-1/2 opacity-[0.13] pointer-events-none">
-          <!-- Sunglasses shape for slide 0 -->
+        <!-- Decorative glasses SVG (only when no image) -->
+        <div v-if="!slides[current].imageUrl && slides[current].glasses !== 'none'"
+             class="absolute left-0 top-1/2 -translate-y-1/2 opacity-[0.13] pointer-events-none">
           <svg v-if="slides[current].glasses === 'sun'" width="340" height="200" viewBox="0 0 340 200" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
             <rect x="10" y="60" width="140" height="80" rx="40"/>
             <rect x="190" y="60" width="140" height="80" rx="40"/>
@@ -47,7 +54,6 @@
             <line x1="210" y1="80" x2="308" y2="80" stroke-width="3" opacity="0.5"/>
             <line x1="210" y1="96" x2="308" y2="96" stroke-width="3" opacity="0.5"/>
           </svg>
-          <!-- Prescription glasses for slide 1 -->
           <svg v-else-if="slides[current].glasses === 'rx'" width="340" height="200" viewBox="0 0 340 200" fill="none" stroke="white" stroke-width="8" stroke-linecap="round" stroke-linejoin="round">
             <circle cx="100" cy="100" r="76"/>
             <circle cx="240" cy="100" r="76"/>
@@ -55,7 +61,6 @@
             <path d="M24 60 Q6 44 0 54"/>
             <path d="M316 60 Q334 44 340 54"/>
           </svg>
-          <!-- Lens / circle for slide 2 -->
           <svg v-else width="280" height="280" viewBox="0 0 280 280" fill="none" stroke="white" stroke-width="8" stroke-linecap="round">
             <circle cx="140" cy="140" r="110"/>
             <circle cx="140" cy="140" r="60"/>
@@ -73,7 +78,7 @@
     <div class="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2 z-20">
       <button
         v-for="(s, i) in slides"
-        :key="s.id"
+        :key="s._id || s.id"
         :class="[
           'rounded-full transition-all duration-300',
           current === i ? 'w-6 h-2 bg-white' : 'w-2 h-2 bg-white/50 hover:bg-white/80'
@@ -104,8 +109,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import { bannerService } from '@/services/banner.service'
 
-const slides = [
+const STATIC_SLIDES = [
   {
     id: 1,
     eyebrow:  'کلکسیون تابستان ۱۴۰۴',
@@ -117,6 +123,7 @@ const slides = [
     bgTo:     '#1B4F8A',
     accent:   '#FFD700',
     glasses:  'sun',
+    imageUrl: '',
   },
   {
     id: 2,
@@ -129,6 +136,7 @@ const slides = [
     bgTo:     '#2D6A4F',
     accent:   '#B7E4C7',
     glasses:  'rx',
+    imageUrl: '',
   },
   {
     id: 3,
@@ -141,14 +149,21 @@ const slides = [
     bgTo:     '#11998e',
     accent:   '#f8f9fa',
     glasses:  'lens',
+    imageUrl: '',
   },
 ]
 
+const slides  = ref([...STATIC_SLIDES])
 const current = ref(0)
 let autoTimer = null
 
-function next()     { current.value = (current.value + 1) % slides.length }
-function prev()     { current.value = (current.value - 1 + slides.length) % slides.length }
+function slideBackground(slide) {
+  if (slide.imageUrl) return {}
+  return { background: `linear-gradient(135deg, ${slide.bgFrom} 0%, ${slide.bgTo} 100%)` }
+}
+
+function next()     { current.value = (current.value + 1) % slides.value.length }
+function prev()     { current.value = (current.value - 1 + slides.value.length) % slides.value.length }
 function goTo(i)    { current.value = i; resetTimer() }
 
 function resetTimer() {
@@ -156,8 +171,18 @@ function resetTimer() {
   autoTimer = setInterval(next, 4500)
 }
 
-onMounted(() => {
+onMounted(async () => {
   autoTimer = setInterval(next, 4500)
+
+  try {
+    const { data } = await bannerService.getActive()
+    if (Array.isArray(data) && data.length > 0) {
+      slides.value = data
+      current.value = 0
+    }
+  } catch {
+    // stay with static fallback silently
+  }
 })
 
 onUnmounted(() => {

@@ -1,4 +1,4 @@
-export type UploadFolder = 'products' | 'avatars' | 'reviews' | 'categories';
+export type UploadFolder = 'products' | 'avatars' | 'reviews' | 'categories' | 'banners' | 'logos';
 
 export interface StorageResult {
   key:      string;

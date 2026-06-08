@@ -87,6 +87,18 @@ const routes = [
     component: () => import('@/views/discounts/DiscountsView.vue'),
     meta: { layout: 'admin', title: 'کدهای تخفیف' },
   },
+  {
+    path: '/banners',
+    name: 'banners',
+    component: () => import('@/views/banners/BannersView.vue'),
+    meta: { layout: 'admin', title: 'بنرها' },
+  },
+  {
+    path: '/settings',
+    name: 'settings',
+    component: () => import('@/views/settings/SettingsView.vue'),
+    meta: { layout: 'admin', title: 'تنظیمات سایت', adminOnly: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 
@@ -109,6 +121,9 @@ router.beforeEach(async (to, _from, next) => {
     await auth.fetchProfile()
     if (!auth.isLoggedIn) return next({ name: 'login' })
   }
+
+  if (to.meta.adminOnly && !auth.isAdmin)
+    return next({ name: 'dashboard' })
 
   next()
 })

@@ -4,6 +4,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { ProductService } from './product.service';
 import { Product, ProductStatus } from './entities/product.schema';
+import { Category } from '../category/entities/category.schema';
+import { Color } from '../color/entities/color.schema';
 
 const catId  = new Types.ObjectId().toString();
 const prodId = new Types.ObjectId().toString();
@@ -65,10 +67,15 @@ describe('ProductService', () => {
       create:            jest.fn(),
     };
 
+    const catModel   = { findOne: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }) };
+    const colorModel = { findOne: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }) };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductService,
-        { provide: getModelToken(Product.name), useValue: model },
+        { provide: getModelToken(Product.name),  useValue: model },
+        { provide: getModelToken(Category.name), useValue: catModel },
+        { provide: getModelToken(Color.name),    useValue: colorModel },
       ],
     }).compile();
 

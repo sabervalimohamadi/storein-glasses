@@ -9,6 +9,12 @@ import { User } from '../user/entities/user.schema';
 import { CartService } from '../cart/cart.service';
 import { ProductService } from '../product/product.service';
 import { DiscountService } from '../discount/discount.service';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
 
 const userId  = new Types.ObjectId().toString();
 const orderId = new Types.ObjectId().toString();
@@ -91,6 +97,7 @@ describe('OrderService', () => {
         { provide: ProductService,            useValue: productService },
         { provide: DiscountService,           useValue: discountService },
         { provide: EventEmitter2,             useValue: eventEmitter },
+        { provide: AppLoggerService,          useValue: mockLogger },
       ],
     }).compile();
 

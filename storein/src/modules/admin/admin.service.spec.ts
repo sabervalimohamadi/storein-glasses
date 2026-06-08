@@ -169,7 +169,7 @@ describe('AdminService', () => {
       expect(res.isAdmin).toBe(true);
       expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith(
         userId,
-        { isAdmin: true },
+        { role: 'admin', isAdmin: true },
         { new: true },
       );
     });
