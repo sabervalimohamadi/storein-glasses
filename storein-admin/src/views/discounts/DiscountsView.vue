@@ -119,7 +119,7 @@
             <span :class="[
               'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow',
               'transition-transform duration-200',
-              row.isActive ? 'translate-x-[-20px] left-0.5' : 'left-0.5',
+              row.isActive ? 'left-0.5 translate-x-4' : 'left-0.5',
             ]" />
           </button>
         </template>

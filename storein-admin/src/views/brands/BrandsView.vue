@@ -121,7 +121,7 @@
               >
                 <span :class="[
                   'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
-                  form.isActive ? 'right-0.5 translate-x-[-20px]' : 'right-0.5',
+                  form.isActive ? 'left-0.5 translate-x-5' : 'left-0.5',
                 ]" />
               </div>
               <span class="text-sm font-medium" :class="form.isActive ? 'text-success' : 'text-text-secondary'">

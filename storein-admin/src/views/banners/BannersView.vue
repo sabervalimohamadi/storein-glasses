@@ -314,7 +314,7 @@
                     ]">
                     <span :class="[
                       'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
-                      form.isActive ? 'translate-x-1' : 'translate-x-6',
+                      form.isActive ? 'left-0.5 translate-x-6' : 'left-0.5',
                     ]"></span>
                   </button>
                 </div>
