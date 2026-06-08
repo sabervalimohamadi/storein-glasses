@@ -2438,8 +2438,326 @@ Additionally:
 
 ---
 
+## Session 5 — Dashboard Fix, Blog Module, Section Color Theming (2026-06-08)
+
+---
+
+### Dashboard Stats Fix ✅ (storein-admin)
+
+**Problem:** Stat cards (کاربران / محصولات / سفارشات / درآمد) showed 0 on the dashboard.
+
+**Root cause:** `DashboardView` expected `stats.overview.totalUsers` etc., but `GET /admin/dashboard` returns `{ users: { total }, products: { total }, orders: { ... }, revenue: { ... } }` — no `overview` key.
+
+**Fix — `storein-admin/src/services/dashboard.service.js`:**
+Added 4 new service methods:
+```js
+export const dashboardService = {
+  getStats:        ()          => http.get('/admin/dashboard'),
+  getRevenue:      (params)    => http.get('/admin/stats/revenue', { params }),
+  getOrderStats:   ()          => http.get('/admin/stats/orders'),
+  getRecentOrders: (limit=10)  => http.get('/admin/stats/recent-orders', { params: { limit } }),
+  getTopProducts:  (limit=10)  => http.get('/admin/products/top-selling', { params: { limit } }),
+}
+```
+
+**Fix — `storein-admin/src/views/dashboard/DashboardView.vue` — `loadStats()`:**
+Rewrote to call all 5 endpoints in parallel with `Promise.allSettled` and map into the shape the template expects:
+```js
+const [dashRes, revenueRes, orderStatsRes, recentRes, topRes] = await Promise.allSettled([...])
+stats.value = {
+  overview: {
+    totalRevenue:  dash.revenue?.allTime   ?? 0,
+    monthRevenue:  dash.revenue?.thisMonth ?? 0,
+    todayRevenue:  dash.revenue?.today     ?? 0,
+    totalOrders:   dash.orders?.total      ?? 0,
+    pendingOrders: dash.orders?.pending    ?? 0,
+    todayOrders:   orderStats.today        ?? 0,
+    totalUsers:    dash.users?.total       ?? 0,
+    totalProducts: dash.products?.total    ?? 0,
+  },
+  revenueByDay:     revenue.byDay.map(d => ({ date: d.date, revenue: d.amount ?? 0, orders: 0 })),
+  orderStatusStats: dash.orders ?? {},
+  recentOrders:     Array.isArray(recent) ? recent : [],
+  topProducts:      Array.isArray(top)    ? top    : [],
+}
+```
+
+**Key decisions:**
+- `Promise.allSettled` used instead of `Promise.all` — individual endpoint failures don't crash the entire dashboard
+- `RevenueChart` expects `{ date, revenue }` but backend returns `{ date, amount }` — mapping layer in `loadStats` converts field name
+- `stats.overview` shape kept intact — no template changes needed
+
+---
+
+### Blog Module ✅ (full-stack)
+
+New content management feature: blog posts with draft/published/archived lifecycle.
+
+#### Backend — `storein/src/modules/blog/`
+
+| File | Purpose |
+|------|---------|
+| `entities/blog.schema.ts` | Blog schema: title, slug (unique, auto-generated), content, excerpt, featuredImage, author (ref User), tags[], status (draft/published/archived), viewCount, publishedAt |
+| `dto/create-blog.dto.ts` | Create DTO: title, content, optional excerpt/featuredImage/tags/status/publishedAt |
+| `dto/update-blog.dto.ts` | Update DTO (PartialType of CreateBlogDto) |
+| `dto/blog-query.dto.ts` | Query DTO: page, limit, search, status, sortBy, tag |
+| `blog.service.ts` | Full service: `findAll(query, adminMode)`, `findBySlug`, `findById`, `create`, `update`, `remove`, `incrementView`, `getPopularTags`, `uniqueSlug` private helper |
+| `blog.controller.ts` | Public + admin endpoints |
+| `blog.module.ts` | Imports MongooseModule, exports BlogService + MongooseModule |
+
+**Endpoints**
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/v1/blog` | Public | پست‌های منتشرشده با فیلتر/صفحه‌بندی |
+| GET | `/api/v1/blog/tags` | Public | تگ‌های محبوب (حداکثر 20) |
+| GET | `/api/v1/blog/slug/:slug` | Public | جزئیات پست + افزایش viewCount |
+| GET | `/api/v1/blog/admin` | Admin | همه پست‌ها (شامل draft/archived) |
+| GET | `/api/v1/blog/admin/:id` | Admin | جزئیات admin |
+| POST | `/api/v1/blog` | Admin | ایجاد پست |
+| PATCH | `/api/v1/blog/:id` | Admin | ویرایش |
+| DELETE | `/api/v1/blog/:id` | Admin | حذف |
+
+**Key decisions:**
+- `slugify` تابع داخلی — هیچ dependency اضافه نشد
+- `uniqueSlug` در صورت تکرار slug پسوند عددی اضافه می‌کند (-1, -2, ...)
+- `adminMode=true` در `findAll` فیلتر status را برمی‌دارد تا ادمین همه پست‌ها را ببیند
+- `Record<string, SortOrder>` برای sort (نه `Record<string, number>`) — Mongoose strict type
+- `publishedAt` به صورت خودکار هنگام تغییر status به `published` ست می‌شود
+
+**Updated:** `storein/src/app.module.ts` — `BlogModule` اضافه شد.
+
+#### Admin Panel — `storein-admin/`
+
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `src/services/blog.service.js` | `getAll`, `getById`, `create`, `update`, `remove` — mapped to `/blog/admin` endpoints |
+| `src/views/blog/BlogsView.vue` | لیست پست‌ها با فیلتر (search / status / sortBy)، جدول با thumbnail، نشانگر وضعیت، تگ‌ها، تعداد بازدید؛ دکمه‌های edit/delete/link-to-storefront |
+| `src/views/blog/BlogFormView.vue` | فرم ایجاد/ویرایش: title + auto-slug، ویرایشگر HTML با toolbar (H2/H3/B/I/UL/OL/link/img/code/blockquote)، پیش‌نمایش، آپلود featured image، مدیریت تگ‌ها، پنل SEO preview، دو دکمه «پیش‌نویس» و «انتشار» |
+
+**Auto-slug logic:**
+- هنگام تایپ title، slug به صورت خودکار از title ساخته می‌شود
+- به محض اینکه کاربر slug را دستی ویرایش کند، auto-generation متوقف می‌شود
+- `useDebounceFn` از `@vueuse/core` برای debounce جستجو
+
+**Updated files:**
+
+| File | Change |
+|------|--------|
+| `src/router/index.js` | Routes: `/blog`, `/blog/create`, `/blog/:id/edit` با permission: `'blog'` |
+| `src/components/layout/AdminSidebar.vue` | «بلاگ» 📝 به گروه فروشگاه اضافه شد |
+| `src/utils/constants.js` | `{ key: 'blog', label: 'بلاگ', icon: '📝', group: 'محتوا' }` به `PANEL_PERMISSIONS` اضافه شد |
+
+#### Storefront — `storein-front/`
+
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `src/services/blog.service.js` | `getAll(params)`, `getBySlug(slug)`, `getTags()` — public endpoints |
+| `src/stores/blog.store.js` | Pinia store: `posts`, `post`, `tags`, `loading`, `total`, `totalPages`, `filters`؛ actions: `fetchPosts`, `fetchPostBySlug`, `fetchTags`, `resetFilters` |
+| `src/views/blog/components/BlogCard.vue` | کارت پست: تصویر، تگ‌ها، عنوان (hover:text-brand)، خلاصه، نویسنده، تاریخ، تعداد بازدید |
+| `src/views/blog/BlogListView.vue` | صفحه لیست: سایدبار (جستجو + مرتب‌سازی + تگ‌های محبوب)، گرید پست‌ها (1→2→3 ستون)، pagination، chips فیلتر فعال |
+| `src/views/blog/BlogDetailView.vue` | صفحه جزئیات: تصویر hero (یا gradient header)، breadcrumb، meta (نویسنده/تاریخ/بازدید/زمان مطالعه)، محتوا با `v-html`، تگ‌ها، دکمه کپی لینک |
+
+**`readTime` computed:** تعداد کلمات ÷ ۲۰۰ کلمه در دقیقه
+
+**Updated files:**
+
+| File | Change |
+|------|--------|
+| `src/router/index.js` | `/blog` (name: `blog`) و `/blog/:slug` (name: `blog-detail`) اضافه شد |
+| `src/components/layout/AppHeaderNav.vue` | «بلاگ» به quickLinks اضافه شد؛ `isLinkActive` برای route‌های blog آپدیت شد |
+| `src/components/layout/AppMobileDrawer.vue` | لینک بلاگ قبل از بخش دسته‌بندی‌ها اضافه شد |
+
+---
+
+### Theme Section Colors ✅ (full-stack)
+
+قابلیت تنظیم رنگ navbar، footer سایت اصلی، و sidebar پنل ادمین به صورت مستقل.
+
+#### Backend — Schema + DTO
+
+**`storein/src/modules/settings/entities/site-settings.schema.ts`** — `ThemeSettings` class:
+```typescript
+// New fields added — empty string = use default CSS variable
+@Prop({ default: '' }) navbarBg:     string;
+@Prop({ default: '' }) navbarBorder: string;
+@Prop({ default: '' }) footerBg:     string;
+@Prop({ default: '' }) footerText:   string;
+@Prop({ default: '' }) sidebarBg:    string;
+```
+
+**`storein/src/modules/settings/dto/update-settings.dto.ts`** — `ThemeDto` class:
+```typescript
+const HEX_OR_EMPTY = /^(#[0-9A-Fa-f]{6})?$/;  // allows '' (reset) or valid #RRGGBB
+@IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBg?:     string;
+@IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBorder?: string;
+@IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerBg?:     string;
+@IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerText?:   string;
+@IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) sidebarBg?:    string;
+```
+
+#### Admin Sidebar Dynamic Color
+
+**`storein-admin/src/composables/useAdminTheme.js`** (جدید):
+```js
+// Module-level singleton — shared across all useAdminTheme() calls
+const sidebarBg = ref('')
+
+async function init() {          // called once on App.vue mount
+  const { data } = await http.get('/settings')
+  apply(data?.theme)
+}
+
+function applyTheme(theme) { apply(theme) }  // called immediately after save
+
+export function useAdminTheme() {
+  return { sidebarBg, init, applyTheme }
+}
+```
+
+**`storein-admin/src/App.vue`** — `init()` در `onMounted` فراخوانی می‌شود.
+
+**`storein-admin/src/components/layout/AdminSidebar.vue`** — هر دو `<aside>` (desktop + mobile):
+```html
+:style="sidebarBg ? { backgroundColor: sidebarBg } : {}"
+```
+
+#### Storefront Navbar + Footer
+
+**`storein-front/src/assets/styles/variables.css`** — متغیرهای footer اضافه شد:
+```css
+--color-footer-bg:    #111827;
+--color-footer-text:  #D1D5DB;
+--color-footer-muted: #9CA3AF;
+```
+
+**`storein-front/src/composables/useTheme.js`** — `applyFromSettings()` حالا 4 CSS var می‌سازد:
+```js
+if (theme.navbarBg)     root.setProperty('--color-header-bg',     theme.navbarBg)
+if (theme.navbarBorder) root.setProperty('--color-header-border', theme.navbarBorder)
+if (theme.footerBg)     root.setProperty('--color-footer-bg',     theme.footerBg)
+if (theme.footerText)   root.setProperty('--color-footer-text',   theme.footerText)
+```
+
+**`storein-front/src/components/layout/AppFooter.vue`** — از CSS vars به جای کلاس‌های hardcoded Tailwind:
+```html
+<footer class="site-footer"
+  :style="{ backgroundColor: 'var(--color-footer-bg)', color: 'var(--color-footer-text)' }">
+```
+```css
+/* <style scoped> — CSS :deep() selectors با !important */
+.site-footer :deep(.text-white)      { color: var(--color-footer-text) !important; }
+.site-footer :deep(.text-gray-400)   { color: var(--color-footer-muted) !important; }
+.site-footer :deep(.bg-gray-800)     { background-color: rgba(255,255,255,0.08) !important; }
+.site-footer :deep(.border-gray-800) { border-color: rgba(255,255,255,0.1) !important; }
+```
+
+#### SettingsView Theme Tab UI
+
+**`storein-admin/src/views/settings/SettingsView.vue`** — tab «تم سایت» یک card جدید اضافه شد:
+
+```
+کارت: رنگ‌بندی بخش‌های مختلف سایت
+├── هدر / ناوبار
+│   ├── color picker + input: navbarBg
+│   ├── color picker + input: navbarBorder
+│   └── mini-preview: نمایش navbar با رنگ انتخابی
+├── فوتر
+│   ├── color picker + input: footerBg
+│   ├── color picker + input: footerText
+│   └── mini-preview: نمایش footer با رنگ انتخابی
+└── سایدبار ادمین
+    ├── color picker + input: sidebarBg
+    └── mini-preview: نمایش sidebar با رنگ انتخابی
+```
+
+هر بخش دارای دکمه «↺ پیش‌فرض» است که فقط وقتی مقدار ست شده نمایش داده می‌شود.
+
+**Script section آپدیت‌ها:**
+
+```js
+const { applyTheme } = useAdminTheme()
+
+// contrast helper — تعیین رنگ متن navbar preview
+const navbarTextColor = computed(() => {
+  const lum = (0.299*r + 0.587*g + 0.114*b) / 255
+  return lum > 0.5 ? '#1f2937' : '#f9fafb'
+})
+
+// emptyForm() — 5 فیلد جدید
+theme: { ..., navbarBg: '', navbarBorder: '', footerBg: '', footerText: '', sidebarBg: '' }
+
+// applyData() — 5 فیلد جدید از API response
+// saveAll() — 5 فیلد جدید در DTO
+// بعد از save: applyTheme(data.theme) — sidebar بلافاصله آپدیت می‌شود
+```
+
+**Key decisions:**
+- Module-level singleton در `useAdminTheme` — state یک بار fetch می‌شود و بین همه component‌ها shared است؛ نیازی به Pinia نیست
+- CSS `:deep()` با `!important` برای override کردن Tailwind classes hardcoded در template footer بدون نیاز به بازنویسی template
+- `HEX_OR_EMPTY` regex در DTO — رشته خالی (`''`) معنای "برگرد به پیش‌فرض" دارد
+- فقط اگر مقدار set شده باشد (`if (theme.navbarBg)`) CSS var ست می‌شود — مقادیر خالی CSS vars پیش‌فرض را حفظ می‌کنند
+- Admin sidebar رنگ را فوری (بدون reload) بعد از save آپدیت می‌کند از طریق `applyTheme()` call
+
+---
+
+## Current Project Status (2026-06-08)
+
+### Backend `storein/` — ✅ کامل
+
+| Modules | Count |
+|---------|-------|
+| Core modules (Auth, User, Product, Category...) | 15 |
+| Feature modules (Brand, Color, Banner, Settings, Blog) | 5 |
+| Total tests | 203+ |
+| API endpoints | ~130 |
+
+### Admin Panel `storein-admin/` — ✅ کامل
+
+| Section | Views | Status |
+|---------|-------|--------|
+| Auth (Login) | 1 | ✅ |
+| Dashboard (Charts + KPIs) | 1 | ✅ |
+| Products (List + Form) | 2 | ✅ |
+| Categories | 1 | ✅ |
+| Brands | 1 | ✅ |
+| Colors | 1 | ✅ |
+| Banners (Hero + Promo) | 1 | ✅ |
+| Orders (List + Detail) | 2 | ✅ |
+| Users (List + Detail) | 2 | ✅ |
+| Reviews | 1 | ✅ |
+| Discounts | 1 | ✅ |
+| Blog (List + Form) | 2 | ✅ |
+| Settings (6 tabs + Theme Colors) | 1 | ✅ |
+
+### Storefront `storein-front/` — ✅ تقریباً کامل
+
+| View | Route | Status |
+|------|-------|--------|
+| `HomeView` | `/` | ✅ |
+| `ProductListView` | `/products`, `/category/:slug` | ✅ |
+| `SearchView` | `/search` | ✅ |
+| `ProductDetailView` | `/product/:slug` | ✅ |
+| `LoginView` + `OtpView` | `/auth/login`, `/auth/otp` | ✅ |
+| `CartView` | `/cart` | ✅ |
+| `ProfileView` | `/user/profile` | ✅ |
+| `OrdersView` + `OrderDetailView` | `/user/orders` | ✅ |
+| `FavoritesView` | `/user/favorites` | ✅ |
+| `AddressesView` | `/user/addresses` | ✅ |
+| `BlogListView` | `/blog` | ✅ |
+| `BlogDetailView` | `/blog/:slug` | ✅ |
+| `CheckoutView` | `/checkout` | 🔲 Stub |
+
+**Remaining:** `CheckoutView` — انتخاب آدرس + انتخاب روش پرداخت + ثبت سفارش.
+
+---
+
 ## GitHub
 
 Repository: `https://github.com/sabervalimohamadi/storein-glasses.git`  
 Branch: `master`  
-Latest commit: `ec7d702` — Add banner/settings modules, three-tier RBAC, and fix user list API
+Latest commit: `b5e6d77` — Session 5: Blog module, dashboard fix, section color theming

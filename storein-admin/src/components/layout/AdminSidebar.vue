@@ -4,7 +4,9 @@
     'fixed top-0 right-0 h-full bg-sidebar-bg z-sidebar flex flex-col',
     'transition-all duration-300 shadow-sidebar hidden lg:flex',
     ui.sidebarCollapsed ? 'w-16' : 'w-64',
-  ]">
+  ]"
+  :style="sidebarBg ? { backgroundColor: sidebarBg } : {}"
+  >
     <!-- Logo -->
     <div class="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
       <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
@@ -94,7 +96,9 @@
     'fixed top-0 right-0 h-full bg-sidebar-bg z-sidebar w-64 flex flex-col',
     'transition-transform duration-300 shadow-sidebar lg:hidden',
     ui.sidebarMobileOpen ? 'translate-x-0' : 'translate-x-full',
-  ]">
+  ]"
+  :style="sidebarBg ? { backgroundColor: sidebarBg } : {}"
+  >
     <div class="flex items-center justify-between gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
       <div class="flex items-center gap-3">
         <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
@@ -140,40 +144,56 @@
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUiStore }   from '@/stores/ui.store'
-import { useAuthStore } from '@/stores/auth.store'
+import { useUiStore }     from '@/stores/ui.store'
+import { useAuthStore }   from '@/stores/auth.store'
+import { useAdminTheme }  from '@/composables/useAdminTheme'
 
 const route  = useRoute()
 const router = useRouter()
 const ui     = useUiStore()
 const auth   = useAuthStore()
+const { sidebarBg } = useAdminTheme()
 
-const navGroups = computed(() => [
-  {
-    label: '',
-    items: [{ name: 'dashboard', icon: '📊', label: 'داشبورد' }],
-  },
-  {
-    label: 'فروشگاه',
-    items: [
-      { name: 'products',   icon: '📦', label: 'محصولات' },
-      { name: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
-      { name: 'brands',     icon: '🔖', label: 'برندها' },
-      { name: 'colors',     icon: '🎨', label: 'رنگ‌ها' },
-      { name: 'banners',    icon: '🖼', label: 'بنرها' },
-      { name: 'orders',     icon: '🛒', label: 'سفارشات' },
-      { name: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
-    ],
-  },
-  {
-    label: 'مدیریت',
-    items: [
-      { name: 'users',    icon: '👥', label: 'کاربران' },
-      { name: 'reviews',  icon: '⭐', label: 'نظرات' },
-      ...(auth.isAdmin ? [{ name: 'settings', icon: '⚙️', label: 'تنظیمات سایت' }] : []),
-    ],
-  },
-])
+function canAccess(perm) {
+  if (auth.isAdmin) return true
+  return auth.hasPermission(perm)
+}
+
+const navGroups = computed(() => {
+  const groups = [
+    {
+      label: '',
+      items: [{ name: 'dashboard', perm: 'dashboard', icon: '📊', label: 'داشبورد' }],
+    },
+    {
+      label: 'فروشگاه',
+      items: [
+        { name: 'products',   perm: 'products',   icon: '📦', label: 'محصولات' },
+        { name: 'categories', perm: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
+        { name: 'brands',     perm: 'brands',     icon: '🔖', label: 'برندها' },
+        { name: 'colors',     perm: 'colors',     icon: '🎨', label: 'رنگ‌ها' },
+        { name: 'banners',    perm: 'banners',    icon: '🖼', label: 'بنرها' },
+        { name: 'orders',     perm: 'orders',     icon: '🛒', label: 'سفارشات' },
+        { name: 'discounts',  perm: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
+        { name: 'blog',       perm: 'blog',       icon: '📝', label: 'بلاگ' },
+      ],
+    },
+    {
+      label: 'مدیریت',
+      items: [
+        { name: 'users',    perm: 'users',    icon: '👥', label: 'کاربران' },
+        { name: 'reviews',  perm: 'reviews',  icon: '⭐', label: 'نظرات' },
+        ...(auth.isAdmin ? [{ name: 'settings', perm: null, icon: '⚙️', label: 'تنظیمات سایت' }] : []),
+      ],
+    },
+  ]
+  return groups
+    .map(group => ({
+      ...group,
+      items: group.items.filter(item => !item.perm || canAccess(item.perm)),
+    }))
+    .filter(group => group.items.length > 0)
+})
 
 function isActive(item) {
   return route.name === item.name ||

@@ -27,6 +27,9 @@ export class User {
   @Prop({ enum: Object.values(UserRole), default: UserRole.USER })
   role: string;
 
+  @Prop({ type: [String], default: [] })
+  permissions: string[];
+
   @Prop({ type: [AddressSchema], default: [] })
   addresses: Address[];
 }

@@ -12,6 +12,19 @@ class SocialLinks {
   @Prop({ default: '' }) youtube:   string;
 }
 
+class ThemeSettings {
+  @Prop({ default: 'blue' })    preset:       string;
+  @Prop({ default: '#3B82F6' }) primaryColor: string;
+  @Prop({ default: 'light', enum: ['light', 'dark', 'system'] }) defaultMode: string;
+
+  // Section colors — empty string means "use default"
+  @Prop({ default: '' }) navbarBg:     string;
+  @Prop({ default: '' }) navbarBorder: string;
+  @Prop({ default: '' }) footerBg:     string;
+  @Prop({ default: '' }) footerText:   string;
+  @Prop({ default: '' }) sidebarBg:    string;
+}
+
 class FooterLink {
   @Prop({ default: '' }) label: string;
   @Prop({ default: '' }) url:   string;
@@ -59,6 +72,10 @@ export class SiteSettings {
 
   @Prop({ type: [{ _id: false, label: String, url: String }], default: [] })
   footerLinks: FooterLink[];
+
+  // ── Theme ─────────────────────────────────────────────────
+  @Prop({ type: ThemeSettings, default: () => ({ preset: 'blue', primaryColor: '#3B82F6' }) })
+  theme: ThemeSettings;
 
   // ── Contact ───────────────────────────────────────────────
   @Prop({ default: '' })

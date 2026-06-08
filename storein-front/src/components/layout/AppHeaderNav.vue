@@ -87,10 +87,12 @@ const quickLinks = [
   { label: 'عینک طبی',    to: { name: 'category', params: { slug: 'prescription' } } },
   { label: 'لنز طبی',     to: { name: 'category', params: { slug: 'contact-lens' } } },
   { label: 'لوازم جانبی', to: { name: 'category', params: { slug: 'accessories' } } },
+  { label: 'بلاگ',        to: { name: 'blog' } },
 ]
 
 function isLinkActive(link) {
   if (link.to?.name === 'home') return route.name === 'home'
+  if (link.to?.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
   if (link.to?.params?.slug)   return route.params?.slug === link.to.params.slug
   return false
 }

@@ -1,5 +1,7 @@
 <template>
-  <footer class="bg-gray-900 text-gray-300">
+  <footer class="site-footer"
+    :style="{ backgroundColor: 'var(--color-footer-bg)', color: 'var(--color-footer-text)' }"
+  >
     <!-- Main content -->
     <div class="container-main py-12">
       <div class="grid grid-cols-1 md:grid-cols-3 gap-10">
@@ -159,3 +161,43 @@ const trustBadges = [
   { icon: '🚚', label: 'ارسال سریع' },
 ]
 </script>
+
+<style scoped>
+/* All child colors inherit from CSS variables so admin can change them live */
+.site-footer :deep(.text-white),
+.site-footer :deep(h4.text-white),
+.site-footer :deep(p.text-white) {
+  color: var(--color-footer-text) !important;
+}
+
+.site-footer :deep(.text-gray-300),
+.site-footer :deep(.text-gray-400) {
+  color: var(--color-footer-muted) !important;
+}
+
+.site-footer :deep(.text-gray-500) {
+  color: var(--color-footer-muted) !important;
+  opacity: 0.7;
+}
+
+/* hover:text-white overrides */
+.site-footer :deep(a:hover) {
+  color: var(--color-footer-text) !important;
+  opacity: 1;
+}
+
+/* Social icon buttons */
+.site-footer :deep(.bg-gray-800) {
+  background-color: rgba(255, 255, 255, 0.08) !important;
+}
+.site-footer :deep(.bg-gray-800:hover) {
+  background-color: var(--color-footer-text) !important;
+  opacity: 0.15;
+}
+
+/* Dividers */
+.site-footer :deep(.border-gray-800),
+.site-footer :deep(.border-t.border-gray-800) {
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+</style>

@@ -8,9 +8,15 @@ export const useAuthStore = defineStore('auth', () => {
   const loading      = ref(false)
   const pendingPhone = ref('')
 
-  const isAdmin    = computed(() => user.value?.isAdmin === true)
-  const isManager  = computed(() => user.value?.role === 'manager')
-  const isLoggedIn = computed(() => !!token.value && (user.value?.isAdmin === true || user.value?.role === 'manager'))
+  const isAdmin     = computed(() => user.value?.isAdmin === true)
+  const isManager   = computed(() => user.value?.role === 'manager')
+  const isLoggedIn  = computed(() => !!token.value && (user.value?.isAdmin === true || user.value?.role === 'manager'))
+  const permissions = computed(() => user.value?.permissions ?? [])
+
+  function hasPermission(perm) {
+    if (isAdmin.value) return true
+    return permissions.value.includes(perm)
+  }
 
   function hasAdminAccess(profile) {
     return profile?.isAdmin === true || profile?.role === 'manager'
@@ -63,5 +69,5 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem('admin_refresh_token')
   }
 
-  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, sendOtp, verifyOtp, fetchProfile, logout }
+  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, verifyOtp, fetchProfile, logout }
 })

@@ -48,6 +48,17 @@
           </RouterLink>
         </div>
 
+        <!-- Quick links -->
+        <div class="py-2" style="border-bottom: 1px solid var(--color-border);">
+          <RouterLink :to="{ name: 'blog' }" @click="close"
+            class="flex items-center gap-3 px-4 py-2.5 text-sm"
+            style="color: var(--color-text-primary);"
+            @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
+            @mouseleave="e => e.currentTarget.style.backgroundColor = ''">
+            <span>📝</span> بلاگ
+          </RouterLink>
+        </div>
+
         <!-- Categories -->
         <div class="py-2" style="border-top: 1px solid var(--color-border);" v-if="categories.length">
           <p class="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-text-disabled);">دسته‌بندی‌ها</p>

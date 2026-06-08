@@ -121,8 +121,36 @@ const todayDatePersian = computed(() =>
 )
 
 async function loadStats() {
-  const res = await dashboardService.getStats()
-  stats.value = res.data ?? res ?? {}
+  const [dashRes, revenueRes, orderStatsRes, recentRes, topRes] = await Promise.allSettled([
+    dashboardService.getStats(),
+    dashboardService.getRevenue(),
+    dashboardService.getOrderStats(),
+    dashboardService.getRecentOrders(10),
+    dashboardService.getTopProducts(10),
+  ])
+
+  const dash       = dashRes.status       === 'fulfilled' ? (dashRes.value?.data       ?? {}) : {}
+  const revenue    = revenueRes.status    === 'fulfilled' ? (revenueRes.value?.data    ?? {}) : {}
+  const orderStats = orderStatsRes.status === 'fulfilled' ? (orderStatsRes.value?.data ?? {}) : {}
+  const recent     = recentRes.status     === 'fulfilled' ? (recentRes.value?.data     ?? []) : []
+  const top        = topRes.status        === 'fulfilled' ? (topRes.value?.data        ?? []) : []
+
+  stats.value = {
+    overview: {
+      totalRevenue:  dash.revenue?.allTime   ?? 0,
+      monthRevenue:  dash.revenue?.thisMonth ?? 0,
+      todayRevenue:  dash.revenue?.today     ?? 0,
+      totalOrders:   dash.orders?.total      ?? 0,
+      pendingOrders: dash.orders?.pending    ?? 0,
+      todayOrders:   orderStats.today        ?? 0,
+      totalUsers:    dash.users?.total       ?? 0,
+      totalProducts: dash.products?.total    ?? 0,
+    },
+    revenueByDay:     (revenue.byDay ?? []).map(d => ({ date: d.date, revenue: d.amount ?? 0, orders: 0 })),
+    orderStatusStats: dash.orders        ?? {},
+    recentOrders:     Array.isArray(recent) ? recent : [],
+    topProducts:      Array.isArray(top)    ? top    : [],
+  }
 }
 
 async function loadPendingReviews() {

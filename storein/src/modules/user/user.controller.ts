@@ -60,8 +60,9 @@ export class UserController {
     @Query('limit')     limit     = 20,
     @Query('search')    search?: string,
     @Query('isBlocked') isBlocked?: string,
+    @Query('role')      role?: string,
   ) {
-    return this.userService.findAll(+page, +limit, search, isBlocked);
+    return this.userService.findAll(+page, +limit, search, isBlocked, role);
   }
 
   @UseGuards(AdminGuard)

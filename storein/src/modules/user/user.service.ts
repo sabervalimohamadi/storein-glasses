@@ -106,6 +106,7 @@ export class UserService {
     limit = 20,
     search?: string,
     isBlocked?: string,
+    role?: string,
   ): Promise<{ items: any[]; total: number }> {
     const skip    = (page - 1) * limit;
     const filter: Record<string, unknown> = {};
@@ -121,6 +122,8 @@ export class UserService {
 
     if (isBlocked === 'true')  filter['isActive'] = false;
     if (isBlocked === 'false') filter['isActive'] = true;
+
+    if (role) filter['role'] = role;
 
     const [users, total] = await Promise.all([
       this.userModel.find(filter).select('-__v').sort({ createdAt: -1 }).skip(skip).limit(limit).lean<UserDocument[]>(),

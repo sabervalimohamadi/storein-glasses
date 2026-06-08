@@ -4,14 +4,10 @@ import App    from './App.vue'
 import router from './router'
 import { logger } from '@/utils/logger'
 import '@/assets/styles/main.css'
+import { useTheme } from '@/composables/useTheme'
 
-// Apply saved theme before first render (avoid flash)
-;(function () {
-  const saved = localStorage.getItem('theme')
-  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-  if (saved === 'dark' || (!saved && prefersDark))
-    document.documentElement.classList.add('dark')
-})()
+// Apply saved dark/light preference before first render (no FOUC)
+useTheme().init()
 
 const app = createApp(App)
 

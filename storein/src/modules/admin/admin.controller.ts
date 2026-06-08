@@ -2,7 +2,7 @@ import {
   Body, Controller, Get, Param,
   Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
-import { IsIn } from 'class-validator';
+import { IsArray, IsIn, IsString } from 'class-validator';
 import { AdminService } from './admin.service';
 import { DateRangeDto, LowStockDto } from './dto/date-range.dto';
 import { JwtAuthGuard }    from '../auth/guards/jwt-auth.guard';
@@ -14,6 +14,12 @@ import { UserRole }        from '../user/entities/user.schema';
 class SetRoleDto {
   @IsIn(Object.values(UserRole))
   role: string;
+}
+
+class SetPermissionsDto {
+  @IsArray()
+  @IsString({ each: true })
+  permissions: string[];
 }
 
 @UseGuards(JwtAuthGuard, AdminGuard)
@@ -64,6 +70,12 @@ export class AdminController {
   @UseGuards(SuperAdminGuard)
   setUserRole(@Param('id') id: string, @Body() dto: SetRoleDto) {
     return this.adminService.setUserRole(id, dto.role);
+  }
+
+  @Patch('users/:id/permissions')
+  @UseGuards(SuperAdminGuard)
+  setPermissions(@Param('id') id: string, @Body() dto: SetPermissionsDto) {
+    return this.adminService.setPermissions(id, dto.permissions);
   }
 
   @Patch('users/:id/promote')

@@ -6,13 +6,17 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { computed, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import AdminLayout from '@/layouts/AdminLayout.vue'
-import AuthLayout  from '@/layouts/AuthLayout.vue'
-import AdminToast  from '@/components/common/AdminToast.vue'
+import AdminLayout    from '@/layouts/AdminLayout.vue'
+import AuthLayout     from '@/layouts/AuthLayout.vue'
+import AdminToast     from '@/components/common/AdminToast.vue'
+import { useAdminTheme } from '@/composables/useAdminTheme'
 
 const route = useRoute()
 const layouts = { admin: AdminLayout, auth: AuthLayout }
 const currentLayout = computed(() => layouts[route.meta.layout] ?? AdminLayout)
+
+const { init } = useAdminTheme()
+onMounted(init)
 </script>

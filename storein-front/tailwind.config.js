@@ -12,9 +12,9 @@ export default {
       },
       colors: {
         brand: {
-          DEFAULT: '#1B4F8A',
-          dark:    '#0F3D73',
-          light:   '#3B6FBE',
+          DEFAULT: 'rgb(var(--color-brand-rgb) / <alpha-value>)',
+          dark:    'rgb(var(--color-brand-dark-rgb) / <alpha-value>)',
+          light:   'rgb(var(--color-brand-light-rgb) / <alpha-value>)',
         },
         surface: {
           DEFAULT: '#F4F6F9',

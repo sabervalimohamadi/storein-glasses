@@ -28,6 +28,7 @@ import { BrandModule }  from './modules/brand/brand.module';
 import { ColorModule }  from './modules/color/color.module';
 import { BannerModule }   from './modules/banner/banner.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { BlogModule }     from './modules/blog/blog.module';
 import { LoggerModule }          from './common/logger/logger.module';
 import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
 import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middleware';
@@ -84,6 +85,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     ColorModule,
     BannerModule,
     SettingsModule,
+    BlogModule,
   ],
 })
 export class AppModule implements NestModule {

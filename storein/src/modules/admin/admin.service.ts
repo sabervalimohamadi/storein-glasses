@@ -227,6 +227,18 @@ export class AdminService {
     return user;
   }
 
+  async setPermissions(userId: string, permissions: string[]): Promise<UserDocument> {
+    if (!Types.ObjectId.isValid(userId))
+      throw new NotFoundException('کاربر یافت نشد');
+    const user = await this.userModel
+      .findByIdAndUpdate(userId, { permissions }, { new: true })
+      .select('-__v')
+      .lean<UserDocument>();
+    if (!user) throw new NotFoundException('کاربر یافت نشد');
+    this.logger.log(`User ${userId} permissions: [${permissions.join(', ')}]`);
+    return user;
+  }
+
   async promoteToAdmin(userId: string): Promise<UserDocument> {
     return this.setUserRole(userId, UserRole.ADMIN);
   }

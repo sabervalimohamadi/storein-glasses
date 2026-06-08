@@ -22,3 +22,17 @@ export const REVIEW_STATUSES = {
 
 export const SORT_DIRS   = { asc: 'صعودی', desc: 'نزولی' }
 export const ITEMS_PER_PAGE = 20
+
+export const PANEL_PERMISSIONS = [
+  { key: 'dashboard',  label: 'داشبورد',      icon: '📊', group: 'عمومی' },
+  { key: 'products',   label: 'محصولات',       icon: '📦', group: 'فروشگاه' },
+  { key: 'categories', label: 'دسته‌بندی‌ها',  icon: '🏷️', group: 'فروشگاه' },
+  { key: 'brands',     label: 'برندها',        icon: '🔖', group: 'فروشگاه' },
+  { key: 'colors',     label: 'رنگ‌ها',        icon: '🎨', group: 'فروشگاه' },
+  { key: 'banners',    label: 'بنرها',         icon: '🖼',  group: 'فروشگاه' },
+  { key: 'orders',     label: 'سفارشات',       icon: '🛒', group: 'فروشگاه' },
+  { key: 'discounts',  label: 'کدهای تخفیف',  icon: '🎟️', group: 'فروشگاه' },
+  { key: 'users',      label: 'کاربران',       icon: '👥', group: 'مدیریت' },
+  { key: 'reviews',    label: 'نظرات',         icon: '⭐', group: 'مدیریت' },
+  { key: 'blog',       label: 'بلاگ',          icon: '📝', group: 'محتوا'   },
+]

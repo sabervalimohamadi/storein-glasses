@@ -33,6 +33,19 @@ const routes = [
     component: () => import('@/views/products/SearchView.vue'),
     meta: { layout: 'default' },
   },
+  // ── Blog ────────────────────────────────────────────────────
+  {
+    path: '/blog',
+    name: 'blog',
+    component: () => import('@/views/blog/BlogListView.vue'),
+    meta: { layout: 'default' },
+  },
+  {
+    path: '/blog/:slug',
+    name: 'blog-detail',
+    component: () => import('@/views/blog/BlogDetailView.vue'),
+    meta: { layout: 'default' },
+  },
   // ── Auth ────────────────────────────────────────────────────
   {
     path: '/auth/login',
@@ -57,6 +70,12 @@ const routes = [
     path: '/checkout',
     name: 'checkout',
     component: () => import('@/views/checkout/CheckoutView.vue'),
+    meta: { layout: 'default', requiresAuth: true },
+  },
+  {
+    path: '/payment/result',
+    name: 'payment-result',
+    component: () => import('@/views/payment/PaymentResultView.vue'),
     meta: { layout: 'default', requiresAuth: true },
   },
   // ── User Dashboard ──────────────────────────────────────────

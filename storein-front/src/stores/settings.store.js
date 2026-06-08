@@ -21,6 +21,7 @@ export const useSettingsStore = defineStore('settings', () => {
   const footerTagline   = computed(() => settings.value?.footerTagline   ?? '')
   const footerCopyright = computed(() => settings.value?.footerCopyright ?? 'تمامی حقوق برای استورین محفوظ است')
   const footerLinks     = computed(() => settings.value?.footerLinks     ?? [])
+  const theme           = computed(() => settings.value?.theme ?? { preset: 'blue', primaryColor: '#1B4F8A', defaultMode: 'light' })
 
   async function fetchSettings() {
     if (fetched) return
@@ -42,6 +43,7 @@ export const useSettingsStore = defineStore('settings', () => {
     logoUrl, faviconUrl, ogImage, social,
     phone, email, address,
     footerTagline, footerCopyright, footerLinks,
+    theme,
     fetchSettings,
   }
 })

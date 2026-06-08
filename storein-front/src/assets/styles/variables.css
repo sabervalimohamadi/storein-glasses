@@ -1,8 +1,8 @@
 :root {
-  /* Brand */
-  --color-brand:       #1B4F8A;
-  --color-brand-dark:  #0F3D73;
-  --color-brand-light: #3B6FBE;
+  /* Brand — RGB triplets (no commas) so Tailwind opacity modifiers work: bg-brand/10 */
+  --color-brand-rgb:       27 79 138;   /* #1B4F8A */
+  --color-brand-dark-rgb:  15 61 115;   /* #0F3D73 */
+  --color-brand-light-rgb: 59 111 190;  /* #3B6FBE */
 
   /* Surfaces */
   --color-bg:          #F4F6F9;
@@ -17,6 +17,11 @@
   /* Header */
   --color-header-bg:      #FFFFFF;
   --color-header-border:  #DDE3EC;
+
+  /* Footer */
+  --color-footer-bg:      #111827;
+  --color-footer-text:    #D1D5DB;
+  --color-footer-muted:   #9CA3AF;
 
   /* Status */
   --color-success: #059669;
