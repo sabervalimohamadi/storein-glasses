@@ -74,7 +74,7 @@
             :max="form.type === 'percentage' ? 100 : undefined"
             dir="ltr"
             :placeholder="form.type === 'percentage' ? '20' : '500000'"
-            class="flex-1 px-3 py-2.5 outline-none text-sm bg-white" />
+            class="flex-1 px-3 py-2.5 outline-none text-sm bg-card text-text-primary" />
           <span class="px-3 py-2.5 bg-surface border-r border-border
                        text-text-secondary text-sm flex-shrink-0 font-fanum">
             {{ form.type === 'percentage' ? '٪' : 'تومان' }}

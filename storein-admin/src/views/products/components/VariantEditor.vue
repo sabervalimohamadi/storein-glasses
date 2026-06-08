@@ -5,7 +5,7 @@
       <div
         v-for="(variant, idx) in modelValue"
         :key="idx"
-        class="border border-border rounded-xl p-4 bg-white"
+        class="border border-border rounded-xl p-4 bg-card"
       >
         <!-- Header -->
         <div class="flex items-center justify-between mb-4">
@@ -93,11 +93,11 @@
                   <!-- Dropdown -->
                   <div
                     v-if="openDropdown === `${idx}-${key}`"
-                    class="absolute top-full mt-1 right-0 left-0 z-50 bg-white border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto py-1"
+                    class="absolute top-full mt-1 right-0 left-0 z-50 bg-card border border-border rounded-xl shadow-lg max-h-52 overflow-y-auto py-1"
                     @click.stop
                   >
                     <!-- Search -->
-                    <div class="px-2 pb-1 sticky top-0 bg-white">
+                    <div class="px-2 pb-1 sticky top-0 bg-card">
                       <input
                         v-model="colorSearch"
                         type="text"

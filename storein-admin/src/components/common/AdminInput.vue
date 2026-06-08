@@ -5,7 +5,7 @@
       <span v-if="required" class="text-error">*</span>
     </label>
     <div :class="[
-      'flex items-center border rounded-lg bg-white overflow-hidden transition-all duration-150',
+      'flex items-center border rounded-lg bg-card overflow-hidden transition-all duration-150',
       error
         ? 'border-error ring-2 ring-error/15'
         : focused

@@ -8,4 +8,22 @@
   --radius-md:  10px;
   --radius-lg:  14px;
   --transition: 200ms ease;
+
+  /* Semantic color tokens (light) */
+  --color-surface:        #F1F5F9;
+  --color-card:           #FFFFFF;
+  --color-border:         #E2E8F0;
+  --color-text-primary:   #0F172A;
+  --color-text-secondary: #64748B;
+  --color-text-disabled:  #CBD5E1;
+}
+
+html.dark {
+  color-scheme: dark;
+  --color-surface:        #0F172A;
+  --color-card:           #1E293B;
+  --color-border:         #334155;
+  --color-text-primary:   #F1F5F9;
+  --color-text-secondary: #94A3B8;
+  --color-text-disabled:  #475569;
 }

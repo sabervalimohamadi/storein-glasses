@@ -1,7 +1,9 @@
 <template>
   <tr :class="[
     'border-b border-border transition-colors duration-100',
-    depth === 0 ? 'bg-white hover:bg-surface/60' : 'bg-surface/40 hover:bg-surface',
+    depth === 0
+      ? 'bg-card hover:bg-surface/60 dark:hover:bg-slate-700/50'
+      : 'bg-surface/40 dark:bg-slate-800/50 hover:bg-surface dark:hover:bg-slate-700/80',
   ]">
 
     <!-- Name + indent -->

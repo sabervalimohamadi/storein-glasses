@@ -12,7 +12,7 @@
               ? 'bg-success border-success text-white'
               : stepState(step.value) === 'current'
                 ? 'bg-primary border-primary text-white scale-110 shadow-md'
-                : 'bg-white border-border text-text-disabled',
+                : 'bg-card border-border text-text-disabled',
           ]">
             <svg v-if="stepState(step.value) === 'done'" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M5 13l4 4L19 7"/>

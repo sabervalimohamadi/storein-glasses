@@ -24,7 +24,7 @@
             :class="[
               'px-3 py-1.5 rounded-lg text-sm font-medium transition-all',
               activeStatus === tab.value
-                ? 'bg-white text-primary shadow-sm'
+                ? 'bg-card text-primary shadow-sm'
                 : 'text-text-secondary hover:text-text-primary',
             ]">
             {{ tab.label }}

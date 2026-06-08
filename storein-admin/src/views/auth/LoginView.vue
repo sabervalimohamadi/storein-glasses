@@ -1,6 +1,6 @@
 <template>
   <div class="w-full max-w-sm">
-    <div class="bg-white rounded-2xl shadow-modal p-8">
+    <div class="bg-card rounded-2xl shadow-modal p-8">
 
       <!-- Logo -->
       <div class="text-center mb-8">

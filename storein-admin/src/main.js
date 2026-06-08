@@ -1,3 +1,12 @@
+// Apply theme before Vue mounts — prevents flash of unstyled content
+;(function () {
+  const stored = localStorage.getItem('theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  if (stored === 'dark' || (!stored && prefersDark)) {
+    document.documentElement.classList.add('dark')
+  }
+})()
+
 import { createApp }   from 'vue'
 import { createPinia } from 'pinia'
 import '@/plugins/chartjs'

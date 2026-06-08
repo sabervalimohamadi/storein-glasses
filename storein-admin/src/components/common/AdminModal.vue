@@ -9,7 +9,7 @@
 
         <!-- Panel -->
         <div :class="[
-          'relative bg-white rounded-2xl shadow-modal w-full flex flex-col max-h-[90vh]',
+          'relative bg-card rounded-2xl shadow-modal w-full flex flex-col max-h-[90vh]',
           sizeClass,
         ]">
           <!-- Header -->
