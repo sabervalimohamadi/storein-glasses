@@ -7,6 +7,7 @@ import { Transaction, TransactionSchema } from './entities/transaction.schema';
 import { PaymentGateway } from './gateway/payment-gateway.abstract';
 import { MockPaymentGateway } from './gateway/mock-payment-gateway.service';
 import { OrderModule } from '../order/order.module';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { OrderModule } from '../order/order.module';
   controllers: [PaymentController],
   providers: [
     PaymentService,
+    AppLoggerService,
     { provide: PaymentGateway, useClass: MockPaymentGateway },
   ],
   exports: [PaymentService],

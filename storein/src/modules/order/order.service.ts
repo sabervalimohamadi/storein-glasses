@@ -21,6 +21,7 @@ import {
 } from '../notification/notification.listener';
 import type { UserDocument } from '../user/entities/user.schema';
 import { User } from '../user/entities/user.schema';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 @Injectable()
 export class OrderService {
@@ -31,7 +32,10 @@ export class OrderService {
     private productService: ProductService,
     private discountService: DiscountService,
     private eventEmitter: EventEmitter2,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('OrderService');
+  }
 
   async createFromCart(userId: string, dto: CreateOrderDto): Promise<OrderDocument> {
     const cart = await this.cartService.getRawCart(userId);
@@ -125,6 +129,14 @@ export class OrderService {
       );
     }
 
+    this.logger.log('Order created', {
+      orderId:     (order._id as any).toString(),
+      orderNumber: order.orderNumber,
+      userId,
+      total,
+      itemCount:   cart.items.length,
+    });
+
     return order.toObject();
   }
 
@@ -175,6 +187,13 @@ export class OrderService {
     order.status         = OrderStatus.CANCELLED;
     order.cancelReason   = 'لغو توسط خریدار';
     await order.save();
+
+    this.logger.log('Order cancelled by user', {
+      orderId:        (order._id as any).toString(),
+      orderNumber:    order.orderNumber,
+      userId,
+      previousStatus,
+    });
 
     const userForEvent = await this.userModel
       .findById(order.userId).select('phone').lean<UserDocument>();
@@ -242,6 +261,13 @@ export class OrderService {
     const previousStatus = order.status;
     order.status         = dto.status;
     await order.save();
+
+    this.logger.log('Order status updated by admin', {
+      orderId:        (order._id as any).toString(),
+      orderNumber:    order.orderNumber,
+      previousStatus,
+      newStatus:      dto.status,
+    });
 
     const userForEvent = await this.userModel
       .findById(order.userId).select('phone').lean<UserDocument>();

@@ -21,6 +21,7 @@ import {
 } from '../notification/notification.listener';
 import { PayOrderDto } from './dto/pay-order.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 const DEFAULT_CALLBACK = 'http://localhost:3000/api/v1/payments/verify';
 
@@ -32,7 +33,10 @@ export class PaymentService {
     private gateway: PaymentGateway,
     private orderService: OrderService,
     private eventEmitter: EventEmitter2,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('PaymentService');
+  }
 
   // ── Wallet ────────────────────────────────────────────────────
   async getOrCreateWallet(userId: string): Promise<WalletDocument> {
@@ -102,6 +106,13 @@ export class PaymentService {
 
     if (order.status !== OrderStatus.PENDING)
       throw new BadRequestException('این سفارش قابل پرداخت نیست');
+
+    this.logger.log('Payment initiated', {
+      orderId: dto.orderId,
+      userId,
+      method:  dto.method,
+      amount:  order.total,
+    });
 
     const callbackUrl = dto.callbackUrl ?? DEFAULT_CALLBACK;
 
@@ -198,6 +209,14 @@ export class PaymentService {
         status: TransactionStatus.FAILED,
       });
 
+      this.logger.warn('Payment verification failed', {
+        authority,
+        txId:   (tx._id as any).toString(),
+        userId: tx.userId.toString(),
+        amount: tx.amount,
+        reason: result.message,
+      });
+
       const failedUser: any = await this.walletModel.db
         .model('User')
         .findById(tx.userId)
@@ -265,6 +284,15 @@ export class PaymentService {
       };
       this.eventEmitter.emit(EVENTS.PAYMENT_SUCCESS, event);
     }
+
+    this.logger.log('Payment verified successfully', {
+      authority,
+      refId:   result.refId,
+      txId:    (tx._id as any).toString(),
+      userId:  tx.userId.toString(),
+      orderId: tx.orderId?.toString(),
+      amount:  tx.amount,
+    });
 
     return { success: true, refId: result.refId, message: 'پرداخت موفق' };
   }

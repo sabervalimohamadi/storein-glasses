@@ -9,7 +9,7 @@
         :key="img.url"
         class="relative group aspect-square rounded-xl overflow-hidden border-2 border-border bg-surface"
       >
-        <img :src="img.thumbnail || img.url" class="w-full h-full object-cover" />
+        <img :src="resolveUrl(img)" class="w-full h-full object-cover" />
 
         <!-- Main badge -->
         <div v-if="idx === 0"
@@ -83,6 +83,20 @@ const fileInput   = ref(null)
 const uploading   = ref(false)
 const isDragging  = ref(false)
 const uploadError = ref('')
+
+// Handles all image shapes:
+// - plain string URL (from DB)
+// - { url } (normalized)
+// - { original: { url }, thumbnail: { url } }  (upload API response)
+function resolveUrl(img) {
+  if (!img) return ''
+  if (typeof img === 'string') return img
+  if (img.thumbnail?.url)  return img.thumbnail.url
+  if (typeof img.thumbnail === 'string' && img.thumbnail) return img.thumbnail
+  if (img.url)             return img.url
+  if (img.original?.url)   return img.original.url
+  return ''
+}
 
 function triggerInput() {
   if (uploading.value) return

@@ -3,6 +3,7 @@ export interface CartItem {
   variantId:    string;
   sku:          string;
   name:         string;
+  slug:         string;
   thumbnail:    string | null;
   price:        number;
   comparePrice: number | null;

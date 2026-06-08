@@ -120,9 +120,19 @@ const timerUnits = computed(() => [
 ])
 
 // ── Cart ──────────────────────────────────────────────
+function getAvailableVariant(product) {
+  return product.variants?.find(v => v.stock > 0 && v.isActive !== false)
+    ?? product.variants?.[0]
+}
+
 async function handleAddToCart(product) {
+  const variant = getAvailableVariant(product)
+  if (!variant?._id) {
+    ui.addToast('این محصول در حال حاضر قابل سفارش نیست', 'error')
+    return
+  }
   try {
-    await cartStore.addItem(product._id, 1)
+    await cartStore.addItem(product._id, variant._id, 1)
     ui.addToast('محصول به سبد خرید افزوده شد', 'success')
   } catch {
     ui.addToast('خطا در افزودن به سبد خرید', 'error')

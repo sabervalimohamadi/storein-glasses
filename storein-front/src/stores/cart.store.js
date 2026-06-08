@@ -17,18 +17,18 @@ export const useCartStore = defineStore('cart', () => {
     } finally { loading.value = false }
   }
 
-  async function addItem(productId, quantity = 1) {
-    const { data } = await cartService.addItem(productId, quantity)
+  async function addItem(productId, variantId, quantity = 1) {
+    const { data } = await cartService.addItem(productId, variantId, quantity)
     items.value = data.items
   }
 
-  async function updateItem(itemId, quantity) {
-    const { data } = await cartService.updateItem(itemId, quantity)
+  async function updateItem(productId, variantId, quantity) {
+    const { data } = await cartService.updateItem(productId, variantId, quantity)
     items.value = data.items
   }
 
-  async function removeItem(itemId) {
-    const { data } = await cartService.removeItem(itemId)
+  async function removeItem(productId, variantId) {
+    const { data } = await cartService.removeItem(productId, variantId)
     items.value = data.items
   }
 

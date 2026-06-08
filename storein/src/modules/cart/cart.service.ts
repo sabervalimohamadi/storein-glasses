@@ -59,7 +59,7 @@ export class CartService {
   async addItem(userId: string, dto: AddToCartDto): Promise<CartSummary> {
     const product = await this.productModel
       .findById(dto.productId)
-      .select('name thumbnail variants')
+      .select('name slug thumbnail variants')
       .lean<ProductDocument>();
     if (!product) throw new NotFoundException('محصول یافت نشد');
 
@@ -88,6 +88,7 @@ export class CartService {
         variantId:    dto.variantId,
         sku:          variant.sku,
         name:         product.name,
+        slug:         product.slug,
         thumbnail:    product.thumbnail ?? null,
         price:        variant.price,
         comparePrice: variant.comparePrice ?? null,

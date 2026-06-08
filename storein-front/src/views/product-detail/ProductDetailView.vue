@@ -194,7 +194,7 @@ async function quickAddToCart() {
   if (!isInStock.value || addingToCart.value) return
   addingToCart.value = true
   try {
-    await cartStore.addItem(product.value._id, 1)
+    await cartStore.addItem(product.value._id, selectedVariant.value?._id, 1)
     ui.addToast('محصول به سبد خرید افزوده شد ✓', 'success')
   } catch {
     ui.addToast('خطا در افزودن به سبد', 'error')

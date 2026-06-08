@@ -1,38 +1,69 @@
 import {
-  ExceptionFilter,
-  Catch,
-  ArgumentsHost,
-  HttpException,
-  HttpStatus,
+  ExceptionFilter, Catch, ArgumentsHost,
+  HttpException, HttpStatus, Inject,
 } from '@nestjs/common';
-import { Request, Response } from 'express';
+import { Request, Response }       from 'express';
+import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { Logger }                  from 'winston';
 
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost) {
-    const ctx = host.switchToHttp();
-    const response = ctx.getResponse<Response>();
-    const request = ctx.getRequest<Request>();
+  constructor(
+    @Inject(WINSTON_MODULE_PROVIDER)
+    private readonly logger: Logger,
+  ) {}
 
-    const status =
-      exception instanceof HttpException
-        ? exception.getStatus()
-        : HttpStatus.INTERNAL_SERVER_ERROR;
+  catch(exception: unknown, host: ArgumentsHost): void {
+    const ctx       = host.switchToHttp();
+    const request   = ctx.getRequest<Request>();
+    const response  = ctx.getResponse<Response>();
+    const requestId = (request as any)['requestId'];
+    const userId    = (request as any)['user']?.userId;
 
-    const message =
-      exception instanceof HttpException
-        ? exception.getResponse()
-        : 'Internal server error';
+    const isHttp     = exception instanceof HttpException;
+    const statusCode = isHttp
+      ? exception.getStatus()
+      : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    response.status(status).json({
-      success: false,
-      statusCode: status,
-      timestamp: new Date().toISOString(),
-      path: request.url,
-      message:
-        typeof message === 'object' && 'message' in (message as object)
-          ? (message as any).message
-          : message,
-    });
+    const rawMessage = isHttp
+      ? (exception.getResponse() as any)?.message || exception.message
+      : 'Internal server error';
+
+    const errorResponse = {
+      success:    false,
+      statusCode,
+      message:    rawMessage,
+      path:       request.url,
+      timestamp:  new Date().toISOString(),
+      ...(requestId ? { requestId } : {}),
+    };
+
+    const logPayload = {
+      context:    'ExceptionFilter',
+      requestId,
+      userId,
+      method:     request.method,
+      url:        request.url,
+      statusCode,
+      message:    exception instanceof Error ? exception.message : String(exception),
+      stack:      exception instanceof Error ? exception.stack   : undefined,
+      body:       this.sanitizeBody(request.body),
+    };
+
+    if (statusCode >= 500) {
+      this.logger.error('Unhandled Server Error', logPayload);
+    } else if (statusCode >= 400) {
+      this.logger.warn('Client Error', { ...logPayload, stack: undefined });
+    }
+
+    response.status(statusCode).json(errorResponse);
+  }
+
+  private sanitizeBody(body: any): any {
+    if (!body || typeof body !== 'object') return body;
+    const sensitive = ['password', 'token', 'secret', 'code', 'otp'];
+    const clean = { ...body };
+    sensitive.forEach(key => { if (key in clean) clean[key] = '***'; });
+    return clean;
   }
 }

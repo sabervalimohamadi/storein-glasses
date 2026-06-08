@@ -44,7 +44,7 @@ export class AuthService {
 
     await this.redis.setex(`otp:${phone}`, ttl, code);
     await this.smsService.sendOtp(phone, code);
-    this.logger.log(`OTP sent → ${phone}`);
+    this.logger.log(`OTP sent → ${this.maskPhone(phone)}`);
 
     return { message: 'کد تایید ارسال شد', expiresIn: ttl };
   }
@@ -64,12 +64,13 @@ export class AuthService {
 
     if (!user) {
       user = await this.userModel.create({ phone });
-      this.logger.log(`New user: ${phone}`);
+      this.logger.log(`New user registered: ${this.maskPhone(phone)}`);
     } else if (!user.isActive) {
       throw new UnauthorizedException('حساب کاربری غیرفعال است');
     }
 
     const tokens = await this.issueTokens(user, meta);
+    this.logger.log(`OTP verified — user logged in: ${this.maskPhone(phone)}`);
     return { ...tokens, isNewUser };
   }
 
@@ -118,5 +119,9 @@ export class AuthService {
     if (phone.startsWith('+98')) return '0' + phone.slice(3);
     if (phone.startsWith('98')) return '0' + phone.slice(2);
     return phone;
+  }
+
+  private maskPhone(phone: string): string {
+    return phone.length > 4 ? phone.slice(0, -4) + '****' : '****';
   }
 }

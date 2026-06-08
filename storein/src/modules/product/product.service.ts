@@ -8,6 +8,7 @@ import { Model, Types } from 'mongoose';
 import slugify from 'slugify';
 import { Product, ProductDocument, ProductStatus } from './entities/product.schema';
 import { Category, CategoryDocument } from '../category/entities/category.schema';
+import { Color, ColorDocument } from '../color/entities/color.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -18,6 +19,7 @@ export class ProductService {
   constructor(
     @InjectModel(Product.name)   private productModel:   Model<ProductDocument>,
     @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
+    @InjectModel(Color.name)     private colorModel:     Model<ColorDocument>,
   ) {}
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -98,7 +100,7 @@ export class ProductService {
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
-        .select('name slug images thumbnail minPrice maxPrice totalStock category tags createdAt')
+        .select('name slug images thumbnail minPrice maxPrice totalStock avgRating reviewCount category tags createdAt variants')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
@@ -109,7 +111,7 @@ export class ProductService {
     return { products, total, page, totalPages: Math.ceil(total / limit) };
   }
 
-  async findBySlug(slug: string): Promise<ProductDocument> {
+  async findBySlug(slug: string): Promise<any> {
     const product = await this.productModel
       .findOne({ slug, status: ProductStatus.ACTIVE })
       .select('-__v')
@@ -122,7 +124,23 @@ export class ProductService {
       .findByIdAndUpdate(product._id, { $inc: { viewCount: 1 } })
       .exec();
 
-    return product;
+    // Build colorMap: { 'مشکی': '#1a1a1a', ... } from DB Colors collection
+    const colorNames = (product.variants ?? [])
+      .flatMap((v: any) =>
+        (v.attributes ?? []).filter((a: any) => a.key === 'رنگ').map((a: any) => a.value)
+      )
+      .filter(Boolean);
+
+    let colorMap: Record<string, string> = {};
+    if (colorNames.length > 0) {
+      const colors = await this.colorModel
+        .find({ name: { $in: colorNames } })
+        .select('name hex')
+        .lean<ColorDocument[]>();
+      colorMap = Object.fromEntries(colors.map((c) => [c.name, c.hex]));
+    }
+
+    return { ...product, colorMap };
   }
 
   // ── Admin ─────────────────────────────────────────────────────
@@ -183,13 +201,14 @@ export class ProductService {
     const denorm = this.calcDenormalized(dto.variants ?? []);
 
     try {
-      const product = await this.productModel.create({
+      const doc: any = {
         ...dto,
         slug,
         category: new Types.ObjectId(dto.category),
         ...(dto.brand && { brand: new Types.ObjectId(dto.brand) }),
         ...denorm,
-      });
+      };
+      const product = await this.productModel.create(doc);
       return product.toObject();
     } catch (err: any) {
       if (err.name === 'ValidationError')

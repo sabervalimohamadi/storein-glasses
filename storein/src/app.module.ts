@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import * as Joi from 'joi';
@@ -26,9 +26,13 @@ import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
 import { BrandModule } from './modules/brand/brand.module';
 import { ColorModule } from './modules/color/color.module';
+import { LoggerModule }          from './common/logger/logger.module';
+import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
+import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middleware';
 
 @Module({
   imports: [
+    LoggerModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, redisConfig, jwtConfig, otpConfig, uploadConfig],
@@ -50,13 +54,13 @@ import { ColorModule } from './modules/color/color.module';
       }),
     }),
     EventEmitterModule.forRoot({
-      wildcard:           false,
-      delimiter:          '.',
-      newListener:        false,
-      removeListener:     false,
-      maxListeners:       10,
-      verboseMemoryLeak:  false,
-      ignoreErrors:       false,
+      wildcard:          false,
+      delimiter:         '.',
+      newListener:       false,
+      removeListener:    false,
+      maxListeners:      10,
+      verboseMemoryLeak: false,
+      ignoreErrors:      false,
     }),
     DatabaseModule,
     RedisModule,
@@ -78,4 +82,10 @@ import { ColorModule } from './modules/color/color.module';
     ColorModule,
   ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer): void {
+    consumer
+      .apply(RequestIdMiddleware, HttpLoggerMiddleware)
+      .forRoutes({ path: '*', method: RequestMethod.ALL });
+  }
+}

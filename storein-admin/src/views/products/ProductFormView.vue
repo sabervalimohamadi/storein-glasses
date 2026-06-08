@@ -278,7 +278,12 @@ function buildDto(statusOverride) {
       const first = form.images[0]
       if (!first) return undefined
       if (typeof first === 'string') return first
-      return first.thumbnail?.url || first.original?.url
+      // upload response: { thumbnail: { url }, original: { url } }
+      if (first.thumbnail?.url)  return first.thumbnail.url
+      // normalized: { url }
+      if (first.url)             return first.url
+      if (first.original?.url)   return first.original.url
+      return undefined
     })(),
     variants:    form.variants.map(v => ({
       ...(v._id ? { _id: v._id } : {}),
@@ -330,6 +335,7 @@ async function publish() {
       router.push({ name: 'products' })
     }
   } catch (err) {
+    console.error('SAVE ERROR:', JSON.stringify(err.response?.data, null, 2))
     const msg = err.response?.data?.message
     if (Array.isArray(msg)) msg.forEach(m => ui.addToast(m, 'error'))
     else ui.addToast(msg ?? 'خطا در ذخیره محصول', 'error')
@@ -345,7 +351,9 @@ function fillForm(p) {
   form.description = p.description ?? ''
   form.categoryId  = p.category?._id  ?? p.category  ?? ''
   form.brandId     = p.brand?._id     ?? p.brand     ?? ''
-  form.images      = p.images      ?? []
+  form.images      = (p.images ?? []).map(img =>
+    typeof img === 'string' ? { url: img, thumbnail: img } : img
+  )
   form.tags        = p.tags        ?? []
   form.status      = p.status      ?? 'draft'
   form.variants    = p.variants?.length

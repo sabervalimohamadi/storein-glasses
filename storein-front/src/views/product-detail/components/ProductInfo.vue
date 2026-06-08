@@ -51,7 +51,7 @@
         <div class="flex items-center gap-2 mb-3">
           <span class="text-sm font-medium text-text-primary">رنگ:</span>
           <span class="text-sm text-brand font-medium">
-            {{ selectedVariant?.attributes?.['رنگ'] || '' }}
+            {{ getAttr(selectedVariant, 'رنگ') }}
           </span>
         </div>
         <div class="flex flex-wrap gap-3">
@@ -75,7 +75,7 @@
             >
               <span
                 class="w-7 h-7 rounded-full border border-black/10 block"
-                :style="{ backgroundColor: getColorHex(variant.attributes?.['رنگ']) }"
+                :style="{ backgroundColor: getColorHex(getAttr(variant, 'رنگ')) }"
               />
               <span v-if="variant.stock === 0" class="absolute inset-0 flex items-center justify-center">
                 <svg class="w-3.5 h-3.5 text-error" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
@@ -84,7 +84,7 @@
               </span>
             </span>
             <span class="text-xs text-text-secondary leading-none">
-              {{ variant.attributes?.['رنگ'] }}
+              {{ getAttr(variant, 'رنگ') }}
             </span>
           </button>
         </div>
@@ -185,12 +185,11 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useCartStore }     from '@/stores/cart.store'
 import { useWishlistStore } from '@/stores/wishlist.store'
 import { useUiStore }       from '@/stores/ui.store'
 import { formatPrice, formatNumber, calcDiscount } from '@/utils/formatters'
-import { colorService } from '@/services/color.service'
 import BaseRating   from '@/components/common/BaseRating.vue'
 import BaseBadge    from '@/components/common/BaseBadge.vue'
 import BaseButton   from '@/components/common/BaseButton.vue'
@@ -252,7 +251,7 @@ async function handleAddToCart() {
   if (!isInStock.value || addingToCart.value) return
   addingToCart.value = true
   try {
-    await cartStore.addItem(props.product._id, 1)
+    await cartStore.addItem(props.product._id, selectedVariant.value?._id, 1)
     ui.addToast('محصول به سبد خرید افزوده شد ✓', 'success')
     emit('add-to-cart', selectedVariant.value?._id)
   } catch {
@@ -262,20 +261,18 @@ async function handleAddToCart() {
   }
 }
 
-// ── Colors from API ───────────────────────────────────────────────
-const colorsFromApi = ref([])
+// ── Attribute helpers ─────────────────────────────────────────────
+// attributes is [{key,value}] array — never access as object
+function getAttr(variant, key) {
+  if (!variant?.attributes) return ''
+  const found = variant.attributes.find(a => a.key === key)
+  return found?.value ?? ''
+}
 
-onMounted(async () => {
-  try {
-    const { data } = await colorService.getActive()
-    colorsFromApi.value = Array.isArray(data) ? data : []
-  } catch { /* silent */ }
-})
-
+// ── Colors — from product.colorMap (populated by backend) ─────────
 function getColorHex(name) {
   if (!name) return '#888'
-  const found = colorsFromApi.value.find(c => c.name === name)
-  return found?.hex ?? '#888'
+  return props.product?.colorMap?.[name] ?? '#888'
 }
 
 const guarantees = [

@@ -1,15 +1,19 @@
 import {
-  IsArray, IsBoolean, IsNumber,
+  IsArray, IsBoolean, IsMongoId, IsNumber,
   IsOptional, IsString, Min, ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
 class VariantAttributeDto {
+  @IsOptional() @IsMongoId() _id?: string;
   @IsString() key: string;
   @IsString() value: string;
 }
 
 export class CreateVariantDto {
+  @IsOptional() @IsMongoId()
+  _id?: string;
+
   @IsOptional() @IsString()
   sku?: string;
 

@@ -37,6 +37,7 @@ const cartWithItem = (): Cart => ({
     variantId:    varId,
     sku:          'SKU-1',
     name:         'سامسونگ A55',
+    slug:         'samsung-a55',
     thumbnail:    null,
     price:        10_000_000,
     comparePrice: 12_000_000,

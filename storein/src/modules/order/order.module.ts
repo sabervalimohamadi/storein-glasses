@@ -7,6 +7,7 @@ import { CartModule } from '../cart/cart.module';
 import { ProductModule } from '../product/product.module';
 import { UserModule } from '../user/user.module';
 import { DiscountModule } from '../discount/discount.module';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 @Module({
   imports: [
@@ -17,7 +18,7 @@ import { DiscountModule } from '../discount/discount.module';
     DiscountModule,
   ],
   controllers: [OrderController],
-  providers: [OrderService],
+  providers: [OrderService, AppLoggerService],
   exports: [OrderService, MongooseModule],
 })
 export class OrderModule {}

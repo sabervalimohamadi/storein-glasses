@@ -1,4 +1,5 @@
-import axios from 'axios'
+import axios    from 'axios'
+import { logger } from '@/utils/logger'
 
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
@@ -6,27 +7,57 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 })
 
-http.interceptors.request.use((config) => {
-  const token = localStorage.getItem('admin_token')
-  if (token) config.headers.Authorization = `Bearer ${token}`
-  return config
-}, Promise.reject)
+http.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('admin_token')
+    if (token) config.headers.Authorization = `Bearer ${token}`
+    config.metadata = { startTime: Date.now() }
+    return config
+  },
+  (error) => {
+    logger.error('Request setup failed', error, {}, 'HTTP')
+    return Promise.reject(error)
+  },
+)
 
 http.interceptors.response.use(
-  (res) => {
-    if (res.data && 'data' in res.data) res.data = res.data.data
-    return res
+  (response) => {
+    if (response.data && 'data' in response.data) response.data = response.data.data
+
+    const duration = Date.now() - (response.config.metadata?.startTime ?? 0)
+    if (duration > 3000) {
+      logger.warn('Slow API call', {
+        url:      response.config.url,
+        method:   response.config.method?.toUpperCase(),
+        duration: `${duration}ms`,
+      }, 'Performance')
+    }
+
+    return response
   },
-  (err) => {
-    if (err.response?.status === 401) {
+  (error) => {
+    const status   = error.response?.status
+    const url      = error.config?.url ?? 'unknown'
+    const method   = error.config?.method?.toUpperCase() ?? 'UNKNOWN'
+    const message  = error.response?.data?.message ?? error.message
+    const duration = Date.now() - (error.config?.metadata?.startTime ?? 0)
+
+    logger.apiError(`${method} ${url}`, status ?? 0, message, { duration: `${duration}ms` })
+
+    if (!error.response) {
+      logger.error('Network error — no response from server', error, { url, method }, 'HTTP')
+    }
+
+    if (status === 401) {
       localStorage.removeItem('admin_token')
       window.location.href = '/login'
     }
-    if (err.response?.status === 403) {
+    if (status === 403) {
       window.location.href = '/login?error=forbidden'
     }
-    return Promise.reject(err)
-  }
+
+    return Promise.reject(error)
+  },
 )
 
 export default http
