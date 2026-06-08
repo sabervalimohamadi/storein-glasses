@@ -2223,8 +2223,223 @@ logger.clearErrors()
 
 ---
 
+---
+
+## Session 4 — Banner Module, Settings Module, Three-Tier RBAC, User List Fix (2026-06-08)
+
+---
+
+### Banner Module ✅ (backend)
+
+New module for managing hero slider + two-column promo card banners.
+
+**New files — `storein/src/modules/banner/`**
+
+| File | Purpose |
+|------|---------|
+| `entities/banner.schema.ts` | Banner schema: title, eyebrow, subtitle, cta, ctaLink, bgFrom, bgTo, accent, imageUrl, glasses, `type: 'hero'\|'promo'`, isActive, sortOrder |
+| `dto/create-banner.dto.ts` | Create DTO with optional `type` field |
+| `dto/update-banner.dto.ts` | Update DTO (PartialType) |
+| `dto/reorder-banners.dto.ts` | `{ ids: string[] }` for bulk sort-order update |
+| `banner.service.ts` | Full service with AppLoggerService: findActive (hero only), findActivePromo (promo only), findAll (admin), create (per-type sortOrder count), update, remove, reorder (bulkWrite), toggleActive |
+| `banner.controller.ts` | Routes in static-before-dynamic order |
+| `banner.module.ts` | Providers: BannerService, AppLoggerService |
+| `banner.service.spec.ts` | 35 tests — all methods, chainLean pattern, per-type counting, reorder, toggle |
+
+**Endpoints**
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/v1/banners` | Public | اسلایدرهای فعال (hero) |
+| GET | `/api/v1/banners/promo` | Public | بنرهای ویژه فعال (promo) |
+| GET | `/api/v1/banners/admin/all` | Admin | همه بنرها |
+| POST | `/api/v1/banners` | Admin | ایجاد |
+| PATCH | `/api/v1/banners/reorder` | Admin | تغییر ترتیب (bulkWrite) |
+| PATCH | `/api/v1/banners/:id/toggle` | Admin | فعال/غیرفعال |
+| PATCH | `/api/v1/banners/:id` | Admin | ویرایش |
+| DELETE | `/api/v1/banners/:id` | Admin | حذف |
+
+**Key decisions:**
+- `type: 'hero' | 'promo'` field on single schema — no separate collection
+- `sortOrder` counted per-type via `countDocuments({ type })` — hero and promo have independent order
+- Route ordering: `/promo`, `/reorder`, `/admin/all` declared before `/:id` to avoid catch-all conflict
+
+---
+
+### Settings Module ✅ (backend)
+
+New module for site-wide settings editable by admin only.
+
+**New files — `storein/src/modules/settings/`**
+
+| File | Purpose |
+|------|---------|
+| `entities/site-settings.schema.ts` | Singleton schema: `_key: 'default'`, siteName, tagline, logoUrl, faviconUrl, description, keywords, ogImage, SocialLinks (6 platforms), footerTagline, footerCopyright, footerLinks[], phone, email, address |
+| `dto/update-settings.dto.ts` | All-optional DTO with MaxLength, IsEmail, ValidateNested for social and footerLinks |
+| `settings.service.ts` | `findSettings()` — bootstrap on first access; `updateSettings()` — findOneAndUpdate with upsert |
+| `settings.controller.ts` | `GET` public (storefront); `PATCH` SuperAdminGuard only |
+| `settings.module.ts` | Providers: SettingsService, AppLoggerService |
+| `settings.service.spec.ts` | 16 tests — bootstrap log, no-log on cache hit, upsert options, field counts in log |
+
+**Updated:** `storein/src/app.module.ts` — SettingsModule imported.
+
+**Updated:** `storage-provider.abstract.ts` — `'logos'` added to UploadFolder type.
+
+**Key decisions:**
+- `_key: 'default'` with unique index — one document, no ID lookups
+- `findOneAndUpdate` with `{ upsert: true }` — idempotent, safe first-run
+- `PATCH` uses `SuperAdminGuard` not `AdminGuard` — managers cannot edit site settings
+
+---
+
+### BannersView ✅ (admin panel)
+
+**New files:**
+- `storein-admin/src/services/banner.service.js` — getAll, create, update, remove, toggleActive, reorder
+- `storein-admin/src/views/banners/BannersView.vue` — two-tab banner management
+
+**Features:**
+- Two tabs: «اسلایدر اصلی» (hero) and «بنرهای ویژه» (promo) with per-tab count badges
+- `openCreate()` auto-sets `form.type` to the active tab
+- Modal with dual live preview — hero (full-width slider style) vs promo (half-width card style)
+- Promo form hides `accent` color and `subtitle` fields (unused in promo layout)
+- HTML5 drag-and-drop reorder — operates on filtered subset only; reconstructs `allBanners` preserving other-type order on drop
+- Router: `/banners` route added; Sidebar: «بنرها» 🖼 in فروشگاه group
+
+---
+
+### SettingsView ✅ (admin panel)
+
+**New files:**
+- `storein-admin/src/services/settings.service.js` — get, update
+- `storein-admin/src/views/settings/SettingsView.vue` — 5-tab settings editor
+
+**Features:**
+- Tab 1 — عمومی: siteName, tagline, logo/favicon upload (folder: `logos`)
+- Tab 2 — سئو: description, keywords, ogImage + live Google preview card
+- Tab 3 — شبکه‌های اجتماعی: Instagram, Telegram, WhatsApp, Twitter, LinkedIn, YouTube
+- Tab 4 — فوتر: tagline, copyright, dynamic footerLinks (add/remove rows)
+- Tab 5 — تماس: phone, email, address
+- `dirty` computed: `JSON.stringify(form) !== savedSnapshot` — save button shown only when changed
+- Sticky save bar with «بازگردانی» (revert to saved) button
+- Router: `/settings` route added; Sidebar: «تنظیمات سایت» ⚙️ in مدیریت group
+
+---
+
+### Storefront — Banner + Settings Integration ✅ (storein-front)
+
+**New files:**
+- `src/services/banner.service.js` — `getActive()` → `/banners`, `getActivePromo()` → `/banners/promo`
+- `src/services/settings.service.js` — `getSettings()` → `/settings`
+- `src/stores/settings.store.js` — Pinia store with all settings as computed accessors + fallbacks; fetched once on app mount
+- `src/composables/useHead.js` — `useSiteHead(settingsRef)` composable using `watchEffect` to update `document.title`, meta description/keywords, og:title/description/image, favicon
+
+**Updated files:**
+- `src/App.vue` — `storeToRefs(settingsStore)` to get reactive Ref; `useSiteHead(settings)` called here; `fetchSettings()` on mount
+- `src/components/layout/AppFooter.vue` — fully dynamic: logo (img or siteName text), social icons (v-if per platform), footerLinks from store with static fallback, phone/email with fallback, `footerCopyright © currentYear`
+- `src/views/home/components/HeroBanner.vue` — fetches `GET /banners` on mount; falls back to 3 static slides; supports `imageUrl` background
+- `src/views/home/components/SpecialBanner.vue` — fetches `GET /banners/promo` on mount; falls back to 2 static cards; supports `imageUrl`
+
+**Key decisions:**
+- `storeToRefs(store)` required to pass Pinia state as reactive `Ref` to `watchEffect` inside composable — direct `store.settings` is unwrapped
+- `useSiteHead` uses a single `watchEffect` watching `settings.value` — all meta updates in one place
+
+---
+
+### Three-Tier RBAC — Admin / Manager / User ✅
+
+**User schema update** (`storein/src/modules/user/entities/user.schema.ts`):
+```typescript
+export enum UserRole {
+  USER    = 'user',
+  MANAGER = 'manager',
+  ADMIN   = 'admin',
+}
+// New field added to User class:
+@Prop({ enum: Object.values(UserRole), default: UserRole.USER })
+role: string;
+```
+`isAdmin: boolean` kept for backward compatibility — synced on every role change.
+
+**Guard changes:**
+
+| Guard | File | Behavior |
+|-------|------|---------|
+| `AdminGuard` (updated) | `common/guards/admin.guard.ts` | Allows `isAdmin === true` **OR** `role === 'manager'` |
+| `SuperAdminGuard` (new) | `common/guards/super-admin.guard.ts` | Allows `isAdmin === true` only |
+
+**Applied to:**
+- `PATCH /api/v1/settings` → `SuperAdminGuard` (managers cannot edit site settings)
+- `PATCH /api/v1/admin/users/:id/role` → `SuperAdminGuard` (class-level `AdminGuard` + method-level `SuperAdminGuard`)
+- `PATCH /api/v1/admin/users/:id/promote` → `SuperAdminGuard`
+- `PATCH /api/v1/admin/users/:id/demote` → `SuperAdminGuard`
+
+**`AdminService.setUserRole(userId, role)`** (new method):
+- Validates role against `UserRole` enum
+- Sets both `role` and `isAdmin` atomically: `isAdmin = role === 'admin'`
+- `promoteToAdmin` and `demoteFromAdmin` now delegate to `setUserRole`
+
+**New endpoint:** `PATCH /api/v1/admin/users/:id/role` with `{ role: 'user'|'manager'|'admin' }` body.
+
+**Admin panel updates:**
+
+| File | Change |
+|------|--------|
+| `stores/auth.store.js` | Added `isAdmin` and `isManager` computed; `isLoggedIn` allows `role === 'manager'`; login/fetchProfile allow manager role |
+| `components/layout/AdminSidebar.vue` | `navGroups` is now a `computed` — Settings link hidden for managers; role badge (ادمین/مدیر) shown in sidebar footer with phone |
+| `router/index.js` | `meta: { adminOnly: true }` on `/settings` route; `beforeEach` redirects managers to dashboard if they try to access admin-only routes |
+
+**Role permission matrix:**
+
+| Feature | User | Manager | Admin |
+|---------|------|---------|-------|
+| Products, Categories, Brands, Colors | — | ✅ | ✅ |
+| Orders management | — | ✅ | ✅ |
+| Reviews, Discounts, Banners | — | ✅ | ✅ |
+| Users list/view | — | ✅ | ✅ |
+| Site Settings (edit) | — | ❌ | ✅ |
+| User role management | — | ❌ | ✅ |
+
+---
+
+### Test Fixes ✅
+
+All 203 backend tests pass after this session.
+
+| File | Fix |
+|------|-----|
+| `payment.service.spec.ts` | Added `AppLoggerService` import + mock to providers |
+| `order.service.spec.ts` | Same fix |
+| `product.service.spec.ts` | Added `CategoryModel` and `ColorModel` mocks (ProductService injects all three) |
+| `admin.service.spec.ts` | Updated `promoteToAdmin` assertion to match new `{ role, isAdmin }` payload |
+| `user.service.spec.ts` | Updated `toggleActive` → `toggleBlock`; added `isBlocked` assertion |
+
+```
+Test Suites: 19 passed, 19 total
+Tests:       203 passed, 203 total
+```
+
+---
+
+### User List API Fix ✅
+
+Three bugs fixed in the admin users list:
+
+| Bug | Root Cause | Fix |
+|-----|-----------|-----|
+| «کاربری یافت نشد» despite 2 users | Backend returned `{ users, total }` but frontend read `data?.items` | Service now returns `{ items, total }` |
+| `isBlocked` missing from user objects | Schema stores `isActive: boolean`; frontend expected `isBlocked` | Service maps `isBlocked = !isActive` on every returned user |
+| Block/unblock call failed (404) | Frontend called `PATCH /users/:id/block` but backend had `toggle-active` | Renamed method to `toggleBlock`, endpoint to `/block` |
+
+Additionally:
+- `search` query param now filters by phone/firstName/lastName regex
+- `isBlocked=true/false` query param now filters by `isActive: false/true`
+- Users sorted by `createdAt: -1` (newest first)
+
+---
+
 ## GitHub
 
 Repository: `https://github.com/sabervalimohamadi/storein-glasses.git`  
 Branch: `master`  
-Latest commit: `f95627d` — Add complete logging system across all three projects
+Latest commit: `ec7d702` — Add banner/settings modules, three-tier RBAC, and fix user list API
