@@ -237,19 +237,24 @@
               <div class="flex gap-2">
                 <input
                   v-model="couponCode"
-                  class="form-input flex-1"
+                  class="form-input flex-1 uppercase tracking-widest"
                   dir="ltr"
                   placeholder="کد تخفیف (اختیاری)"
-                  :disabled="couponApplied"
+                  :disabled="couponApplied || checkingCoupon"
                   @keydown.enter="applyCoupon"
+                  @input="couponMessage = ''; couponError = false"
                 />
                 <button
                   v-if="!couponApplied"
                   @click="applyCoupon"
                   :disabled="!couponCode.trim() || checkingCoupon"
-                  class="px-4 py-2.5 rounded-xl border border-brand text-brand text-sm font-medium hover:bg-brand hover:text-white transition-colors disabled:opacity-40"
+                  class="px-4 py-2.5 rounded-xl border border-brand text-brand text-sm font-medium hover:bg-brand hover:text-white transition-colors disabled:opacity-40 flex items-center gap-1.5 flex-shrink-0"
                 >
-                  {{ checkingCoupon ? '...' : 'اعمال' }}
+                  <svg v-if="checkingCoupon" class="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
+                  </svg>
+                  {{ checkingCoupon ? 'بررسی...' : 'اعمال' }}
                 </button>
                 <button
                   v-else
@@ -259,7 +264,8 @@
                   حذف
                 </button>
               </div>
-              <p v-if="couponMessage" :class="['text-xs font-medium', couponApplied ? 'text-success' : 'text-error']">
+              <p v-if="couponMessage" :class="['text-xs font-medium flex items-center gap-1', couponError ? 'text-error' : 'text-success']">
+                <span v-if="couponError">✕</span>
                 {{ couponMessage }}
               </p>
             </div>
@@ -513,6 +519,7 @@ import { useUiStore }      from '@/stores/ui.store'
 import { userService }     from '@/services/user.service'
 import { orderService }    from '@/services/order.service'
 import { paymentService }  from '@/services/payment.service'
+import { discountService } from '@/services/discount.service'
 import { formatPrice, formatNumber } from '@/utils/formatters'
 
 const router    = useRouter()
@@ -603,19 +610,51 @@ async function saveNewAddress() {
 const couponCode     = ref('')
 const couponApplied  = ref(false)
 const couponMessage  = ref('')
+const couponError    = ref(false)
 const checkingCoupon = ref(false)
+const discountAmount = ref(0)
 
-function applyCoupon() {
-  if (!couponCode.value.trim()) return
-  // Optimistic — real validation happens at order creation
-  couponApplied.value = true
-  couponMessage.value = 'کد تخفیف اعمال خواهد شد'
+async function applyCoupon() {
+  const code = couponCode.value.trim().toUpperCase()
+  if (!code) return
+
+  checkingCoupon.value = true
+  couponMessage.value  = ''
+  couponError.value    = false
+
+  try {
+    const { data } = await discountService.validate(code, cartStore.totalPrice)
+
+    if (data.isValid) {
+      couponApplied.value  = true
+      couponError.value    = false
+      discountAmount.value = data.discountAmount ?? 0
+      couponMessage.value  = data.discountAmount
+        ? `${formatPrice(data.discountAmount)} تخفیف اعمال شد ✓`
+        : 'کد تخفیف اعمال شد ✓'
+    } else {
+      couponApplied.value  = false
+      couponError.value    = true
+      discountAmount.value = 0
+      couponMessage.value  = data.message || 'کد تخفیف وجود ندارد'
+    }
+  } catch (err) {
+    couponApplied.value  = false
+    couponError.value    = true
+    discountAmount.value = 0
+    const msg = err?.response?.data?.message
+    couponMessage.value  = Array.isArray(msg) ? msg[0] : (msg || 'کد تخفیف معتبر نیست')
+  } finally {
+    checkingCoupon.value = false
+  }
 }
 
 function removeCoupon() {
-  couponCode.value    = ''
-  couponApplied.value = false
-  couponMessage.value = ''
+  couponCode.value     = ''
+  couponApplied.value  = false
+  couponMessage.value  = ''
+  couponError.value    = false
+  discountAmount.value = 0
 }
 
 // ── Order note ─────────────────────────────────────────────────

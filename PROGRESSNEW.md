@@ -2705,7 +2705,80 @@ theme: { ..., navbarBg: '', navbarBorder: '', footerBg: '', footerText: '', side
 
 ---
 
-## Current Project Status (2026-06-08)
+---
+
+## Session 6 — Checkout Coupon Validation Fix (2026-06-09)
+
+---
+
+### Coupon Code Real Validation ✅ (storein-front)
+
+**Problem:** وقتی کد تخفیف اشتباه وارد می‌شد هیچ خطایی نمایش داده نمی‌شد — هر کدی accept می‌شد.
+
+**Root cause:** `applyCoupon()` در `CheckoutView.vue` بدون هیچ API call، فقط `couponApplied = true` ست می‌کرد (optimistic بدون validation). پیام «کد تخفیف اعمال خواهد شد» برای همه کدها نمایش داده می‌شد.
+
+**New file — `storein-front/src/services/discount.service.js`:**
+```js
+export const discountService = {
+  validate: (code, cartTotal) => http.post('/discounts/validate', { code, cartTotal }),
+}
+```
+
+**Updated — `CheckoutView.vue`:**
+
+`applyCoupon` کاملاً بازنویسی شد — حالا `POST /discounts/validate` را با کد و مبلغ سبد خرید فراخوانی می‌کند:
+
+```js
+async function applyCoupon() {
+  const code = couponCode.value.trim().toUpperCase()
+  checkingCoupon.value = true
+  try {
+    const { data } = await discountService.validate(code, cartStore.totalPrice)
+    if (data.isValid) {
+      couponApplied.value  = true
+      couponError.value    = false
+      discountAmount.value = data.discountAmount ?? 0
+      couponMessage.value  = `${formatPrice(data.discountAmount)} تخفیف اعمال شد ✓`
+    } else {
+      couponError.value   = true
+      couponMessage.value = data.message || 'کد تخفیف وجود ندارد'
+    }
+  } catch (err) {
+    couponError.value   = true
+    couponMessage.value = err?.response?.data?.message || 'کد تخفیف معتبر نیست'
+  } finally {
+    checkingCoupon.value = false
+  }
+}
+```
+
+**پیام‌های error از backend (بدون تغییر در backend):**
+
+| حالت | پیام نمایش داده شده |
+|------|---------------------|
+| کد پیدا نشد | کد تخفیف وجود ندارد |
+| کد منقضی شده | کد تخفیف منقضی شده |
+| کمتر از حداقل خرید | حداقل مبلغ خرید X تومان است |
+| ظرفیت تمام شده | ظرفیت استفاده از این کد تمام شده |
+| قبلاً استفاده شده | قبلاً از این کد استفاده کرده‌اید |
+| کد معتبر | X تومان تخفیف اعمال شد ✓ |
+
+**سایر بهبودها در template:**
+- `couponError` ref جداگانه برای رنگ‌بندی پیام — قرمز برای خطا، سبز برای موفقیت
+- آیکون `✕` قرمز قبل از پیام خطا
+- `@input` روی input — پیام قبلی را هنگام تایپ مجدد پاک می‌کند
+- `uppercase + tracking-widest` روی input — کدها به صورت بزرگ نمایش داده می‌شوند
+- دکمه «اعمال» حین بررسی اسپینر + «بررسی...» نشان می‌دهد
+- `discountAmount` ref برای نگه‌داشتن مبلغ تخفیف دریافتی از API
+
+**Key decisions:**
+- Backend endpoint `POST /discounts/validate` یک read-only endpoint است — هیچ side effect ندارد (recordUsage فقط هنگام create order اتفاق می‌افتد)
+- `data.isValid` بررسی می‌شود نه HTTP status code — backend همیشه 200 برمی‌گرداند حتی برای کدهای invalid
+- `couponCode.value.trim().toUpperCase()` — ورودی کاربر normalize می‌شود قبل از ارسال به API
+
+---
+
+## Current Project Status (2026-06-09)
 
 ### Backend `storein/` — ✅ کامل
 
@@ -2750,9 +2823,9 @@ theme: { ..., navbarBg: '', navbarBorder: '', footerBg: '', footerText: '', side
 | `AddressesView` | `/user/addresses` | ✅ |
 | `BlogListView` | `/blog` | ✅ |
 | `BlogDetailView` | `/blog/:slug` | ✅ |
-| `CheckoutView` | `/checkout` | 🔲 Stub |
+| `CheckoutView` | `/checkout` | ✅ (address + review + payment + real coupon validation) |
 
-**Remaining:** `CheckoutView` — انتخاب آدرس + انتخاب روش پرداخت + ثبت سفارش.
+**Remaining:** `CheckoutView` — کامل شد. تنها view باقیمانده: هیچ.
 
 ---
 
