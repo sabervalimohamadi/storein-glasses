@@ -3429,3 +3429,88 @@ logger.error('useApi: execute failed', e, { message: error.value }, 'useApi')
 Repository: `https://github.com/sabervalimohamadi/storein-glasses.git`  
 Branch: `master`  
 Latest commit: `6cac650` — Fix coupon validation in checkout — real API call instead of optimistic accept
+
+---
+
+## Session 10 — BulkDiscountModal Redesign + Logs + Tests (2026-06-12)
+
+### `storein-admin/src/views/products/components/BulkDiscountModal.vue` ✅ — Redesign
+
+فایل از پایه بازطراحی شد (۴۰۲ → ~۴۵۰ خط).
+
+**تغییرات ساختاری:**
+- `watch` به `{ immediate: true }` تبدیل شد تا `initialProducts` هنگام mount اولیه نیز populate شود (bug fix)
+- `sliderFillPct` computed جدید برای درصد پر شدن slider: `${Math.round((discountPct / 90) * 100)}%`
+- `close()` function اضافه شد
+- `data-testid` روی `apply-btn`، `close-btn`، `pct-input`، `pct-slider`، `filter-search-btn`، `count-badge`، `clear-all-btn`
+
+**بهبودهای بصری:**
+| عنصر | تغییر |
+|------|-------|
+| Modal container | `box-shadow` سه لایه با glow اصلی `rgba(27,79,138,0.18)` |
+| Header icon badge | `linear-gradient(135deg, #1B4F8A, #3B6FBE)` + shadow glow |
+| Count badge | Gradient navy pill با pop animation |
+| Header accent line | Gradient از شفاف → navy → transparent |
+| Percentage box | Border glow + gradient text با `background-clip: text` هنگام active |
+| Range slider | Custom CSS با `--fill` property → gradient fill navy to `#3B6FBE` + styled thumb |
+| Preset buttons | Pill shape (`border-radius: 9999px`) با gradient active state + lift |
+| Summary card | `border-color` glow هنگام آماده بودن برای apply |
+| Product rows | Hover تint + `TransitionGroup` slide animations با `list-leave-active: position:absolute` |
+| Apply button | `linear-gradient(135deg, #1B4F8A, #3B6FBE)` + `box-shadow` glow + hover lift + active press |
+| Discount panel background | `linear-gradient(180deg, rgba(27,79,138,0.07), transparent)` |
+| Empty state | Dashed border `rgba(27,79,138,0.2)` + icon با opacity |
+| Filter results | `slide-down` Transition |
+| Modal enter | `scale(0.96) + translateY(8px) + opacity` |
+
+**لاگ‌های اضافه‌شده:**
+```js
+// watch — on open:
+logger.info('BulkDiscountModal opened', { initialCount }, 'BulkDiscountModal')
+
+// fetchFiltered catch:
+logger.error('BulkDiscountModal: fetchFiltered failed', err, { category, brand }, 'BulkDiscountModal')
+
+// apply — before API call:
+logger.info('BulkDiscountModal: applying discount', { productCount, discountPct }, 'BulkDiscountModal')
+
+// apply catch:
+logger.error('BulkDiscountModal: apply failed', err, { productCount, discountPct }, 'BulkDiscountModal')
+```
+
+---
+
+### `storein-admin/src/views/products/components/BulkDiscountModal.test.js` ✅ — جدید
+
+**19 تست** در ۷ دسته:
+
+| دسته | تست‌ها |
+|------|--------|
+| initialisation | renders when open، populates from initialProducts |
+| addSingle | no duplicate، adds new product |
+| removeProduct | removes by id |
+| addAllFiltered | only new products، clears filter state |
+| fetchFiltered | calls getAll with correct params، logs error on failure |
+| apply | calls bulkDiscount، emits applied، guard (empty list)، logs info، logs error، guard (pct > 90) |
+| close | emits `update:modelValue=false` via vm.close()، via close-btn click |
+| sliderFillPct | correct %، 0% edge case |
+
+**Mocks:** `productService`، `logger`، `useUiStore`، `formatters`
+
+**نکته مهم:** `{ immediate: true }` در watcher لازم بود تا تست‌هایی که با `initialProducts` mount می‌کنند، `targetProducts` را پر ببینند.
+
+---
+
+### `storein-admin/package.json` + `node_modules` ✅
+
+`npm install --save-dev vitest jsdom @vue/test-utils` اجرا شد — وابستگی‌های تست نصب شدند.
+
+---
+
+### خلاصه Session 10
+
+| آیتم | تعداد |
+|------|-------|
+| فایل‌های تغییریافته | 1 (BulkDiscountModal.vue) |
+| فایل‌های جدید | 1 (BulkDiscountModal.test.js) |
+| تست‌های جدید | 19 |
+| Bug fix | watcher immediate — initialProducts روی mount |
