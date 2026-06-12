@@ -29,13 +29,18 @@ import { ColorModule }  from './modules/color/color.module';
 import { BannerModule }   from './modules/banner/banner.module';
 import { SettingsModule } from './modules/settings/settings.module';
 import { BlogModule }     from './modules/blog/blog.module';
+import { PageModule }           from './modules/page/page.module';
+import { FrameAttributeModule } from './modules/frame-attribute/frame-attribute.module';
+import { PopupModule }          from './modules/popup/popup.module';
 import { LoggerModule }          from './common/logger/logger.module';
+import { GatewayModule }        from './common/gateway/gateway.module';
 import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
 import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middleware';
 
 @Module({
   imports: [
     LoggerModule,
+    GatewayModule,
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, redisConfig, jwtConfig, otpConfig, uploadConfig],
@@ -54,6 +59,12 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
         UPLOAD_DEST:          Joi.string().default('./uploads'),
         UPLOAD_MAX_FILE_SIZE: Joi.number().default(5242880),
         UPLOAD_BASE_URL:      Joi.string().default('http://localhost:3000'),
+        PAYMENT_GATEWAY:      Joi.string().valid('mock', 'zarinpal').default('mock'),
+        ZARINPAL_MERCHANT_ID: Joi.string().optional().allow(''),
+        SMS_PROVIDER:            Joi.string().valid('mock', 'kavenegar').default('mock'),
+        KAVENEGAR_API_KEY:       Joi.string().optional().allow(''),
+        KAVENEGAR_SENDER:        Joi.string().optional().allow(''),
+        KAVENEGAR_OTP_TEMPLATE:  Joi.string().optional().allow(''),
       }),
     }),
     EventEmitterModule.forRoot({
@@ -86,6 +97,9 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     BannerModule,
     SettingsModule,
     BlogModule,
+    PageModule,
+    FrameAttributeModule,
+    PopupModule,
   ],
 })
 export class AppModule implements NestModule {

@@ -53,12 +53,12 @@
             <div class="flex justify-between">
               <dt class="text-text-secondary">نام:</dt>
               <dd class="font-medium text-text-primary">
-                {{ order.user?.firstName }} {{ order.user?.lastName }}
+                {{ order.userId?.firstName }} {{ order.userId?.lastName }}
               </dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-text-secondary">تلفن:</dt>
-              <dd class="font-fanum font-medium" dir="ltr">{{ order.user?.phone }}</dd>
+              <dd class="font-fanum font-medium" dir="ltr">{{ order.userId?.phone }}</dd>
             </div>
             <div class="flex justify-between">
               <dt class="text-text-secondary">روش پرداخت:</dt>
@@ -105,22 +105,25 @@
         <div class="text-sm text-text-secondary leading-7">
           <p>
             <span class="font-medium text-text-primary">
-              {{ order.address?.province }}، {{ order.address?.city }}
+              {{ order.shippingAddress?.province }}، {{ order.shippingAddress?.city }}
             </span>
-            — {{ order.address?.street }}
+            — {{ order.shippingAddress?.street }}
+          </p>
+          <p v-if="order.shippingAddress?.detail" class="text-text-secondary">
+            {{ order.shippingAddress.detail }}
           </p>
           <p class="mt-1 flex flex-wrap gap-4">
             <span>
               کد پستی:
-              <span class="font-fanum font-medium text-text-primary" dir="ltr">{{ order.address?.postalCode }}</span>
+              <span class="font-fanum font-medium text-text-primary" dir="ltr">{{ order.shippingAddress?.postalCode }}</span>
             </span>
             <span>
               گیرنده:
-              <span class="font-medium text-text-primary">{{ order.address?.recipient }}</span>
+              <span class="font-medium text-text-primary">{{ order.shippingAddress?.recipientName }}</span>
             </span>
             <span>
               تلفن گیرنده:
-              <span class="font-fanum font-medium text-text-primary" dir="ltr">{{ order.address?.phone }}</span>
+              <span class="font-fanum font-medium text-text-primary" dir="ltr">{{ order.shippingAddress?.recipientPhone }}</span>
             </span>
           </p>
         </div>
@@ -135,22 +138,28 @@
         <div class="space-y-3">
           <div
             v-for="item in order.items"
-            :key="item.productId"
+            :key="item.variantId"
             class="flex items-center gap-4 py-3 border-b border-border last:border-none"
           >
             <img
-              :src="item.image" :alt="item.name"
+              :src="item.thumbnail" :alt="item.name"
               class="w-14 h-14 rounded-xl object-contain border border-border bg-surface flex-shrink-0 p-1"
               @error="e => (e.target.style.opacity = '0')"
             />
             <div class="flex-1 min-w-0">
               <p class="font-medium text-text-primary text-sm truncate">{{ item.name }}</p>
-              <p class="text-text-secondary text-xs mt-0.5 font-fanum">
-                {{ formatPrice(item.price) }} × {{ item.quantity }} عدد
-              </p>
+              <div class="flex flex-wrap gap-2 mt-0.5">
+                <p class="text-text-secondary text-xs font-fanum">
+                  {{ formatPrice(item.price) }} × {{ item.quantity }} عدد
+                </p>
+                <span v-if="item.attributes?.length"
+                  class="text-xs text-text-disabled">
+                  ({{ item.attributes.map(a => a.value).join(' / ') }})
+                </span>
+              </div>
             </div>
             <span class="font-black text-text-primary font-fanum flex-shrink-0">
-              {{ formatPrice(item.totalPrice) }}
+              {{ formatPrice(item.price * item.quantity) }}
             </span>
           </div>
         </div>

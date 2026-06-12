@@ -55,13 +55,13 @@ export class AdminService {
       ]),
 
       this.orderModel.aggregate([
-        { $match: { status: OrderStatus.DELIVERED } },
+        { $match: { status: { $nin: [OrderStatus.PENDING, OrderStatus.CANCELLED] } } },
         { $group: { _id: null, total: { $sum: '$total' } } },
       ]),
       this.orderModel.aggregate([
         {
           $match: {
-            status:    OrderStatus.DELIVERED,
+            status:    { $nin: [OrderStatus.PENDING, OrderStatus.CANCELLED] },
             createdAt: { $gte: monthStart },
           },
         },
@@ -70,7 +70,7 @@ export class AdminService {
       this.orderModel.aggregate([
         {
           $match: {
-            status:    OrderStatus.DELIVERED,
+            status:    { $nin: [OrderStatus.PENDING, OrderStatus.CANCELLED] },
             createdAt: { $gte: todayStart },
           },
         },
@@ -127,7 +127,8 @@ export class AdminService {
     const result = await this.orderModel.aggregate([
       {
         $match: {
-          status:    OrderStatus.DELIVERED,
+          // سفارشات پرداخت‌شده: همه وضعیت‌ها به‌جز pending و cancelled
+          status:    { $nin: [OrderStatus.PENDING, OrderStatus.CANCELLED] },
           createdAt: { $gte: from, $lte: to },
         },
       },
@@ -139,6 +140,7 @@ export class AdminService {
             d: { $dayOfMonth:  '$createdAt' },
           },
           amount: { $sum: '$total' },
+          count:  { $sum: 1 },
         },
       },
       { $sort: { '_id.y': 1, '_id.m': 1, '_id.d': 1 } },
@@ -147,6 +149,7 @@ export class AdminService {
     const byDay = result.map((r: any) => ({
       date:   `${r._id.y}-${String(r._id.m).padStart(2, '0')}-${String(r._id.d).padStart(2, '0')}`,
       amount: r.amount,
+      count:  r.count,
     }));
 
     const total = byDay.reduce((s, d) => s + d.amount, 0);

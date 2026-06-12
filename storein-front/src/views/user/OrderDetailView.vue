@@ -40,9 +40,29 @@
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p class="text-xs text-text-secondary mb-1">شماره سفارش</p>
-            <p class="text-xl font-black text-text-primary font-fanum dir-ltr">
-              {{ order.orderNumber }}
-            </p>
+            <div class="flex items-center gap-2">
+              <p class="text-xl font-black text-text-primary font-fanum dir-ltr">
+                {{ order.orderNumber }}
+              </p>
+              <button
+                @click="copyOrderNumber(order.orderNumber)"
+                :title="copied ? 'کپی شد!' : 'کپی کد سفارش'"
+                :class="[
+                  'w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0',
+                  copied
+                    ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                    : 'bg-surface text-text-secondary hover:bg-primary/10 hover:text-primary border border-border',
+                ]"
+              >
+                <svg v-if="!copied" class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                </svg>
+                <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                </svg>
+              </button>
+            </div>
             <p class="text-sm text-text-secondary mt-1">
               ثبت شده در {{ formatDate(order.createdAt) }}
             </p>
@@ -238,6 +258,14 @@ const router = useRouter()
 const ui     = useUiStore()
 
 const order            = ref(null)
+const copied           = ref(false)
+
+function copyOrderNumber(text) {
+  navigator.clipboard.writeText(text).then(() => {
+    copied.value = true
+    setTimeout(() => { copied.value = false }, 2000)
+  })
+}
 const loading          = ref(true)
 const confirmingCancel = ref(false)
 const cancelling       = ref(false)
@@ -305,5 +333,5 @@ onMounted(fetchOrder)
 </script>
 
 <style scoped>
-.dir-ltr { direction: ltr; display: inline; }
+.dir-ltr { direction: ltr; unicode-bidi: embed; }
 </style>

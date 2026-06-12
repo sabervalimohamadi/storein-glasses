@@ -17,13 +17,13 @@ export class Review {
   @Prop({ type: Types.ObjectId, ref: 'Product', required: true, index: true })
   productId: Types.ObjectId;
 
-  @Prop({ type: Types.ObjectId, ref: 'Order', required: true })
-  orderId: Types.ObjectId;
+  @Prop({ type: Types.ObjectId, ref: 'Order', default: null })
+  orderId: Types.ObjectId | null;
 
   @Prop({ required: true, min: 1, max: 5 })
   rating: number;
 
-  @Prop({ required: true, trim: true, minlength: 10, maxlength: 100 })
+  @Prop({ trim: true, minlength: 2, maxlength: 100, default: '' })
   title: string;
 
   @Prop({ required: true, trim: true, minlength: 20, maxlength: 1000 })

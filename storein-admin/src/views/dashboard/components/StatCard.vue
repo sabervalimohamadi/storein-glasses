@@ -1,13 +1,20 @@
 <template>
-  <div class="admin-card flex items-start gap-4 hover:shadow-md transition-shadow duration-200">
+  <component
+    :is="to ? 'RouterLink' : 'div'"
+    :to="to"
+    :class="[
+      'admin-card flex items-start gap-4 transition-all duration-200',
+      to ? 'hover:shadow-md hover:border-primary/40 cursor-pointer group' : 'hover:shadow-md',
+    ]"
+  >
 
     <!-- Icon circle -->
-    <div :class="['w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl', iconBg]">
+    <div :class="['w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 text-2xl transition-transform', iconBg, to ? 'group-hover:scale-110' : '']">
       {{ icon }}
     </div>
 
     <!-- Content -->
-    <div class="flex-1 min-w-0">
+    <div class="flex-1 min-w-0 pt-0.5">
 
       <template v-if="loading">
         <AdminSkeleton height="1rem" width="60%" class="mb-2" />
@@ -18,7 +25,7 @@
       <template v-else>
         <p class="text-text-secondary text-sm mb-1">{{ title }}</p>
 
-        <p class="text-2xl font-black text-text-primary font-fanum leading-none mb-1 truncate">
+        <p class="text-2xl font-black text-text-primary font-fanum leading-tight mb-1 truncate">
           {{ value }}
         </p>
 
@@ -41,7 +48,7 @@
         </div>
       </template>
     </div>
-  </div>
+  </component>
 </template>
 
 <script setup>
@@ -57,6 +64,7 @@ const props = defineProps({
   color:    { type: String, default: 'blue' },
   loading:  { type: Boolean, default: false },
   trend:    { type: Number, default: null },
+  to:       { type: [String, Object], default: null },
 })
 
 const iconBg = computed(() => ({

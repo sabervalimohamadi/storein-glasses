@@ -1,45 +1,47 @@
 <template>
   <!-- Skeleton -->
-  <div v-if="loading" class="rounded-xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
+  <div v-if="loading" class="rounded-2xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
     <BaseSkeleton height="200px" class="rounded-none" />
-    <div class="p-3 space-y-2">
-      <BaseSkeleton height="1rem" />
-      <BaseSkeleton height="1rem" width="70%" />
-      <BaseSkeleton height="0.75rem" width="45%" />
-      <BaseSkeleton height="2.25rem" class="mt-2" />
+    <div class="p-4 space-y-3">
+      <BaseSkeleton height="1.1rem" />
+      <BaseSkeleton height="1.1rem" width="70%" />
+      <BaseSkeleton height="0.85rem" width="45%" />
+      <BaseSkeleton height="2.5rem" class="mt-3" />
     </div>
   </div>
 
   <!-- Product card -->
   <article
     v-else
-    class="rounded-xl shadow-card overflow-hidden cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all duration-200 group flex flex-col"
+    class="rounded-2xl shadow-card overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col h-full"
     style="background-color: var(--color-card);"
     @click="handleClick"
   >
-    <!-- Image -->
-    <div class="aspect-square relative p-3 shrink-0" style="background-color: var(--color-bg);">
-      <!-- Heart: always visible, filled if in wishlist -->
+    <!-- Image area -->
+    <div
+      class="aspect-square relative shrink-0 overflow-hidden"
+      :class="featured ? '' : 'p-3'"
+      :style="featured ? 'background-color: #fff;' : 'background-color: var(--color-bg);'"
+    >
+
+      <!-- Wishlist: top-end (physically left in RTL) -->
       <button
         type="button"
-        :class="[
-          'absolute top-2 end-2 z-10 w-8 h-8 flex items-center justify-center rounded-full transition-all duration-200',
-          wishlist ? 'bg-red-50 opacity-100' : 'bg-white/80 opacity-0 group-hover:opacity-100 shadow-sm',
-        ]"
+        class="absolute top-2.5 end-2.5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 shadow-sm hover:scale-110 transition-transform duration-150"
         @click.stop="$emit('toggle-wish')"
         :title="wishlist ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
           :fill="wishlist ? 'currentColor' : 'none'"
-          stroke="currentColor" stroke-width="1.5"
-          :class="['w-4 h-4', wishlist ? 'text-red-500' : 'text-gray-500']"
+          stroke="currentColor" stroke-width="1.8"
+          :class="['w-4 h-4', wishlist ? 'text-red-500' : 'text-gray-400']"
         >
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z"/>
         </svg>
       </button>
 
-      <!-- Discount + New badges: top-start (right in RTL) -->
-      <div class="absolute top-2 start-2 z-10 flex flex-col gap-1">
+      <!-- Discount + New badges: top-start (physically right in RTL) -->
+      <div class="absolute top-2.5 start-2.5 z-10 flex flex-col gap-1">
         <BaseBadge v-if="discount > 0" variant="red" size="sm">{{ discount }}%</BaseBadge>
         <BaseBadge v-if="product.isNew" variant="navy" size="sm">جدید</BaseBadge>
       </div>
@@ -49,21 +51,36 @@
         :alt="product.name"
         class="w-full h-full object-contain"
         loading="lazy"
-        @error="imgSrc = placeholder"
+        @error="imgError = true"
       />
+
+      <!-- Color variant labels: bottom-start (right in RTL) — only in featured mode -->
+      <div v-if="featured && colorVariants.length" class="absolute bottom-2 start-2 z-10 flex flex-col gap-1 items-start">
+        <span
+          v-for="color in colorVariants.slice(0, 3)"
+          :key="color"
+          class="text-[11px] font-bold px-2 py-0.5 rounded-full text-white leading-tight"
+          style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px);"
+        >
+          {{ color }}
+        </span>
+      </div>
 
       <!-- Out of stock overlay -->
       <div v-if="product.totalStock === 0" class="absolute inset-0 bg-white/75 flex items-center justify-center">
-        <span class="text-text-secondary font-semibold text-sm px-3 py-1 bg-white rounded-full shadow-sm">ناموجود</span>
+        <span class="text-gray-700 font-semibold text-sm px-3 py-1.5 bg-white rounded-full shadow-sm">ناموجود</span>
       </div>
     </div>
 
     <!-- Body -->
-    <div class="p-3 flex flex-col gap-1.5 flex-1">
-      <h3 class="text-sm font-medium text-text-primary line-clamp-2 leading-relaxed" style="min-height: 2.5rem">
+    <div class="p-4 flex flex-col gap-2 flex-1">
+
+      <!-- Name -->
+      <h3 class="text-sm font-bold text-text-primary line-clamp-2 leading-relaxed" style="min-height: 2.75rem">
         {{ product.name }}
       </h3>
 
+      <!-- Rating -->
       <BaseRating
         v-if="product.avgRating"
         :model-value="product.avgRating"
@@ -74,63 +91,110 @@
       />
 
       <!-- Price block -->
-      <div class="mt-auto pt-1">
-        <div v-if="discount > 0" class="flex items-center gap-2 mb-0.5">
-          <span class="text-xs text-text-secondary line-through font-fanum">{{ formatPrice(product.comparePrice) }}</span>
+      <div class="mt-auto pt-1 space-y-1">
+        <div v-if="discount > 0" class="flex items-center justify-between gap-1">
+          <span class="text-xs text-text-secondary line-through font-fanum">
+            {{ formatPrice(maxComparePrice) }}
+          </span>
           <BaseBadge variant="red" size="sm">{{ discount }}%</BaseBadge>
         </div>
-        <span class="text-base font-bold text-text-primary font-fanum">{{ formatPrice(product.minPrice) }}</span>
+        <p class="text-base font-bold text-text-primary text-right font-fanum">
+          {{ formatPrice(product.minPrice) }}
+        </p>
       </div>
 
-      <BaseButton
-        block
-        size="sm"
-        class="mt-2"
+      <!-- Add to cart / In cart -->
+      <button
+        type="button"
+        class="mt-2 w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+        :style="isInCart
+          ? 'background: linear-gradient(135deg, #22c55e, #16a34a);'
+          : 'background: linear-gradient(135deg, #a855f7, #7c3aed);'"
         :disabled="product.totalStock === 0"
-        @click.stop="$emit('add-to-cart')"
+        @click.stop="isInCart ? goToCart() : $emit('add-to-cart')"
       >
-        + افزودن به سبد
-      </BaseButton>
+        <svg v-if="isInCart" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>
+        </svg>
+        {{ isInCart ? 'در سبد خرید' : '+ افزودن به سبد' }}
+      </button>
+
     </div>
   </article>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import BaseSkeleton from './BaseSkeleton.vue'
 import BaseBadge    from './BaseBadge.vue'
 import BaseRating   from './BaseRating.vue'
-import BaseButton   from './BaseButton.vue'
 import { formatPrice } from '@/utils/formatters'
 import { PRODUCT_PLACEHOLDER } from '@/utils/constants'
+import { useCartStore } from '@/stores/cart.store'
 
 const props = defineProps({
-  product: { type: Object, default: () => ({}) },
-  loading: { type: Boolean, default: false },
+  product:  { type: Object,  default: () => ({}) },
+  loading:  { type: Boolean, default: false },
   wishlist: { type: Boolean, default: false },
+  featured: { type: Boolean, default: false },
 })
 
 defineEmits(['click', 'add-to-cart', 'toggle-wish'])
 
-const router = useRouter()
+const router    = useRouter()
+const cartStore = useCartStore()
 
-const placeholder = PRODUCT_PLACEHOLDER
+const isInCart = computed(() =>
+  cartStore.items.some(item => item.productId === props.product._id)
+)
 
-const imgSrc = ref((() => {
-  if (props.product.thumbnail) return props.product.thumbnail
-  const img = props.product.images?.[0]
+function goToCart() {
+  router.push({ name: 'cart' })
+}
+
+const imgError = ref(false)
+
+function resolveImg(p) {
+  if (p.thumbnail) return p.thumbnail
+  const img = p.images?.[0]
   if (!img) return PRODUCT_PLACEHOLDER
   if (typeof img === 'string') return img
   return img.thumbnail || img.url || PRODUCT_PLACEHOLDER
-})())
+}
+
+const imgSrc = computed(() => imgError.value ? PRODUCT_PLACEHOLDER : resolveImg(props.product))
+
+watch(() => props.product?._id, () => { imgError.value = false })
+
+// Unique color variant names (max 3 shown)
+const colorVariants = computed(() => {
+  const seen = new Set()
+  const result = []
+  for (const v of props.product.variants ?? []) {
+    if (v.isActive === false) continue
+    const colorAttr = (v.attributes ?? []).find(a => a.key === 'رنگ')
+    if (colorAttr?.value && !seen.has(colorAttr.value)) {
+      seen.add(colorAttr.value)
+      result.push(colorAttr.value)
+    }
+  }
+  return result
+})
+
+const maxComparePrice = computed(() => {
+  return Math.max(
+    0,
+    ...(props.product.variants ?? [])
+      .filter(v => v.comparePrice > 0 && v.isActive !== false)
+      .map(v => v.comparePrice),
+  )
+})
 
 const discount = computed(() => {
-  const { minPrice, comparePrice } = props.product
-  if (comparePrice && comparePrice > minPrice && minPrice > 0) {
-    return Math.round((1 - minPrice / comparePrice) * 100)
-  }
-  return 0
+  const { minPrice } = props.product
+  if (!minPrice || maxComparePrice.value <= minPrice) return 0
+  return Math.round((1 - minPrice / maxComparePrice.value) * 100)
 })
 
 function handleClick() {

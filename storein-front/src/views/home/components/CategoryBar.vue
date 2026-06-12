@@ -1,6 +1,7 @@
 <template>
   <section class="py-5">
-    <div class="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+    <div class="overflow-x-auto scrollbar-hide">
+      <div class="flex gap-4 px-1 py-3">
       <RouterLink
         v-for="item in items"
         :key="item.slug"
@@ -8,7 +9,7 @@
         class="flex flex-col items-center gap-2 min-w-[72px] group cursor-pointer flex-shrink-0"
       >
         <div
-          class="w-16 h-16 rounded-full flex items-center justify-center transition-transform duration-200 group-hover:scale-110 group-hover:shadow-md"
+          class="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200 group-hover:-translate-y-1.5 group-hover:shadow-lg"
           :style="{ backgroundColor: item.color }"
         >
           <svg
@@ -74,6 +75,7 @@
           {{ item.label }}
         </span>
       </RouterLink>
+      </div>
     </div>
   </section>
 </template>

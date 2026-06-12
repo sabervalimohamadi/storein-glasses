@@ -33,6 +33,9 @@ export class Category {
   @Prop({ default: 0 })
   sortOrder: number;
 
+  @Prop({ enum: ['', 'men', 'women', 'kids', 'unisex'], default: '' })
+  gender: string;
+
   @Prop({ default: true, index: true })
   isActive: boolean;
 }

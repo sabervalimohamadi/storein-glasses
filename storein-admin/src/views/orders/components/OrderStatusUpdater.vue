@@ -3,7 +3,7 @@
     <h3 class="section-title mb-4">تغییر وضعیت سفارش</h3>
 
     <!-- Visual stepper (excludes cancelled) -->
-    <div class="flex items-center mb-5 overflow-x-auto pb-1 scrollbar-hide">
+    <div class="flex items-center mb-5 overflow-x-auto py-2 scrollbar-hide">
       <template v-for="(step, idx) in statusSteps" :key="step.value">
         <div class="flex flex-col items-center flex-shrink-0">
           <div :class="[

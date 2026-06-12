@@ -51,6 +51,7 @@
         />
       </div>
 
+
       <!-- ② Tabs -->
       <ProductTabs
         :product="product"

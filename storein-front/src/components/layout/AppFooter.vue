@@ -191,8 +191,8 @@ const trustBadges = [
   background-color: rgba(255, 255, 255, 0.08) !important;
 }
 .site-footer :deep(.bg-gray-800:hover) {
-  background-color: var(--color-footer-text) !important;
-  opacity: 0.15;
+  background-color: var(--color-brand) !important;
+  opacity: 1;
 }
 
 /* Dividers */

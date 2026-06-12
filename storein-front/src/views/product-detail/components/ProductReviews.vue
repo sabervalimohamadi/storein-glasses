@@ -40,6 +40,18 @@
     <!-- Review form -->
     <ReviewForm :product-id="productId" @submitted="onReviewSubmitted" />
 
+    <!-- Pending review notice -->
+    <div v-if="myPending"
+         class="flex items-start gap-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4 mb-4">
+      <svg class="w-5 h-5 text-yellow-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+      </svg>
+      <div>
+        <p class="text-sm font-medium text-yellow-800 dark:text-yellow-200">نظر شما در انتظار تأیید است</p>
+        <p class="text-xs text-yellow-700 dark:text-yellow-300 mt-1 line-clamp-2">{{ myPending.body }}</p>
+      </div>
+    </div>
+
     <!-- List header -->
     <div class="flex items-center justify-between mb-4">
       <h3 class="font-bold text-text-primary">نظرات کاربران</h3>
@@ -76,7 +88,6 @@
         v-for="review in reviews"
         :key="review._id"
         :review="review"
-        @helpful="markHelpful"
       />
 
       <!-- Empty state -->
@@ -98,6 +109,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
+import { useAuthStore }  from '@/stores/auth.store'
 import { reviewService } from '@/services/review.service'
 import { formatNumber }  from '@/utils/formatters'
 import BaseRating   from '@/components/common/BaseRating.vue'
@@ -112,11 +124,24 @@ const props = defineProps({
   loading:   { type: Boolean, default: false },
 })
 
+const authStore   = useAuthStore()
 const reviews     = ref([])
 const page        = ref(1)
 const hasMore     = ref(false)
 const loadingMore = ref(false)
 const sortBy      = ref('createdAt')
+const myPending   = ref(null)
+
+async function fetchMyPending() {
+  if (!authStore.isLoggedIn || !props.productId) return
+  try {
+    const { data } = await reviewService.getMyReviews({ page: 1, limit: 50 })
+    const found = (data.reviews ?? data.items ?? []).find(
+      r => (r.productId?._id ?? r.productId) === props.productId && r.status === 'pending'
+    )
+    myPending.value = found ?? null
+  } catch { /* silent */ }
+}
 
 async function fetchReviews(reset = false) {
   if (reset) { page.value = 1; reviews.value = [] }
@@ -145,17 +170,16 @@ async function loadMore() {
   finally { loadingMore.value = false }
 }
 
-async function markHelpful(id) {
-  try { await reviewService.markHelpful(id) }
-  catch { /* silent */ }
-}
 
-function onReviewSubmitted() { fetchReviews(true) }
+function onReviewSubmitted() {
+  fetchReviews(true)
+  fetchMyPending()
+}
 
 function barWidth(star) {
   const total = props.stats?.reviewCount || 1
   return Math.round(((props.stats?.distribution?.[star] || 0) / total) * 100)
 }
 
-onMounted(() => fetchReviews(true))
+onMounted(() => { fetchReviews(true); fetchMyPending() })
 </script>

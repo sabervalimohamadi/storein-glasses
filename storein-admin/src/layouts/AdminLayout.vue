@@ -29,13 +29,20 @@
 </template>
 
 <script setup>
+import { onMounted }  from 'vue'
 import { useRoute }   from 'vue-router'
 import { useUiStore } from '@/stores/ui.store'
 import AdminSidebar   from '@/components/layout/AdminSidebar.vue'
 import AdminHeader    from '@/components/layout/AdminHeader.vue'
+import { useRealtimeNotifications } from '@/composables/useRealtimeNotifications'
+import { useAdminTheme }             from '@/composables/useAdminTheme'
 
 const route = useRoute()
 const ui    = useUiStore()
+
+useRealtimeNotifications()
+const { init: initTheme } = useAdminTheme()
+onMounted(initTheme)
 </script>
 
 <style scoped>

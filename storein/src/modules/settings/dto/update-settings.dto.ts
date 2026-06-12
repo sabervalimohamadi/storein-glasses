@@ -1,5 +1,5 @@
 import {
-  IsString, IsOptional, MaxLength,
+  IsString, IsOptional, IsBoolean, MaxLength,
   IsEmail, ValidateNested, IsArray, Matches, IsIn,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -21,6 +21,46 @@ class FooterLinkDto {
 const HEX_OR_EMPTY = /^(#[0-9A-Fa-f]{6})?$/;
 const HEX_MSG      = { message: 'رنگ باید فرمت hex معتبر داشته باشد (#RRGGBB)' };
 
+class SmsSettingsDto {
+  @IsOptional() @IsIn(['mock', 'kavenegar'])
+  provider?: string;
+
+  @IsOptional() @IsString() @MaxLength(64)
+  kavenegarApiKey?: string;
+
+  @IsOptional() @IsString() @MaxLength(20)
+  kavenegarSender?: string;
+
+  @IsOptional() @IsString() @MaxLength(50)
+  kavenegarOtpTemplate?: string;
+}
+
+class AnnouncementBarDto {
+  @IsOptional() @IsBoolean()                  isActive?:  boolean;
+  @IsOptional() @IsString() @MaxLength(200)   text?:      string;
+  @IsOptional() @IsString() @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'رنگ باید hex باشد' }) bgColor?:   string;
+  @IsOptional() @IsString() @Matches(/^#[0-9A-Fa-f]{6}$/, { message: 'رنگ باید hex باشد' }) textColor?: string;
+  @IsOptional() @IsString() @MaxLength(200)   link?:      string;
+}
+
+class TrustItemDto {
+  @IsOptional() @IsString() @MaxLength(10)  icon?:     string;
+  @IsOptional() @IsString() @MaxLength(60)  title?:    string;
+  @IsOptional() @IsString() @MaxLength(120) subtitle?: string;
+  @IsOptional() @IsString() @MaxLength(20)  bgColor?:  string;
+}
+
+class PaymentSettingsDto {
+  @IsOptional() @IsIn(['mock', 'zarinpal'])
+  gateway?: string;
+
+  @IsOptional() @IsString() @MaxLength(50)
+  zarinpalMerchantId?: string;
+
+  @IsOptional() @IsBoolean()
+  zarinpalSandbox?: boolean;
+}
+
 class ThemeDto {
   @IsOptional() @IsString() @MaxLength(30)
   preset?: string;
@@ -32,11 +72,18 @@ class ThemeDto {
   @IsOptional() @IsIn(['light', 'dark', 'system'])
   defaultMode?: string;
 
-  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBg?:     string;
-  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBorder?: string;
-  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerBg?:     string;
-  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerText?:   string;
-  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) sidebarBg?:    string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBg?:         string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBorder?:     string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerBg?:         string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerText?:       string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) sidebarBg?:        string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) pageBg?:           string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBgDark?:     string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) navbarBorderDark?: string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerBgDark?:     string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) footerTextDark?:   string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) sidebarBgDark?:    string;
+  @IsOptional() @IsString() @Matches(HEX_OR_EMPTY, HEX_MSG) pageBgDark?:       string;
 }
 
 export class UpdateSettingsDto {
@@ -70,4 +117,20 @@ export class UpdateSettingsDto {
   // Theme
   @IsOptional() @ValidateNested() @Type(() => ThemeDto)
   theme?: ThemeDto;
+
+  // Payment
+  @IsOptional() @ValidateNested() @Type(() => PaymentSettingsDto)
+  payment?: PaymentSettingsDto;
+
+  // SMS
+  @IsOptional() @ValidateNested() @Type(() => SmsSettingsDto)
+  sms?: SmsSettingsDto;
+
+  // Trust badges
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => TrustItemDto)
+  trustItems?: TrustItemDto[];
+
+  // Announcement bar
+  @IsOptional() @ValidateNested() @Type(() => AnnouncementBarDto)
+  announcementBar?: AnnouncementBarDto;
 }

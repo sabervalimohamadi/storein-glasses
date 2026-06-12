@@ -114,19 +114,19 @@
       </div>
 
       <!-- Start date -->
-      <div>
-        <label class="field-label">تاریخ شروع (اختیاری)</label>
-        <input v-model="form.startDate" type="date"
-          class="field-input text-sm" dir="ltr" />
-      </div>
+      <AdminDatePicker
+        v-model="form.startDate"
+        label="تاریخ شروع (اختیاری)"
+        placeholder="انتخاب تاریخ شروع"
+      />
 
       <!-- End date -->
-      <div>
-        <label class="field-label">تاریخ انقضا (اختیاری)</label>
-        <input v-model="form.endDate" type="date"
-          class="field-input text-sm" dir="ltr" />
-        <p v-if="errors.endDate" class="field-error">{{ errors.endDate }}</p>
-      </div>
+      <AdminDatePicker
+        v-model="form.endDate"
+        label="تاریخ انقضا (اختیاری)"
+        placeholder="انتخاب تاریخ انقضا"
+        :error="errors.endDate"
+      />
 
       <!-- isActive toggle -->
       <div class="sm:col-span-2 flex items-center gap-3 pt-2">
@@ -168,9 +168,10 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { discountService } from '@/services/discount.service'
 import { useUiStore }      from '@/stores/ui.store'
-import AdminModal  from '@/components/common/AdminModal.vue'
-import AdminInput  from '@/components/common/AdminInput.vue'
-import AdminButton from '@/components/common/AdminButton.vue'
+import AdminModal      from '@/components/common/AdminModal.vue'
+import AdminInput      from '@/components/common/AdminInput.vue'
+import AdminButton     from '@/components/common/AdminButton.vue'
+import AdminDatePicker from '@/components/common/AdminDatePicker.vue'
 
 const props = defineProps({
   modelValue: Boolean,

@@ -11,10 +11,13 @@ import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
 import { Review, ReviewDocument, ReviewStatus } from './entities/review.schema';
 import { Product, ProductDocument } from '../product/entities/product.schema';
-import { Order, OrderDocument } from '../order/entities/order.schema';
+import { Order, OrderDocument, OrderStatus } from '../order/entities/order.schema';
+import { User, UserDocument }       from '../user/entities/user.schema';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewStatusDto } from './dto/update-review-status.dto';
 import { ReviewQueryDto } from './dto/review-query.dto';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 const helpfulKey = (reviewId: string) => `review:helpful:${reviewId}`;
 
@@ -24,18 +27,21 @@ export class ReviewService {
     @InjectModel(Review.name)   private reviewModel: Model<ReviewDocument>,
     @InjectModel(Product.name)  private productModel: Model<ProductDocument>,
     @InjectModel(Order.name)    private orderModel: Model<OrderDocument>,
+    @InjectModel(User.name)     private userModel: Model<UserDocument>,
     @Inject(REDIS_CLIENT)       private redis: Redis,
-  ) {}
+    private readonly gateway: NotificationsGateway,
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('ReviewService');
+  }
 
   async create(userId: string, dto: CreateReviewDto): Promise<ReviewDocument> {
+    // Find any delivered order containing this product for this user
     const order = await this.orderModel.findOne({
-      _id:               new Types.ObjectId(dto.orderId),
       userId:            new Types.ObjectId(userId),
       'items.productId': new Types.ObjectId(dto.productId),
+      status:            OrderStatus.DELIVERED,
     }).lean<OrderDocument>();
-
-    if (!order)
-      throw new BadRequestException('فقط پس از خرید محصول می‌توانید نظر ثبت کنید');
 
     const existing = await this.reviewModel.findOne({
       userId:    new Types.ObjectId(userId),
@@ -49,21 +55,43 @@ export class ReviewService {
       ...dto,
       userId:             new Types.ObjectId(userId),
       productId:          new Types.ObjectId(dto.productId),
-      orderId:            new Types.ObjectId(dto.orderId),
-      isVerifiedPurchase: true,
+      orderId:            order?._id ?? null,
+      isVerifiedPurchase: !!order,
       status:             ReviewStatus.PENDING,
+    });
+
+    // Fire-and-forget: fetch names for notification without blocking response
+    Promise.all([
+      this.productModel.findById(dto.productId).select('name').lean(),
+      this.userModel.findById(userId).select('firstName').lean<UserDocument>(),
+    ]).then(([product, user]) => {
+      this.gateway.emitNewReview({
+        reviewId:    (review._id as any).toString(),
+        productName: (product as any)?.name ?? 'محصول',
+        rating:      review.rating,
+        userName:    (user as UserDocument)?.firstName?.trim() || 'کاربر',
+        createdAt:   (review as any).createdAt?.toISOString() ?? new Date().toISOString(),
+      });
+    }).catch(() => { /* silent — notification is non-critical */ });
+
+    this.logger.log('Review created', {
+      reviewId:           (review._id as any).toString(),
+      userId,
+      productId:          dto.productId,
+      rating:             dto.rating,
+      isVerifiedPurchase: !!order,
     });
 
     return review.toObject();
   }
 
   async getProductReviews(query: ReviewQueryDto): Promise<{
-    reviews: ReviewDocument[];
+    items: ReviewDocument[];
     total: number;
     totalPages: number;
     stats: { avgRating: number; distribution: Record<number, number> };
   }> {
-    const { productId, rating, page = 1, limit = 10 } = query;
+    const { productId, rating, page = 1, limit = 10, sortBy = 'createdAt' } = query;
 
     const filter: Record<string, any> = { status: ReviewStatus.APPROVED };
     if (productId) filter.productId = new Types.ObjectId(productId);
@@ -71,11 +99,17 @@ export class ReviewService {
 
     const skip = (page - 1) * limit;
 
+    const sortMap: Record<string, Record<string, 1 | -1>> = {
+      createdAt: { createdAt: -1 },
+      rating:    { rating: -1, createdAt: -1 },
+      helpful:   { helpfulCount: -1, createdAt: -1 },
+    };
+
     const [reviews, total] = await Promise.all([
       this.reviewModel
         .find(filter)
         .select('-__v -adminNote')
-        .sort({ createdAt: -1 })
+        .sort(sortMap[sortBy] ?? { createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate('userId', 'firstName lastName')
@@ -106,7 +140,7 @@ export class ReviewService {
     );
     const avgRating = total5 ? Math.round((sum5 / total5) * 10) / 10 : 0;
 
-    return { reviews, total, totalPages: Math.ceil(total / limit), stats: { avgRating, distribution } };
+    return { items: reviews, total, totalPages: Math.ceil(total / limit), stats: { avgRating, distribution } };
   }
 
   async getMyReviews(userId: string, page = 1, limit = 10) {
@@ -150,7 +184,7 @@ export class ReviewService {
   }
 
   async adminFindAll(query: ReviewQueryDto): Promise<{
-    reviews: ReviewDocument[]; total: number; totalPages: number;
+    items: ReviewDocument[]; total: number; totalPages: number; pendingCount: number;
   }> {
     const { status, productId, page = 1, limit = 10 } = query;
     const filter: Record<string, any> = {};
@@ -159,7 +193,7 @@ export class ReviewService {
 
     const skip = (page - 1) * limit;
 
-    const [reviews, total] = await Promise.all([
+    const [items, total, pendingCount] = await Promise.all([
       this.reviewModel
         .find(filter)
         .select('-__v')
@@ -167,12 +201,13 @@ export class ReviewService {
         .skip(skip)
         .limit(limit)
         .populate('userId', 'phone firstName lastName')
-        .populate('productId', 'name slug')
+        .populate('productId', 'name slug thumbnail')
         .lean<ReviewDocument[]>(),
       this.reviewModel.countDocuments(filter),
+      this.reviewModel.countDocuments({ status: ReviewStatus.PENDING }),
     ]);
 
-    return { reviews, total, totalPages: Math.ceil(total / limit) };
+    return { items, total, totalPages: Math.ceil(total / limit), pendingCount };
   }
 
   async updateStatus(
@@ -195,6 +230,12 @@ export class ReviewService {
     if (dto.status === ReviewStatus.APPROVED) {
       await this.recalcProductRating(review.productId.toString());
     }
+
+    this.logger.log('Review status updated', {
+      reviewId,
+      status:    dto.status,
+      productId: review.productId.toString(),
+    });
 
     return review.toObject();
   }

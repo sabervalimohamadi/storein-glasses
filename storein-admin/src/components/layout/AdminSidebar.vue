@@ -5,7 +5,7 @@
     'transition-all duration-300 shadow-sidebar hidden lg:flex',
     ui.sidebarCollapsed ? 'w-16' : 'w-64',
   ]"
-  :style="sidebarBg ? { backgroundColor: sidebarBg } : {}"
+  :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
     <!-- Logo -->
     <div class="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
@@ -97,7 +97,7 @@
     'transition-transform duration-300 shadow-sidebar lg:hidden',
     ui.sidebarMobileOpen ? 'translate-x-0' : 'translate-x-full',
   ]"
-  :style="sidebarBg ? { backgroundColor: sidebarBg } : {}"
+  :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
     <div class="flex items-center justify-between gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
       <div class="flex items-center gap-3">
@@ -152,7 +152,8 @@ const route  = useRoute()
 const router = useRouter()
 const ui     = useUiStore()
 const auth   = useAuthStore()
-const { sidebarBg } = useAdminTheme()
+const { sidebarBg, sidebarBgDark } = useAdminTheme()
+const activeSidebarBg = computed(() => (ui.isDark && sidebarBgDark.value) ? sidebarBgDark.value : sidebarBg.value)
 
 function canAccess(perm) {
   if (auth.isAdmin) return true
@@ -171,11 +172,12 @@ const navGroups = computed(() => {
         { name: 'products',   perm: 'products',   icon: '📦', label: 'محصولات' },
         { name: 'categories', perm: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
         { name: 'brands',     perm: 'brands',     icon: '🔖', label: 'برندها' },
-        { name: 'colors',     perm: 'colors',     icon: '🎨', label: 'رنگ‌ها' },
+        { name: 'colors',     perm: 'colors',     icon: '✨', label: 'ویژگی‌های اختصاصی' },
         { name: 'banners',    perm: 'banners',    icon: '🖼', label: 'بنرها' },
         { name: 'orders',     perm: 'orders',     icon: '🛒', label: 'سفارشات' },
         { name: 'discounts',  perm: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
         { name: 'blog',       perm: 'blog',       icon: '📝', label: 'بلاگ' },
+        { name: 'pages',      perm: 'pages',      icon: '📄', label: 'صفحات' },
       ],
     },
     {
@@ -183,7 +185,11 @@ const navGroups = computed(() => {
       items: [
         { name: 'users',    perm: 'users',    icon: '👥', label: 'کاربران' },
         { name: 'reviews',  perm: 'reviews',  icon: '⭐', label: 'نظرات' },
-        ...(auth.isAdmin ? [{ name: 'settings', perm: null, icon: '⚙️', label: 'تنظیمات سایت' }] : []),
+        ...(auth.isAdmin ? [
+          { name: 'popups',   perm: null, icon: '🎯', label: 'پاپ‌آپ سایت' },
+          { name: 'settings', perm: null, icon: '⚙️', label: 'تنظیمات سایت' },
+          { name: 'theme',    perm: null, icon: '🎨', label: 'تم سایت' },
+        ] : []),
       ],
     },
   ]

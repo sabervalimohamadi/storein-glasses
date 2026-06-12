@@ -92,7 +92,7 @@
     <CategoryFormModal
       v-model="modalOpen"
       :category="editingCategory"
-      :parent-options="rootOptions"
+      :parent-options="allParentOptions"
       @saved="onSaved"
     />
 
@@ -165,9 +165,18 @@ const filteredRows = computed(() => {
     .map(c => ({ category: c, depth: c.parentId ? 1 : 0 }))
 })
 
-const rootOptions = computed(() =>
-  tree.value.map(c => ({ value: c._id, label: c.name }))
-)
+const allParentOptions = computed(() => {
+  const result = []
+  function walk(nodes, depth = 0) {
+    for (const n of nodes) {
+      const prefix = depth === 0 ? '' : ('　'.repeat(depth - 1) + '└ ')
+      result.push({ value: n._id, label: prefix + n.name })
+      if (n.children?.length) walk(n.children, depth + 1)
+    }
+  }
+  walk(tree.value)
+  return result
+})
 
 // ── Load ──────────────────────────────────────────
 async function loadTree() {

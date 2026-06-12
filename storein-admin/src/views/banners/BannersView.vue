@@ -58,7 +58,7 @@
     <!-- Banner list -->
     <div v-else class="space-y-3">
       <div
-        v-for="(banner, idx) in filteredBanners"
+        v-for="(banner, idx) in pagedBanners"
         :key="banner._id"
         draggable="true"
         @dragstart="onDragStart(idx)"
@@ -170,6 +170,7 @@
       <p class="text-center text-text-disabled text-xs pt-1">
         برای تغییر ترتیب، بنرها را بکشید — ترتیب بلافاصله ذخیره می‌شود
       </p>
+      <AdminPagination v-model="page" :total-pages="totalPages" :loading="loading" />
     </div>
 
     <!-- ── Create / Edit Modal ───────────────────────────────────────── -->
@@ -460,15 +461,16 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { bannerService } from '@/services/banner.service'
 import { uploadService } from '@/services/upload.service'
 import { useUiStore }    from '@/stores/ui.store'
-import AdminButton   from '@/components/common/AdminButton.vue'
-import AdminInput    from '@/components/common/AdminInput.vue'
-import AdminBadge    from '@/components/common/AdminBadge.vue'
-import AdminSkeleton from '@/components/common/AdminSkeleton.vue'
-import AdminConfirm  from '@/components/common/AdminConfirm.vue'
+import AdminButton     from '@/components/common/AdminButton.vue'
+import AdminInput      from '@/components/common/AdminInput.vue'
+import AdminBadge      from '@/components/common/AdminBadge.vue'
+import AdminSkeleton   from '@/components/common/AdminSkeleton.vue'
+import AdminConfirm    from '@/components/common/AdminConfirm.vue'
+import AdminPagination from '@/components/common/AdminPagination.vue'
 
 const ui = useUiStore()
 
@@ -487,6 +489,8 @@ const activeTab       = ref('hero')
 
 const draggingIdx = ref(null)
 const dragOverIdx = ref(null)
+const PER_PAGE    = 10
+const page        = ref(1)
 
 // ── Tabs ───────────────────────────────────────────────────
 const tabs = [
@@ -497,6 +501,13 @@ const tabs = [
 const filteredBanners = computed(() =>
   allBanners.value.filter(b => b.type === activeTab.value),
 )
+
+const totalPages   = computed(() => Math.ceil(filteredBanners.value.length / PER_PAGE))
+const pagedBanners = computed(() =>
+  filteredBanners.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE)
+)
+
+watch(activeTab, () => { page.value = 1 })
 
 function countByType(type) {
   return allBanners.value.filter(b => b.type === type).length
@@ -664,10 +675,15 @@ async function onDrop(targetIdx) {
     return
   }
 
+  // Convert local page indices to absolute indices within filteredBanners
+  const offset     = (page.value - 1) * PER_PAGE
+  const absFrom    = offset + fromIdx
+  const absTarget  = offset + targetIdx
+
   // Work on the filtered subset only
   const subset = [...filteredBanners.value]
-  const [moved] = subset.splice(fromIdx, 1)
-  subset.splice(targetIdx, 0, moved)
+  const [moved] = subset.splice(absFrom, 1)
+  subset.splice(absTarget, 0, moved)
 
   // Reflect new order back into allBanners
   const otherType  = activeTab.value === 'hero' ? 'promo' : 'hero'

@@ -230,6 +230,72 @@
         </div>
       </div>
 
+      <!-- User reviews -->
+      <div class="admin-card">
+        <div class="flex items-center justify-between mb-4">
+          <h3 class="section-title flex items-center gap-2">
+            <span>⭐</span> نظرات کاربر
+            <span class="text-text-disabled font-normal text-xs font-fanum">
+              ({{ reviewsTotal }})
+            </span>
+          </h3>
+        </div>
+
+        <!-- Empty -->
+        <div v-if="!reviewsLoading && userReviews.length === 0"
+             class="text-center py-8 text-text-disabled text-sm">
+          این کاربر هنوز نظری ثبت نکرده است
+        </div>
+
+        <!-- List -->
+        <div v-else class="space-y-3">
+          <div v-for="review in userReviews" :key="review._id"
+               class="p-4 rounded-xl border border-border bg-surface/40 text-sm">
+
+            <!-- Product + status -->
+            <div class="flex items-center justify-between gap-3 mb-2 flex-wrap">
+              <div class="flex items-center gap-3 min-w-0">
+                <img :src="review.productId?.thumbnail"
+                     class="w-9 h-9 rounded-lg object-contain border border-border bg-surface flex-shrink-0"
+                     @error="e => e.target.style.opacity='0'" />
+                <span class="font-medium text-text-primary truncate">
+                  {{ review.productId?.name ?? '—' }}
+                </span>
+              </div>
+              <div class="flex items-center gap-2 flex-shrink-0">
+                <!-- Stars -->
+                <span v-for="i in 5" :key="i"
+                  :class="i <= review.rating ? 'text-yellow-400' : 'text-gray-300'"
+                  class="text-sm leading-none">★</span>
+                <AdminBadge
+                  :variant="REVIEW_STATUSES[review.status]?.color ?? 'gray'"
+                  size="sm">
+                  {{ REVIEW_STATUSES[review.status]?.label ?? review.status }}
+                </AdminBadge>
+              </div>
+            </div>
+
+            <!-- Title + body -->
+            <p v-if="review.title" class="font-bold text-text-primary mb-1">
+              {{ review.title }}
+            </p>
+            <p class="text-text-secondary leading-6 line-clamp-3">{{ review.body }}</p>
+
+            <!-- Date + verified -->
+            <div class="flex items-center gap-3 mt-2 text-xs text-text-disabled">
+              <span class="font-fanum">{{ formatDate(review.createdAt) }}</span>
+              <span v-if="review.isVerifiedPurchase"
+                    class="flex items-center gap-1 text-success">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M5 13l4 4L19 7"/>
+                </svg>
+                خرید تأیید شده
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
     </template>
 
     <!-- 404 state -->
@@ -248,7 +314,7 @@ import { userService }  from '@/services/user.service'
 import { orderService } from '@/services/order.service'
 import { useUiStore }   from '@/stores/ui.store'
 import { formatPrice, formatNumber, formatDate } from '@/utils/formatters'
-import { ORDER_STATUSES } from '@/utils/constants'
+import { ORDER_STATUSES, REVIEW_STATUSES } from '@/utils/constants'
 
 import AdminBadge    from '@/components/common/AdminBadge.vue'
 import AdminButton   from '@/components/common/AdminButton.vue'
@@ -257,10 +323,13 @@ import AdminSkeleton from '@/components/common/AdminSkeleton.vue'
 const route = useRoute()
 const ui    = useUiStore()
 
-const user         = ref(null)
-const recentOrders = ref([])
-const loading      = ref(true)
-const blockLoading = ref(false)
+const user           = ref(null)
+const recentOrders   = ref([])
+const userReviews    = ref([])
+const reviewsTotal   = ref(0)
+const reviewsLoading = ref(false)
+const loading        = ref(true)
+const blockLoading   = ref(false)
 
 async function fetchUser() {
   loading.value = true
@@ -285,6 +354,17 @@ async function fetchRecentOrders() {
   } catch { /* non-critical */ }
 }
 
+async function fetchUserReviews() {
+  reviewsLoading.value = true
+  try {
+    const { data } = await userService.getReviews(route.params.id, { page: 1, limit: 20 })
+    userReviews.value  = data?.items ?? []
+    reviewsTotal.value = data?.total ?? 0
+  } catch { /* non-critical */ } finally {
+    reviewsLoading.value = false
+  }
+}
+
 async function toggleBlock() {
   if (!user.value) return
   blockLoading.value = true
@@ -302,6 +382,6 @@ async function toggleBlock() {
   }
 }
 
-onMounted(() => Promise.allSettled([fetchUser(), fetchRecentOrders()]))
+onMounted(() => Promise.allSettled([fetchUser(), fetchRecentOrders(), fetchUserReviews()]))
 onUnmounted(() => { document.title = 'استورین | پنل مدیریت' })
 </script>

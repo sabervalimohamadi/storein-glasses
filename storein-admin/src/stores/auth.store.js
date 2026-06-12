@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authService } from '@/services/auth.service'
+import { logger } from '@/utils/logger'
 
 export const useAuthStore = defineStore('auth', () => {
   const user         = ref(null)
@@ -27,6 +28,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authService.sendOtp(phone)
       pendingPhone.value = phone
+    } catch (error) {
+      logger.error('admin-auth: sendOtp failed', error, { phone: phone.slice(0, -4) + '****' }, 'AuthStore')
+      throw error
     } finally { loading.value = false }
   }
 
@@ -49,6 +53,9 @@ export const useAuthStore = defineStore('auth', () => {
       user.value         = profile
       pendingPhone.value = ''
       return data
+    } catch (error) {
+      logger.error('admin-auth: verifyOtp failed', error, {}, 'AuthStore')
+      throw error
     } finally { loading.value = false }
   }
 
@@ -58,15 +65,20 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await authService.getProfile()
       if (!hasAdminAccess(data)) { logout(); return }
       user.value = data
-    } catch { logout() }
+    } catch (error) {
+      logger.warn('admin-auth: fetchProfile failed, logging out', { error: error?.message }, 'AuthStore')
+      logout()
+    }
   }
 
-  function logout() {
+  async function logout() {
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
     localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_refresh_token')
+    const { socketService } = await import('@/services/socket.service')
+    socketService.disconnect()
   }
 
   return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, verifyOtp, fetchProfile, logout }

@@ -28,39 +28,83 @@
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.category" class="px-4 pb-3 space-y-2">
-          <label class="flex items-center gap-2 cursor-pointer group">
+        <div v-show="open.category" class="pb-3 space-y-0.5">
+          <label class="flex items-center gap-2 cursor-pointer group px-4 py-1">
             <input
               type="radio"
               :value="null"
               :checked="filters.category === null"
               @change="setFilter('category', null)"
-              class="w-4 h-4 accent-brand"
+              class="w-3.5 h-3.5 accent-brand flex-shrink-0"
             />
             <span class="text-sm text-text-primary group-hover:text-brand transition-colors">
               همه محصولات
             </span>
           </label>
+          <template v-for="cat in allCategories" :key="cat.slug || cat._id">
+            <label class="flex items-center gap-2 cursor-pointer group py-1"
+              :style="{ paddingRight: `${(cat.depth || 0) * 12 + 16}px`, paddingLeft: '16px' }">
+              <input
+                type="radio"
+                :value="cat.slug"
+                :checked="filters.category === cat.slug"
+                @change="setFilter('category', cat.slug)"
+                class="w-3.5 h-3.5 accent-brand flex-shrink-0"
+              />
+              <span class="text-sm group-hover:text-brand transition-colors"
+                :class="cat.depth > 0 ? 'text-text-secondary' : 'text-text-primary'">
+                {{ cat.name }}
+              </span>
+            </label>
+          </template>
+        </div>
+      </div>
+
+      <!-- ② Brand -->
+      <div v-if="brands.length" class="border-b border-surface-border">
+        <button
+          class="w-full flex items-center justify-between px-4 py-3
+                 text-sm font-medium text-text-primary hover:text-brand
+                 transition-colors duration-150"
+          @click="open.brand = !open.brand"
+        >
+          برند
+          <svg :class="['w-4 h-4 transition-transform duration-200', open.brand ? 'rotate-180' : '']"
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
+          </svg>
+        </button>
+        <div v-show="open.brand" class="pb-3 space-y-0.5">
+          <label class="flex items-center gap-2 cursor-pointer group px-4 py-1">
+            <input
+              type="radio"
+              :value="null"
+              :checked="!filters.brand"
+              @change="setFilter('brand', null)"
+              class="w-3.5 h-3.5 accent-brand flex-shrink-0"
+            />
+            <span class="text-sm text-text-primary group-hover:text-brand transition-colors">همه برندها</span>
+          </label>
           <label
-            v-for="cat in rootCategories"
-            :key="cat.slug || cat._id"
-            class="flex items-center gap-2 cursor-pointer group"
+            v-for="b in brands"
+            :key="b._id"
+            class="flex items-center gap-2 cursor-pointer group px-4 py-1"
           >
             <input
               type="radio"
-              :value="cat.slug"
-              :checked="filters.category === cat.slug"
-              @change="setFilter('category', cat.slug)"
-              class="w-4 h-4 accent-brand"
+              :value="b._id"
+              :checked="filters.brand === b._id"
+              @change="setFilter('brand', b._id)"
+              class="w-3.5 h-3.5 accent-brand flex-shrink-0"
             />
             <span class="text-sm text-text-primary group-hover:text-brand transition-colors">
-              {{ cat.name }}
+              {{ b.name }}
             </span>
           </label>
         </div>
       </div>
 
-      <!-- ② Gender -->
+      <!-- ③ Gender -->
       <div class="border-b border-surface-border">
         <button
           class="w-full flex items-center justify-between px-4 py-3
@@ -94,7 +138,7 @@
         </div>
       </div>
 
-      <!-- ③ Frame Shape -->
+      <!-- ④ Frame Shape -->
       <div class="border-b border-surface-border">
         <button
           class="w-full flex items-center justify-between px-4 py-3
@@ -127,7 +171,7 @@
         </div>
       </div>
 
-      <!-- ④ Frame Material -->
+      <!-- ⑤ Frame Material -->
       <div class="border-b border-surface-border">
         <button
           class="w-full flex items-center justify-between px-4 py-3
@@ -161,7 +205,7 @@
         </div>
       </div>
 
-      <!-- ⑤ Price Range -->
+      <!-- ⑥ Price Range -->
       <div class="border-b border-surface-border">
         <button
           class="w-full flex items-center justify-between px-4 py-3
@@ -207,7 +251,7 @@
         </div>
       </div>
 
-      <!-- ⑥ In Stock only -->
+      <!-- ⑦ In Stock only -->
       <div class="px-4 py-3">
         <label class="flex items-center gap-2 cursor-pointer">
           <input
@@ -232,6 +276,7 @@ import { formatNumber } from '@/utils/formatters'
 
 const props = defineProps({
   filters: { type: Object, required: true },
+  brands:  { type: Array,  default: () => [] },
 })
 const emit = defineEmits(['change'])
 
@@ -239,19 +284,21 @@ const categoryStore = useCategoryStore()
 
 const open = reactive({
   category:      true,
+  brand:         true,
   gender:        true,
   frameShape:    false,
   frameMaterial: false,
   price:         true,
 })
 
-const rootCategories = computed(() =>
-  categoryStore.categories.filter(c => !c.parentId || c.depth === 0)
+const allCategories = computed(() =>
+  [...categoryStore.categories].sort((a, b) => (a.depth || 0) - (b.depth || 0) || a.name.localeCompare(b.name, 'fa'))
 )
 
 const activeCount = computed(() => {
   let count = 0
   if (props.filters.category)               count++
+  if (props.filters.brand)                  count++
   if (props.filters.genders?.length)        count++
   if (props.filters.frameShapes?.length)    count++
   if (props.filters.frameMaterials?.length) count++
@@ -287,6 +334,7 @@ function onPriceInput(type, event) {
 
 function clearAll() {
   props.filters.category       = null
+  props.filters.brand          = null
   props.filters.genders        = []
   props.filters.frameShapes    = []
   props.filters.frameMaterials = []

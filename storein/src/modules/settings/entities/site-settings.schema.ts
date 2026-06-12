@@ -18,16 +18,71 @@ class ThemeSettings {
   @Prop({ default: 'light', enum: ['light', 'dark', 'system'] }) defaultMode: string;
 
   // Section colors — empty string means "use default"
-  @Prop({ default: '' }) navbarBg:     string;
-  @Prop({ default: '' }) navbarBorder: string;
-  @Prop({ default: '' }) footerBg:     string;
-  @Prop({ default: '' }) footerText:   string;
-  @Prop({ default: '' }) sidebarBg:    string;
+  @Prop({ default: '' }) navbarBg:         string;
+  @Prop({ default: '' }) navbarBorder:     string;
+  @Prop({ default: '' }) footerBg:         string;
+  @Prop({ default: '' }) footerText:       string;
+  @Prop({ default: '' }) sidebarBg:        string;
+  @Prop({ default: '' }) pageBg:           string;
+  // Dark mode overrides
+  @Prop({ default: '' }) navbarBgDark:     string;
+  @Prop({ default: '' }) navbarBorderDark: string;
+  @Prop({ default: '' }) footerBgDark:     string;
+  @Prop({ default: '' }) footerTextDark:   string;
+  @Prop({ default: '' }) sidebarBgDark:    string;
+  @Prop({ default: '' }) pageBgDark:       string;
 }
 
 class FooterLink {
   @Prop({ default: '' }) label: string;
   @Prop({ default: '' }) url:   string;
+}
+
+class SmsSettings {
+  /** ارائه‌دهنده: mock (تستی) یا kavenegar */
+  @Prop({ default: 'mock', enum: ['mock', 'kavenegar'] })
+  provider: string;
+
+  /** API Key کاوه‌نگار */
+  @Prop({ default: '' })
+  kavenegarApiKey: string;
+
+  /** شماره فرستنده (خط اختصاصی) */
+  @Prop({ default: '' })
+  kavenegarSender: string;
+
+  /** نام قالب OTP در پنل کاوه‌نگار */
+  @Prop({ default: 'storein-otp' })
+  kavenegarOtpTemplate: string;
+}
+
+class AnnouncementBar {
+  @Prop({ default: false }) isActive:  boolean;
+  @Prop({ default: '' })    text:      string;
+  @Prop({ default: '#3b82f6' }) bgColor:   string;
+  @Prop({ default: '#ffffff' }) textColor: string;
+  @Prop({ default: '' })    link:      string;
+}
+
+class TrustItem {
+  @Prop({ default: '' }) icon:     string;
+  @Prop({ default: '' }) title:    string;
+  @Prop({ default: '' }) subtitle: string;
+  @Prop({ default: '#EBF4FF' }) bgColor: string;
+}
+
+class PaymentSettings {
+  /** درگاه فعال: mock (تستی داخلی) یا zarinpal */
+  @Prop({ default: 'mock', enum: ['mock', 'zarinpal'] })
+  gateway: string;
+
+  /** کد پذیرنده زرین‌پال */
+  @Prop({ default: '' })
+  zarinpalMerchantId: string;
+
+  /** true = sandbox (تست) | false = production */
+  @Prop({ default: true })
+  zarinpalSandbox: boolean;
 }
 
 @Schema({ timestamps: true })
@@ -76,6 +131,33 @@ export class SiteSettings {
   // ── Theme ─────────────────────────────────────────────────
   @Prop({ type: ThemeSettings, default: () => ({ preset: 'blue', primaryColor: '#3B82F6' }) })
   theme: ThemeSettings;
+
+  // ── Payment ───────────────────────────────────────────────
+  @Prop({ type: PaymentSettings, default: () => ({ gateway: 'mock', zarinpalSandbox: true }) })
+  payment: PaymentSettings;
+
+  // ── SMS ───────────────────────────────────────────────────
+  @Prop({ type: SmsSettings, default: () => ({ provider: 'mock', kavenegarOtpTemplate: 'storein-otp' }) })
+  sms: SmsSettings;
+
+  // ── Trust badges ──────────────────────────────────────────
+  @Prop({
+    type: [{ _id: false, icon: String, title: String, subtitle: String, bgColor: String }],
+    default: () => [
+      { icon: '🔒', title: 'پرداخت امن',    subtitle: 'درگاه پرداخت معتبر و رمزنگاری شده',      bgColor: '#EBF4FF' },
+      { icon: '↩️', title: 'ضمانت ۷ روزه', subtitle: 'بازگشت کالا در صورت عدم رضایت',          bgColor: '#F0FDF4' },
+      { icon: '✅', title: 'اصالت کالا',    subtitle: 'تمام محصولات دارای گارانتی اصالت',       bgColor: '#FFFBEB' },
+      { icon: '🚚', title: 'ارسال سریع',   subtitle: 'ارسال به سراسر کشور در کمترین زمان',    bgColor: '#FFF1F2' },
+    ],
+  })
+  trustItems: TrustItem[];
+
+  // ── Announcement Bar ──────────────────────────────────────
+  @Prop({
+    type: { _id: false, isActive: Boolean, text: String, bgColor: String, textColor: String, link: String },
+    default: () => ({ isActive: false, text: '', bgColor: '#3b82f6', textColor: '#ffffff', link: '' }),
+  })
+  announcementBar: AnnouncementBar;
 
   // ── Contact ───────────────────────────────────────────────
   @Prop({ default: '' })

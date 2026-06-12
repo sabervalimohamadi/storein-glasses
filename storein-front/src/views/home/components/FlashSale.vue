@@ -34,7 +34,7 @@
     </div>
 
     <!-- Products -->
-    <div class="flex gap-3 overflow-x-auto pb-5 px-4 scrollbar-hide">
+    <div class="flex gap-3 overflow-x-auto pt-2 pb-5 px-4 scrollbar-hide">
       <!-- Skeleton -->
       <template v-if="loading">
         <div

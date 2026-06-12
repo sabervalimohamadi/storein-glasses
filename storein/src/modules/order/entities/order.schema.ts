@@ -34,7 +34,7 @@ class OrderItem {
   productId: Types.ObjectId;
 
   @Prop({ required: true }) variantId: string;
-  @Prop({ required: true }) sku: string;
+  @Prop({ default: '' })    sku: string;
   @Prop({ required: true }) name: string;
   @Prop()                   thumbnail: string;
 

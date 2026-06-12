@@ -36,26 +36,53 @@
             <BaseRating v-model="form.rating" size="lg" />
           </div>
 
-          <!-- Title -->
-          <BaseInput
-            v-model="form.title"
-            label="عنوان نظر"
-            placeholder="مثلاً: کیفیت عالی، ارزش خرید دارد"
-            :error="errors.title"
-          />
+          <!-- Title dropdown -->
+          <div>
+            <label class="block text-sm font-medium text-text-primary mb-1.5">عنوان نظر</label>
+            <div class="relative">
+              <select
+                v-model="form.title"
+                :class="[
+                  'input-field appearance-none w-full cursor-pointer',
+                  errors.title ? 'border-error' : '',
+                  !form.title ? 'text-text-disabled' : 'text-text-primary',
+                ]"
+              >
+                <option value="" disabled>یک عنوان انتخاب کنید...</option>
+                <option>کیفیت عالی، ارزش خرید دارد</option>
+                <option>دقیقاً مطابق تصویر و توضیحات بود</option>
+                <option>راضی هستم، توصیه می‌کنم</option>
+                <option>قیمت مناسب، کیفیت خوب</option>
+                <option>طراحی زیبا و ظاهر شیک</option>
+                <option>سبک و راحت روی صورت</option>
+                <option>مقاوم و با دوام به نظر می‌رسد</option>
+                <option>ارسال سریع و بسته‌بندی مناسب</option>
+                <option>متوسط بود، نه خوب نه بد</option>
+                <option>انتظاراتم برآورده نشد</option>
+              </select>
+              <!-- chevron icon -->
+              <svg
+                class="pointer-events-none absolute top-1/2 -translate-y-1/2 left-3 w-4 h-4 text-text-secondary"
+                fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+              >
+                <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
+              </svg>
+            </div>
+            <p v-if="errors.title" class="text-error text-xs mt-1">{{ errors.title }}</p>
+          </div>
 
-          <!-- Comment -->
+          <!-- Body -->
           <div>
             <label class="block text-sm font-medium text-text-primary mb-1.5">
               متن نظر <span class="text-error">*</span>
             </label>
             <textarea
-              v-model="form.comment"
+              v-model="form.body"
               rows="4"
               placeholder="تجربه خود از این محصول را بنویسید..."
-              :class="['input-field resize-none', errors.comment ? 'border-error' : '']"
+              :class="['input-field resize-none', errors.body ? 'border-error' : '']"
             />
-            <p v-if="errors.comment" class="text-error text-xs mt-1">{{ errors.comment }}</p>
+            <p v-if="errors.body" class="text-error text-xs mt-1">{{ errors.body }}</p>
           </div>
 
           <!-- API error -->
@@ -76,7 +103,6 @@ import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore }   from '@/stores/ui.store'
 import { reviewService } from '@/services/review.service'
 import BaseButton from '@/components/common/BaseButton.vue'
-import BaseInput  from '@/components/common/BaseInput.vue'
 import BaseRating from '@/components/common/BaseRating.vue'
 
 const props = defineProps({
@@ -91,29 +117,29 @@ const formOpen  = ref(false)
 const submitting = ref(false)
 const apiError  = ref('')
 
-const form   = reactive({ rating: 0, title: '', comment: '' })
-const errors = reactive({ title: '', comment: '' })
+const form   = reactive({ rating: 0, title: '', body: '' })
+const errors = reactive({ title: '', body: '' })
 
 const ratingLabels = ['', 'بد', 'متوسط', 'خوب', 'خیلی خوب', 'عالی']
 const ratingLabel  = computed(() => ratingLabels[form.rating] || '')
 
 async function submitReview() {
-  errors.title = errors.comment = apiError.value = ''
+  errors.title = errors.body = apiError.value = ''
 
-  if (!form.rating)            { errors.title   = 'امتیاز الزامی است'; return }
-  if (!form.comment.trim())    { errors.comment = 'متن نظر الزامی است'; return }
-  if (form.comment.length < 10) { errors.comment = 'حداقل ۱۰ کاراکتر وارد کنید'; return }
+  if (!form.rating)           { errors.body = 'امتیاز الزامی است'; return }
+  if (!form.body.trim())      { errors.body = 'متن نظر الزامی است'; return }
+  if (form.body.trim().length < 20) { errors.body = 'حداقل ۲۰ کاراکتر وارد کنید'; return }
 
   submitting.value = true
   try {
     await reviewService.create({
       productId: props.productId,
       rating:    form.rating,
-      title:     form.title.trim(),
-      comment:   form.comment.trim(),
+      title:     form.title.trim() || undefined,
+      body:      form.body.trim(),
     })
     ui.addToast('نظر شما با موفقیت ثبت شد و پس از تایید نمایش داده می‌شود', 'success')
-    Object.assign(form, { rating: 0, title: '', comment: '' })
+    Object.assign(form, { rating: 0, title: '', body: '' })
     formOpen.value = false
     emit('submitted')
   } catch (err) {

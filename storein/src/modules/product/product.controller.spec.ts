@@ -1,0 +1,177 @@
+import { Test, TestingModule } from '@nestjs/testing';
+import { BadRequestException, NotFoundException } from '@nestjs/common';
+import { Types } from 'mongoose';
+import { ProductController } from './product.controller';
+import { ProductService } from './product.service';
+import { ProductStatus } from './entities/product.schema';
+
+const mockService = {
+  findAll:       jest.fn(),
+  findBySlug:    jest.fn(),
+  adminFindAll:  jest.fn(),
+  findById:      jest.fn(),
+  create:        jest.fn(),
+  update:        jest.fn(),
+  remove:        jest.fn(),
+  addVariant:    jest.fn(),
+  updateVariant: jest.fn(),
+  removeVariant: jest.fn(),
+  adjustStock:   jest.fn(),
+  bulkDiscount:  jest.fn(),
+};
+
+const prodId  = new Types.ObjectId().toString();
+const varId   = new Types.ObjectId().toString();
+
+describe('ProductController', () => {
+  let controller: ProductController;
+
+  beforeEach(async () => {
+    const module: TestingModule = await Test.createTestingModule({
+      controllers: [ProductController],
+      providers: [{ provide: ProductService, useValue: mockService }],
+    }).compile();
+
+    controller = module.get(ProductController);
+    jest.clearAllMocks();
+  });
+
+  describe('findAll', () => {
+    it('returns paginated products', async () => {
+      mockService.findAll.mockResolvedValue({ products: [], total: 0 });
+      const result = await controller.findAll({});
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('findBySlug', () => {
+    it('returns product with colorMap', async () => {
+      mockService.findBySlug.mockResolvedValue({ slug: 'test', colorMap: {} });
+      const result = await controller.findBySlug('test');
+      expect(result.slug).toBe('test');
+    });
+
+    it('propagates NotFoundException', async () => {
+      mockService.findBySlug.mockRejectedValue(new NotFoundException());
+      await expect(controller.findBySlug('unknown')).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('adminFindAll', () => {
+    it('returns all products for admin', async () => {
+      mockService.adminFindAll.mockResolvedValue({ products: [], total: 0 });
+      const result = await controller.adminFindAll({});
+      expect(result.total).toBe(0);
+    });
+  });
+
+  describe('findById', () => {
+    it('returns product by id', async () => {
+      mockService.findById.mockResolvedValue({ _id: prodId });
+      const result = await controller.findById(prodId);
+      expect(result._id).toBe(prodId);
+    });
+
+    it('propagates NotFoundException', async () => {
+      mockService.findById.mockRejectedValue(new NotFoundException());
+      await expect(controller.findById(prodId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('create', () => {
+    it('creates and returns product', async () => {
+      const dto = { name: 'محصول', category: prodId, variants: [] };
+      mockService.create.mockResolvedValue({ ...dto, slug: 'product', status: ProductStatus.ACTIVE });
+      const result = await controller.create(dto as any);
+      expect(result.slug).toBe('product');
+    });
+
+    it('propagates BadRequestException on validation error', async () => {
+      mockService.create.mockRejectedValue(new BadRequestException());
+      await expect(controller.create({} as any)).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('update', () => {
+    it('updates and returns product', async () => {
+      mockService.update.mockResolvedValue({ _id: prodId, name: 'Updated' });
+      const result = await controller.update(prodId, { name: 'Updated' });
+      expect(result.name).toBe('Updated');
+    });
+
+    it('propagates NotFoundException', async () => {
+      mockService.update.mockRejectedValue(new NotFoundException());
+      await expect(controller.update(prodId, {})).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('remove', () => {
+    it('removes product successfully', async () => {
+      mockService.remove.mockResolvedValue(undefined);
+      await expect(controller.remove(prodId)).resolves.toBeUndefined();
+    });
+
+    it('propagates NotFoundException', async () => {
+      mockService.remove.mockRejectedValue(new NotFoundException());
+      await expect(controller.remove(prodId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('bulkDiscount', () => {
+    it('returns updated count', async () => {
+      mockService.bulkDiscount.mockResolvedValue({ updated: 3 });
+      const result = await controller.bulkDiscount({ productIds: [prodId], discountPct: 10 });
+      expect(result.updated).toBe(3);
+    });
+  });
+
+  describe('addVariant', () => {
+    it('adds variant and returns product', async () => {
+      mockService.addVariant.mockResolvedValue({ _id: prodId });
+      const result = await controller.addVariant(prodId, { sku: 'SKU-NEW', price: 1000, stock: 5 });
+      expect(result._id).toBe(prodId);
+    });
+
+    it('throws on duplicate SKU', async () => {
+      mockService.addVariant.mockRejectedValue(new BadRequestException());
+      await expect(
+        controller.addVariant(prodId, { sku: 'SKU-001', price: 1000, stock: 1 }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('updateVariant', () => {
+    it('updates variant and returns product', async () => {
+      mockService.updateVariant.mockResolvedValue({ _id: prodId });
+      const result = await controller.updateVariant(prodId, varId, { price: 2000 });
+      expect(result._id).toBe(prodId);
+    });
+  });
+
+  describe('removeVariant', () => {
+    it('removes variant and returns product', async () => {
+      mockService.removeVariant.mockResolvedValue({ _id: prodId });
+      const result = await controller.removeVariant(prodId, varId);
+      expect(result._id).toBe(prodId);
+    });
+
+    it('propagates NotFoundException', async () => {
+      mockService.removeVariant.mockRejectedValue(new NotFoundException());
+      await expect(controller.removeVariant(prodId, varId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('adjustStock', () => {
+    it('adjusts stock and returns product', async () => {
+      mockService.adjustStock.mockResolvedValue({ _id: prodId });
+      const result = await controller.adjustStock(prodId, varId, 5);
+      expect(mockService.adjustStock).toHaveBeenCalledWith(prodId, varId, 5);
+      expect(result._id).toBe(prodId);
+    });
+
+    it('propagates BadRequestException on negative stock', async () => {
+      mockService.adjustStock.mockRejectedValue(new BadRequestException());
+      await expect(controller.adjustStock(prodId, varId, -100)).rejects.toThrow(BadRequestException);
+    });
+  });
+});

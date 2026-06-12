@@ -33,7 +33,7 @@
     <div class="admin-card">
       <AdminTable
         :columns="columns"
-        :rows="filteredBrands"
+        :rows="pagedBrands"
         :loading="loading"
         empty-text="برندی یافت نشد"
       >
@@ -71,6 +71,7 @@
           </div>
         </template>
       </AdminTable>
+      <AdminPagination v-model="page" :total-pages="totalPages" :loading="loading" />
     </div>
 
     <!-- Form Modal -->
@@ -156,31 +157,33 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { brandService } from '@/services/brand.service'
 import { useUiStore } from '@/stores/ui.store'
-import AdminButton   from '@/components/common/AdminButton.vue'
-import AdminTable    from '@/components/common/AdminTable.vue'
-import AdminBadge    from '@/components/common/AdminBadge.vue'
-import AdminModal    from '@/components/common/AdminModal.vue'
-import AdminInput    from '@/components/common/AdminInput.vue'
-import AdminTextarea from '@/components/common/AdminTextarea.vue'
-import AdminConfirm  from '@/components/common/AdminConfirm.vue'
-import ImageUploader from '@/views/products/components/ImageUploader.vue'
+import AdminButton     from '@/components/common/AdminButton.vue'
+import AdminTable      from '@/components/common/AdminTable.vue'
+import AdminBadge      from '@/components/common/AdminBadge.vue'
+import AdminModal      from '@/components/common/AdminModal.vue'
+import AdminInput      from '@/components/common/AdminInput.vue'
+import AdminTextarea   from '@/components/common/AdminTextarea.vue'
+import AdminConfirm    from '@/components/common/AdminConfirm.vue'
+import AdminPagination from '@/components/common/AdminPagination.vue'
+import ImageUploader   from '@/views/products/components/ImageUploader.vue'
 
 const ui = useUiStore()
 
+const PER_PAGE    = 15
 const brands      = ref([])
 const loading     = ref(false)
 const search      = ref('')
 const filterActive = ref('')
-const total       = computed(() => brands.value.length)
+const page        = ref(1)
 
 const columns = [
-  { key: 'name',     label: 'برند' },
-  { key: 'isActive', label: 'وضعیت' },
+  { key: 'name',      label: 'برند' },
+  { key: 'isActive',  label: 'وضعیت' },
   { key: 'sortOrder', label: 'ترتیب' },
-  { key: 'actions',  label: '', class: 'w-24' },
+  { key: 'actions',   label: '', class: 'w-24' },
 ]
 
 const filteredBrands = computed(() => {
@@ -191,6 +194,14 @@ const filteredBrands = computed(() => {
     list = list.filter(b => String(b.isActive) === filterActive.value)
   return list
 })
+
+const totalPages  = computed(() => Math.ceil(filteredBrands.value.length / PER_PAGE))
+const pagedBrands = computed(() =>
+  filteredBrands.value.slice((page.value - 1) * PER_PAGE, page.value * PER_PAGE)
+)
+const total = computed(() => filteredBrands.value.length)
+
+watch([search, filterActive], () => { page.value = 1 })
 
 async function loadBrands() {
   loading.value = true

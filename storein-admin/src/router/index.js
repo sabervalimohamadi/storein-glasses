@@ -112,10 +112,40 @@ const routes = [
     meta: { layout: 'admin', title: 'ویرایش پست', permission: 'blog' },
   },
   {
+    path: '/pages',
+    name: 'pages',
+    component: () => import('@/views/pages/PagesView.vue'),
+    meta: { layout: 'admin', title: 'صفحات', permission: 'pages' },
+  },
+  {
+    path: '/pages/create',
+    name: 'page-create',
+    component: () => import('@/views/pages/PageFormView.vue'),
+    meta: { layout: 'admin', title: 'صفحه جدید', permission: 'pages' },
+  },
+  {
+    path: '/pages/:id/edit',
+    name: 'page-edit',
+    component: () => import('@/views/pages/PageFormView.vue'),
+    meta: { layout: 'admin', title: 'ویرایش صفحه', permission: 'pages' },
+  },
+  {
+    path: '/popups',
+    name: 'popups',
+    component: () => import('@/views/popup/PopupView.vue'),
+    meta: { layout: 'admin', title: 'پاپ‌آپ سایت', adminOnly: true },
+  },
+  {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/settings/SettingsView.vue'),
     meta: { layout: 'admin', title: 'تنظیمات سایت', adminOnly: true },
+  },
+  {
+    path: '/theme',
+    name: 'theme',
+    component: () => import('@/views/settings/ThemeView.vue'),
+    meta: { layout: 'admin', title: 'تم سایت', adminOnly: true },
   },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]

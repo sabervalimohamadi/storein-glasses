@@ -41,7 +41,7 @@
               :key="v._id"
               class="border-t border-surface-border"
             >
-              <td class="py-2 px-4">{{ v.attributes?.['رنگ'] || '—' }}</td>
+              <td class="py-2 px-4">{{ normalizeAttrs(v.attributes)['رنگ'] || '—' }}</td>
               <td class="py-2 px-4 font-fanum">{{ formatPrice(v.price) }}</td>
               <td class="py-2 px-4">
                 <BaseBadge :variant="v.stock > 0 ? 'green' : 'red'" size="sm">
@@ -76,12 +76,22 @@ const generalSpecs = computed(() => {
   return specs
 })
 
+function normalizeAttrs(raw) {
+  if (!raw) return {}
+  if (Array.isArray(raw)) {
+    const obj = {}
+    for (const a of raw) if (a.key) obj[a.key] = a.value
+    return obj
+  }
+  return raw
+}
+
 const variantAttributes = computed(() => {
-  const attrs = props.product?.variants?.[0]?.attributes || {}
+  const attrs = normalizeAttrs(props.product?.variants?.[0]?.attributes)
   const result = {}
-  Object.entries(attrs).forEach(([k, v]) => {
+  for (const [k, v] of Object.entries(attrs)) {
     if (k !== 'رنگ') result[k] = v
-  })
+  }
   return result
 })
 </script>

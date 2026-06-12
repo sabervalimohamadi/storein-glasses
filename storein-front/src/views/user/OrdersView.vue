@@ -48,23 +48,39 @@
         @click="$router.push({ name: 'user-order-detail', params: { id: order._id } })"
       >
         <!-- Order header -->
-        <div class="flex items-center justify-between mb-4 pb-4 border-b border-surface-border">
-          <div class="flex items-center gap-3">
-            <span
-              :class="['w-2.5 h-2.5 rounded-full flex-shrink-0', statusColor(order.status).dot]"
-            />
-            <div>
-              <p class="text-sm font-bold text-text-primary font-fanum dir-ltr">
-                {{ order.orderNumber }}
-              </p>
-              <p class="text-xs text-text-secondary mt-0.5">
-                {{ formatDate(order.createdAt) }}
-              </p>
-            </div>
+        <div class="mb-4 pb-4 border-b border-surface-border">
+          <!-- Row 1: badge + date -->
+          <div class="flex items-center justify-between mb-2">
+            <span :class="['text-xs px-3 py-1 rounded-full font-medium flex-shrink-0', statusColor(order.status).badge]">
+              {{ statusLabel(order.status) }}
+            </span>
+            <p class="text-xs text-text-secondary">{{ formatDate(order.createdAt) }}</p>
           </div>
-          <span :class="['text-xs px-3 py-1 rounded-full font-medium', statusColor(order.status).badge]">
-            {{ statusLabel(order.status) }}
-          </span>
+          <!-- Row 2: dot + order number + copy -->
+          <div class="flex items-center gap-2">
+            <span :class="['w-2 h-2 rounded-full flex-shrink-0', statusColor(order.status).dot]" />
+            <p class="text-xs font-bold text-text-primary font-mono tracking-wide flex-1 min-w-0 truncate dir-ltr">
+              {{ order.orderNumber }}
+            </p>
+            <button
+              @click.stop="copyOrderNumber(order._id, order.orderNumber)"
+              :title="copiedId === order._id ? 'کپی شد!' : 'کپی شماره سفارش'"
+              :class="[
+                'w-7 h-7 rounded-lg flex items-center justify-center transition-all flex-shrink-0',
+                copiedId === order._id
+                  ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
+                  : 'bg-surface text-text-secondary hover:text-brand border border-surface-border',
+              ]"
+            >
+              <svg v-if="copiedId !== order._id" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2"/>
+                <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+              <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+              </svg>
+            </button>
+          </div>
         </div>
 
         <!-- Items preview -->
@@ -191,6 +207,14 @@ const totalPages = ref(1)
 const activeStatus = ref('')
 const cancelTarget = ref(null)
 const cancelling   = ref(false)
+const copiedId     = ref(null)
+
+function copyOrderNumber(id, text) {
+  navigator.clipboard.writeText(text).then(() => {
+    copiedId.value = id
+    setTimeout(() => { copiedId.value = null }, 2000)
+  })
+}
 
 const statusTabs = [
   { value: '',           label: 'همه' },
@@ -255,7 +279,7 @@ onMounted(fetchOrders)
 </script>
 
 <style scoped>
-.dir-ltr { direction: ltr; display: inline-block; }
+.dir-ltr { direction: ltr; }
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
 </style>

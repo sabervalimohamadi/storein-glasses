@@ -3,6 +3,9 @@ import { ref, watch } from 'vue'
 // ── Singleton dark state (shared across all useTheme() calls) ─────
 const isDark = ref(false)
 
+// Last applied theme — needed to re-pick light/dark values on mode toggle
+let _lastTheme = null
+
 // ── Color helpers ─────────────────────────────────────────────────
 function hexToRgb(hex) {
   const clean = hex.replace('#', '')
@@ -48,6 +51,23 @@ function applyDarkClass(dark) {
   document.documentElement.classList.toggle('dark', dark)
 }
 
+// ── Apply section colors based on current mode ───────────────────
+function applyColors(theme, dark) {
+  const root = document.documentElement.style
+
+  function apply(cssVar, lightVal, darkVal) {
+    const val = dark ? darkVal : lightVal
+    if (val) root.setProperty(cssVar, val)
+    else     root.removeProperty(cssVar)
+  }
+
+  apply('--color-header-bg',     theme.navbarBg,     theme.navbarBgDark)
+  apply('--color-header-border', theme.navbarBorder, theme.navbarBorderDark)
+  apply('--color-footer-bg',     theme.footerBg,     theme.footerBgDark)
+  apply('--color-footer-text',   theme.footerText,   theme.footerTextDark)
+  apply('--color-body-bg',       theme.pageBg,       theme.pageBgDark)
+}
+
 export function useTheme() {
 
   // Called once on app boot — applies localStorage user preference
@@ -59,23 +79,11 @@ export function useTheme() {
   }
 
   // Called after settings are fetched from API
-  // Applies primaryColor, section colors, and defaultMode
-  // User's own localStorage preference always wins over defaultMode
   function applyFromSettings(theme) {
     if (!theme) return
+    _lastTheme = theme
 
-    const root = document.documentElement.style
-
-    // Brand color
-    if (theme.primaryColor) applyPrimaryColor(theme.primaryColor)
-
-    // Section colors — only apply when a value is set (non-empty)
-    if (theme.navbarBg)     root.setProperty('--color-header-bg',     theme.navbarBg)
-    if (theme.navbarBorder) root.setProperty('--color-header-border', theme.navbarBorder)
-    if (theme.footerBg)     root.setProperty('--color-footer-bg',     theme.footerBg)
-    if (theme.footerText)   root.setProperty('--color-footer-text',   theme.footerText)
-
-    // Dark mode — only override if user has no saved preference
+    // Resolve the correct dark state FIRST (before applying colors)
     const saved = localStorage.getItem('theme')
     if (!saved && theme.defaultMode) {
       if (theme.defaultMode === 'dark') {
@@ -87,12 +95,16 @@ export function useTheme() {
       }
       applyDarkClass(isDark.value)
     }
+
+    if (theme.primaryColor) applyPrimaryColor(theme.primaryColor)
+    applyColors(theme, isDark.value)
   }
 
-  // User manually toggles
+  // User manually toggles — re-applies section colors for the new mode
   function toggle() {
     isDark.value = !isDark.value
     localStorage.setItem('theme', isDark.value ? 'dark' : 'light')
+    if (_lastTheme) applyColors(_lastTheme, isDark.value)
   }
 
   watch(isDark, applyDarkClass)

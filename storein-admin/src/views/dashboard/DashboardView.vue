@@ -33,7 +33,13 @@
       </button>
     </div>
 
-    <!-- ② Stat cards -->
+    <!-- ② Quick actions -->
+    <QuickActions
+      :pending-orders="stats.overview?.pendingOrders ?? 0"
+      :pending-reviews="pendingReviews"
+    />
+
+    <!-- ③ Stat cards -->
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
       <StatCard
         icon="💰" title="درآمد کل" color="blue" :loading="loading"
@@ -46,18 +52,21 @@
         :value="formatNumber(stats.overview?.totalOrders)"
         sub-label="در انتظار"
         :sub-value="formatNumber(stats.overview?.pendingOrders)"
+        :to="{ name: 'orders' }"
       />
       <StatCard
         icon="👥" title="کاربران" color="green" :loading="loading"
         :value="formatNumber(stats.overview?.totalUsers)"
         sub-label="سفارش امروز"
         :sub-value="formatNumber(stats.overview?.todayOrders)"
+        :to="{ name: 'users' }"
       />
       <StatCard
         icon="🏪" title="محصولات" color="yellow" :loading="loading"
         :value="formatNumber(stats.overview?.totalProducts)"
         sub-label="درآمد امروز"
         :sub-value="formatPrice(stats.overview?.todayRevenue)"
+        :to="{ name: 'products' }"
       />
     </div>
 
@@ -81,11 +90,6 @@
       </div>
     </div>
 
-    <!-- ⑤ Quick actions -->
-    <QuickActions
-      :pending-orders="stats.overview?.pendingOrders ?? 0"
-      :pending-reviews="pendingReviews"
-    />
 
   </div>
 </template>
@@ -121,9 +125,12 @@ const todayDatePersian = computed(() =>
 )
 
 async function loadStats() {
+  const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10)
+  const today        = new Date().toISOString().slice(0, 10)
+
   const [dashRes, revenueRes, orderStatsRes, recentRes, topRes] = await Promise.allSettled([
     dashboardService.getStats(),
-    dashboardService.getRevenue(),
+    dashboardService.getRevenue({ from: sevenDaysAgo, to: today }),
     dashboardService.getOrderStats(),
     dashboardService.getRecentOrders(10),
     dashboardService.getTopProducts(10),
@@ -146,7 +153,7 @@ async function loadStats() {
       totalUsers:    dash.users?.total       ?? 0,
       totalProducts: dash.products?.total    ?? 0,
     },
-    revenueByDay:     (revenue.byDay ?? []).map(d => ({ date: d.date, revenue: d.amount ?? 0, orders: 0 })),
+    revenueByDay:     (revenue.byDay ?? []).map(d => ({ date: d.date, revenue: d.amount ?? 0, orders: d.count ?? 0 })),
     orderStatusStats: dash.orders        ?? {},
     recentOrders:     Array.isArray(recent) ? recent : [],
     topProducts:      Array.isArray(top)    ? top    : [],

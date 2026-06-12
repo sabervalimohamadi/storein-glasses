@@ -58,7 +58,7 @@
             @focus="phoneFocused = true"
             @blur="phoneFocused = false; validatePhone()"
             @keydown.enter="submit"
-            @input="phoneError = ''"
+            @input="phoneError = ''; isBlocked = false"
           />
 
           <!-- Country prefix (static) — left side in RTL -->
@@ -83,10 +83,34 @@
         </Transition>
       </div>
 
+      <!-- Blocked notice -->
+      <Transition name="fade-down">
+        <div v-if="isBlocked" class="mb-5 rounded-xl overflow-hidden border border-red-200 dark:border-red-900/50">
+          <!-- Red header bar -->
+          <div class="bg-red-500 px-4 py-2.5 flex items-center gap-2">
+            <svg class="w-4 h-4 text-white flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <path fill-rule="evenodd"
+                d="M13.477 14.89A6 6 0 015.11 6.524l8.367 8.368zm1.414-1.414L6.524 5.11a6 6 0 018.367 8.367zM18 10a8 8 0 11-16 0 8 8 0 0116 0z"
+                clip-rule="evenodd"/>
+            </svg>
+            <span class="text-white text-sm font-bold">حساب کاربری مسدود شده</span>
+          </div>
+          <!-- Body -->
+          <div class="bg-red-50 dark:bg-red-950/30 px-4 py-3">
+            <p class="text-red-700 dark:text-red-300 text-xs leading-6">
+              دسترسی به حساب کاربری شما توسط مدیریت سایت محدود شده است.
+              برای اطلاعات بیشتر و رفع مسدودی با
+              <span class="font-bold">پشتیبانی سایت</span>
+              تماس بگیرید.
+            </p>
+          </div>
+        </div>
+      </Transition>
+
       <!-- Submit button -->
       <button
         @click="submit"
-        :disabled="authStore.loading || !phone"
+        :disabled="authStore.loading || !phone || isBlocked"
         class="w-full bg-brand text-white font-bold py-3.5 rounded-xl
                hover:bg-brand-dark active:scale-[0.98]
                transition-all duration-150 text-base
@@ -125,6 +149,7 @@ const phone        = ref('')
 const phoneError   = ref('')
 const phoneFocused = ref(false)
 const phoneInput   = ref(null)
+const isBlocked    = ref(false)
 
 onMounted(() => {
   // Pre-fill if user navigated back from OTP page
@@ -158,6 +183,8 @@ async function submit() {
 
   const normalized = normalizePhone(phone.value)
 
+  isBlocked.value = false
+
   try {
     await authStore.sendOtp(normalized)
     router.push({
@@ -168,7 +195,9 @@ async function submit() {
     const status  = err.response?.status
     const message = err.response?.data?.message
 
-    if (status === 429) {
+    if (status === 403) {
+      isBlocked.value = true
+    } else if (status === 429) {
       phoneError.value = 'تعداد درخواست‌ها بیش از حد مجاز است. لطفاً ۱۰ دقیقه صبر کنید.'
     } else if (status === 400) {
       phoneError.value = 'شماره موبایل وارد شده معتبر نیست'

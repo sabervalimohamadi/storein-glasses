@@ -94,320 +94,6 @@
         </div>
       </div>
 
-      <!-- ── Tab: تم سایت ─────────────────────────────────── -->
-      <div v-show="activeTab === 'theme'" class="space-y-5">
-        <div class="admin-card space-y-6">
-          <h3 class="section-title">رنگ اصلی سایت</h3>
-          <p class="text-text-secondary text-sm -mt-3">
-            این رنگ روی دکمه‌ها، لینک‌ها، بج‌ها و المان‌های تعاملی سایت اصلی اعمال می‌شود.
-          </p>
-
-          <!-- Preset grid -->
-          <div class="grid grid-cols-5 sm:grid-cols-6 gap-3">
-            <button
-              v-for="preset in colorPresets"
-              :key="preset.key"
-              @click="selectPreset(preset)"
-              :class="[
-                'flex flex-col items-center gap-2 p-3 rounded-xl border-2 transition-all',
-                form.theme.preset === preset.key
-                  ? 'border-primary scale-105 shadow-md'
-                  : 'border-border hover:border-primary/40',
-              ]"
-            >
-              <!-- Swatch -->
-              <div class="w-9 h-9 rounded-full border border-black/10 flex items-center justify-center overflow-hidden"
-                   :style="preset.color ? `background:${preset.color}` : 'background: conic-gradient(red,yellow,lime,aqua,blue,magenta,red)'">
-                <svg v-if="form.theme.preset === preset.key"
-                     class="w-4 h-4 text-white drop-shadow" fill="currentColor" viewBox="0 0 20 20">
-                  <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                </svg>
-              </div>
-              <span class="text-[11px] text-text-secondary font-medium">{{ preset.label }}</span>
-            </button>
-          </div>
-
-          <!-- Custom color picker (shown only when preset = custom) -->
-          <Transition name="slide-down">
-            <div v-if="form.theme.preset === 'custom'" class="space-y-3 pt-1">
-              <label class="field-label">رنگ سفارشی (Hex)</label>
-              <div class="flex items-center gap-3">
-                <input
-                  type="color"
-                  v-model="form.theme.primaryColor"
-                  class="w-12 h-10 rounded-lg border border-border cursor-pointer bg-transparent p-0.5"
-                />
-                <AdminInput
-                  v-model="form.theme.primaryColor"
-                  dir="ltr"
-                  placeholder="#3B82F6"
-                  class="flex-1"
-                  hint="فرمت hex — مثال: #3B82F6"
-                />
-              </div>
-            </div>
-          </Transition>
-
-          <!-- Default mode -->
-          <div class="space-y-3 pt-2 border-t border-border">
-            <p class="text-xs font-bold text-text-disabled uppercase tracking-wider pt-2">حالت پیش‌فرض سایت</p>
-            <p class="text-text-secondary text-sm">
-              بازدیدکنندگانی که تنظیم خاصی ندارند با این حالت وارد سایت می‌شوند.
-            </p>
-            <div class="grid grid-cols-3 gap-3">
-              <button
-                v-for="mode in displayModes"
-                :key="mode.key"
-                @click="form.theme.defaultMode = mode.key"
-                :class="[
-                  'relative flex flex-col items-center gap-3 p-4 rounded-xl border-2 transition-all',
-                  form.theme.defaultMode === mode.key
-                    ? 'border-primary shadow-md scale-105'
-                    : 'border-border hover:border-primary/40',
-                ]"
-              >
-                <!-- Mini screen mockup -->
-                <div :class="[
-                  'w-full h-16 rounded-lg border border-black/10 overflow-hidden relative',
-                  mode.key === 'dark' ? 'bg-slate-900'
-                  : mode.key === 'light' ? 'bg-white'
-                  : 'bg-gradient-to-bl from-white to-slate-900',
-                ]">
-                  <!-- Fake header bar -->
-                  <div :class="[
-                    'h-4 w-full flex items-center px-2 gap-1',
-                    mode.key === 'dark' ? 'bg-slate-800' : mode.key === 'light' ? 'bg-slate-100' : 'bg-slate-400/50'
-                  ]">
-                    <div class="w-2 h-2 rounded-full" :style="`background:${activePresetColor}`"></div>
-                    <div :class="['h-1.5 rounded-full flex-1', mode.key === 'dark' ? 'bg-slate-700' : 'bg-slate-200']"></div>
-                  </div>
-                  <!-- Fake content lines -->
-                  <div class="p-2 space-y-1">
-                    <div :class="['h-1.5 rounded-full w-3/4', mode.key === 'dark' ? 'bg-slate-700' : 'bg-slate-200']"></div>
-                    <div :class="['h-1.5 rounded-full w-1/2', mode.key === 'dark' ? 'bg-slate-700' : 'bg-slate-200']"></div>
-                    <div class="h-4 rounded-md w-1/3 mt-1" :style="`background:${activePresetColor}; opacity:0.85`"></div>
-                  </div>
-                  <!-- System half overlay -->
-                  <div v-if="mode.key === 'system'"
-                       class="absolute inset-0 flex">
-                    <div class="w-1/2 h-full bg-white/30"></div>
-                    <div class="w-1/2 h-full bg-slate-900/30"></div>
-                  </div>
-                </div>
-                <div class="text-center">
-                  <p class="text-sm font-semibold text-text-primary">{{ mode.label }}</p>
-                  <p class="text-[11px] text-text-disabled mt-0.5">{{ mode.desc }}</p>
-                </div>
-                <!-- Check -->
-                <div v-if="form.theme.defaultMode === mode.key"
-                     class="absolute top-2 left-2 w-5 h-5 rounded-full flex items-center justify-center"
-                     :style="`background:${activePresetColor}`">
-                  <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                  </svg>
-                </div>
-              </button>
-            </div>
-          </div>
-
-        </div>
-
-        <!-- ── Section Colors card ── -->
-        <div class="admin-card space-y-6">
-          <div>
-            <h3 class="section-title">رنگ‌بندی بخش‌های مختلف سایت</h3>
-            <p class="text-text-secondary text-sm mt-1">
-              رنگ هر بخش را جداگانه تنظیم کنید. دکمه «پیش‌فرض» رنگ را به حالت اولیه بازمی‌گرداند.
-            </p>
-          </div>
-
-          <!-- Navbar -->
-          <div class="space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🔝</span>
-                <div>
-                  <p class="text-sm font-semibold text-text-primary">هدر / ناوبار</p>
-                  <p class="text-xs text-text-secondary">پس‌زمینه نوار بالای سایت اصلی</p>
-                </div>
-              </div>
-              <button
-                v-if="form.theme.navbarBg"
-                @click="form.theme.navbarBg = ''; form.theme.navbarBorder = ''"
-                class="text-xs text-text-secondary hover:text-error transition-colors px-2 py-1 rounded-lg hover:bg-error/10"
-              >↺ پیش‌فرض</button>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="field-label text-xs">رنگ پس‌زمینه</label>
-                <div class="flex items-center gap-2 mt-1">
-                  <input type="color" v-model="form.theme.navbarBg"
-                    class="w-10 h-10 rounded-lg cursor-pointer border border-border bg-transparent p-0.5 flex-shrink-0" />
-                  <input v-model="form.theme.navbarBg" dir="ltr"
-                    class="field-input flex-1 font-mono text-sm" placeholder="#FFFFFF (خالی = پیش‌فرض)" />
-                </div>
-              </div>
-              <div>
-                <label class="field-label text-xs">رنگ خط جداکننده</label>
-                <div class="flex items-center gap-2 mt-1">
-                  <input type="color" v-model="form.theme.navbarBorder"
-                    class="w-10 h-10 rounded-lg cursor-pointer border border-border bg-transparent p-0.5 flex-shrink-0" />
-                  <input v-model="form.theme.navbarBorder" dir="ltr"
-                    class="field-input flex-1 font-mono text-sm" placeholder="#DDE3EC (خالی = پیش‌فرض)" />
-                </div>
-              </div>
-            </div>
-            <!-- Mini preview -->
-            <div class="rounded-xl overflow-hidden border border-border">
-              <div class="h-10 flex items-center px-4 gap-3"
-                   :style="{ backgroundColor: form.theme.navbarBg || '#FFFFFF', borderBottom: `1px solid ${form.theme.navbarBorder || '#DDE3EC'}` }">
-                <span class="font-bold text-sm" :style="{ color: navbarTextColor }">استورین</span>
-                <div class="flex-1 h-5 rounded bg-gray-200/50"></div>
-                <div class="w-5 h-5 rounded-full" :style="{ backgroundColor: activePresetColor }"></div>
-              </div>
-              <div class="h-6 bg-surface flex items-center px-4 gap-2">
-                <span v-for="i in 4" :key="i" class="h-1.5 w-12 rounded-full bg-border"></span>
-              </div>
-            </div>
-          </div>
-
-          <div class="border-t border-border pt-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">📄</span>
-                <div>
-                  <p class="text-sm font-semibold text-text-primary">فوتر</p>
-                  <p class="text-xs text-text-secondary">پس‌زمینه و رنگ متن بخش پایین سایت</p>
-                </div>
-              </div>
-              <button
-                v-if="form.theme.footerBg || form.theme.footerText"
-                @click="form.theme.footerBg = ''; form.theme.footerText = ''"
-                class="text-xs text-text-secondary hover:text-error transition-colors px-2 py-1 rounded-lg hover:bg-error/10"
-              >↺ پیش‌فرض</button>
-            </div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="field-label text-xs">رنگ پس‌زمینه</label>
-                <div class="flex items-center gap-2 mt-1">
-                  <input type="color" v-model="form.theme.footerBg"
-                    class="w-10 h-10 rounded-lg cursor-pointer border border-border bg-transparent p-0.5 flex-shrink-0" />
-                  <input v-model="form.theme.footerBg" dir="ltr"
-                    class="field-input flex-1 font-mono text-sm" placeholder="#111827 (خالی = پیش‌فرض)" />
-                </div>
-              </div>
-              <div>
-                <label class="field-label text-xs">رنگ متن</label>
-                <div class="flex items-center gap-2 mt-1">
-                  <input type="color" v-model="form.theme.footerText"
-                    class="w-10 h-10 rounded-lg cursor-pointer border border-border bg-transparent p-0.5 flex-shrink-0" />
-                  <input v-model="form.theme.footerText" dir="ltr"
-                    class="field-input flex-1 font-mono text-sm" placeholder="#D1D5DB (خالی = پیش‌فرض)" />
-                </div>
-              </div>
-            </div>
-            <!-- Mini preview -->
-            <div class="rounded-xl overflow-hidden border border-border">
-              <div class="h-16 px-4 py-3 flex items-start gap-4"
-                   :style="{ backgroundColor: form.theme.footerBg || '#111827' }">
-                <div>
-                  <p class="font-bold text-sm" :style="{ color: form.theme.footerText || '#D1D5DB' }">استورین</p>
-                  <p class="text-xs mt-0.5" :style="{ color: form.theme.footerText || '#9CA3AF', opacity: 0.7 }">فروشگاه تخصصی عینک</p>
-                </div>
-                <div class="flex-1"></div>
-                <div class="text-right">
-                  <p class="text-xs font-semibold" :style="{ color: form.theme.footerText || '#D1D5DB' }">دسته‌بندی‌ها</p>
-                  <p class="text-xs mt-1" :style="{ color: form.theme.footerText || '#9CA3AF', opacity: 0.7 }">عینک آفتابی</p>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <div class="border-t border-border pt-5 space-y-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="text-xl">🗂</span>
-                <div>
-                  <p class="text-sm font-semibold text-text-primary">سایدبار ادمین</p>
-                  <p class="text-xs text-text-secondary">رنگ منوی کناری پنل مدیریت</p>
-                </div>
-              </div>
-              <button
-                v-if="form.theme.sidebarBg"
-                @click="form.theme.sidebarBg = ''"
-                class="text-xs text-text-secondary hover:text-error transition-colors px-2 py-1 rounded-lg hover:bg-error/10"
-              >↺ پیش‌فرض</button>
-            </div>
-            <div class="flex items-center gap-2">
-              <input type="color" v-model="form.theme.sidebarBg"
-                class="w-10 h-10 rounded-lg cursor-pointer border border-border bg-transparent p-0.5 flex-shrink-0" />
-              <input v-model="form.theme.sidebarBg" dir="ltr"
-                class="field-input flex-1 font-mono text-sm" placeholder="#0F172A (خالی = پیش‌فرض)" />
-            </div>
-            <!-- Mini preview -->
-            <div class="flex rounded-xl overflow-hidden border border-border h-24">
-              <div class="w-16 flex flex-col gap-1.5 p-2"
-                   :style="{ backgroundColor: form.theme.sidebarBg || '#0F172A' }">
-                <div v-for="i in 4" :key="i" class="h-1.5 rounded-full bg-white/20"></div>
-                <div class="h-1.5 rounded-full mt-auto" :style="{ backgroundColor: activePresetColor, opacity: 0.8 }"></div>
-              </div>
-              <div class="flex-1 bg-surface p-3 space-y-2">
-                <div class="h-2.5 rounded-full bg-border w-3/4"></div>
-                <div class="h-2 rounded-full bg-border w-1/2"></div>
-                <div class="h-2 rounded-full bg-border w-2/3"></div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="admin-card space-y-5">
-          <!-- Live preview -->
-          <div class="space-y-3">
-            <p class="text-xs font-bold text-text-disabled uppercase tracking-wider">پیش‌نمایش رنگ اصلی</p>
-            <div class="bg-surface rounded-2xl border border-border p-5 space-y-4">
-
-              <!-- Buttons row -->
-              <div class="flex flex-wrap gap-3 items-center">
-                <button class="px-5 py-2.5 rounded-xl text-sm font-semibold text-white shadow-sm transition-all"
-                        :style="`background:${activePresetColor}`">
-                  افزودن به سبد خرید
-                </button>
-                <button class="px-5 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all"
-                        :style="`border-color:${activePresetColor}; color:${activePresetColor}`">
-                  مشاهده محصول
-                </button>
-                <span class="px-3 py-1 rounded-full text-xs font-bold text-white"
-                      :style="`background:${activePresetColor}`">
-                  تخفیف ۲۰٪
-                </span>
-              </div>
-
-              <!-- Fake product card -->
-              <div class="flex items-center gap-4 bg-card rounded-xl p-4 border border-border max-w-sm">
-                <div class="w-16 h-16 rounded-xl flex-shrink-0 opacity-20"
-                     :style="`background:${activePresetColor}`"></div>
-                <div class="flex-1 space-y-2">
-                  <div class="h-3 rounded-full bg-text-disabled/30 w-3/4"></div>
-                  <div class="h-2.5 rounded-full bg-text-disabled/20 w-1/2"></div>
-                  <p class="text-sm font-bold" :style="`color:${activePresetColor}`">
-                    ۱,۲۵۰,۰۰۰ تومان
-                  </p>
-                </div>
-              </div>
-
-              <!-- Nav link example -->
-              <div class="flex gap-4 text-sm border-b border-border pb-3">
-                <span class="font-semibold border-b-2 pb-1" :style="`border-color:${activePresetColor}; color:${activePresetColor}`">
-                  همه محصولات
-                </span>
-                <span class="text-text-secondary">عینک آفتابی</span>
-                <span class="text-text-secondary">عینک طبی</span>
-              </div>
-
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- ── Tab: سئو ────────────────────────────────────── -->
       <div v-show="activeTab === 'seo'" class="space-y-5">
@@ -551,6 +237,475 @@
         </div>
       </div>
 
+      <!-- ── Tab: پرداخت ────────────────────────────────── -->
+      <div v-show="activeTab === 'payment'" class="space-y-5">
+        <!-- Gateway selector -->
+        <div class="admin-card space-y-5">
+          <div>
+            <h3 class="section-title">درگاه پرداخت فعال</h3>
+            <p class="text-text-secondary text-sm mt-2">
+              تغییر درگاه بلافاصله و بدون نیاز به ریستارت سرور اعمال می‌شود.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Mock -->
+            <button
+              @click="form.payment.gateway = 'mock'"
+              :class="[
+                'flex items-start gap-4 p-4 rounded-xl border-2 text-right transition-all',
+                form.payment.gateway === 'mock'
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border hover:border-primary/40',
+              ]"
+            >
+              <div class="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center text-xl flex-shrink-0 mt-0.5">
+                🔧
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-text-primary text-sm">درگاه آزمایشی (Mock)</p>
+                <p class="text-xs text-text-secondary mt-1 leading-relaxed">
+                  پرداخت‌ها بدون اتصال به بانک تأیید می‌شوند — مناسب برای توسعه
+                </p>
+              </div>
+              <div :class="[
+                'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 transition-all',
+                form.payment.gateway === 'mock' ? 'border-primary bg-primary' : 'border-border',
+              ]">
+                <div v-if="form.payment.gateway === 'mock'" class="w-full h-full rounded-full bg-white scale-[0.4]"></div>
+              </div>
+            </button>
+
+            <!-- ZarinPal -->
+            <button
+              @click="form.payment.gateway = 'zarinpal'"
+              :class="[
+                'flex items-start gap-4 p-4 rounded-xl border-2 text-right transition-all',
+                form.payment.gateway === 'zarinpal'
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border hover:border-primary/40',
+              ]"
+            >
+              <div class="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center text-xl flex-shrink-0 mt-0.5">
+                💳
+              </div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-text-primary text-sm">زرین‌پال (ZarinPal)</p>
+                <p class="text-xs text-text-secondary mt-1 leading-relaxed">
+                  درگاه بانکی زرین‌پال — Sandbox برای تست، Production برای واقعی
+                </p>
+              </div>
+              <div :class="[
+                'w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1 transition-all',
+                form.payment.gateway === 'zarinpal' ? 'border-primary bg-primary' : 'border-border',
+              ]">
+                <div v-if="form.payment.gateway === 'zarinpal'" class="w-full h-full rounded-full bg-white scale-[0.4]"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- ZarinPal config (only shown when zarinpal is selected) -->
+        <Transition name="slide-down">
+          <div v-if="form.payment.gateway === 'zarinpal'" class="admin-card space-y-5">
+            <h3 class="section-title">تنظیمات زرین‌پال</h3>
+
+            <!-- Merchant ID -->
+            <div>
+              <AdminInput
+                v-model="form.payment.zarinpalMerchantId"
+                label="شناسه پذیرنده (Merchant ID)"
+                placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                dir="ltr"
+                hint="از پنل زرین‌پال دریافت می‌شود"
+              />
+            </div>
+
+            <!-- Sandbox / Production toggle -->
+            <div>
+              <label class="field-label mb-3 block">حالت اتصال</label>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <!-- Sandbox -->
+                <button
+                  @click="form.payment.zarinpalSandbox = true"
+                  :class="[
+                    'flex items-center gap-3 p-4 rounded-xl border-2 text-right transition-all',
+                    form.payment.zarinpalSandbox
+                      ? 'border-amber-400 bg-amber-50 dark:bg-amber-400/10 shadow-sm'
+                      : 'border-border hover:border-amber-300',
+                  ]"
+                >
+                  <span class="text-2xl">🧪</span>
+                  <div class="flex-1">
+                    <p class="font-semibold text-sm text-text-primary">Sandbox</p>
+                    <p class="text-xs text-text-secondary mt-0.5">تست — پول واقعی کسر نمی‌شود</p>
+                  </div>
+                  <div :class="[
+                    'w-4 h-4 rounded-full border-2 transition-all flex-shrink-0',
+                    form.payment.zarinpalSandbox ? 'border-amber-400 bg-amber-400' : 'border-border',
+                  ]"></div>
+                </button>
+
+                <!-- Production -->
+                <button
+                  @click="form.payment.zarinpalSandbox = false"
+                  :class="[
+                    'flex items-center gap-3 p-4 rounded-xl border-2 text-right transition-all',
+                    !form.payment.zarinpalSandbox
+                      ? 'border-success bg-success/5 shadow-sm'
+                      : 'border-border hover:border-success/40',
+                  ]"
+                >
+                  <span class="text-2xl">🏦</span>
+                  <div class="flex-1">
+                    <p class="font-semibold text-sm text-text-primary">Production</p>
+                    <p class="text-xs text-text-secondary mt-0.5">واقعی — پرداخت‌های زنده</p>
+                  </div>
+                  <div :class="[
+                    'w-4 h-4 rounded-full border-2 transition-all flex-shrink-0',
+                    !form.payment.zarinpalSandbox ? 'border-success bg-success' : 'border-border',
+                  ]"></div>
+                </button>
+              </div>
+            </div>
+
+            <!-- Info banner -->
+            <div :class="[
+              'flex items-start gap-3 p-4 rounded-xl text-sm',
+              form.payment.zarinpalSandbox
+                ? 'bg-amber-50 dark:bg-amber-400/10 border border-amber-200 dark:border-amber-400/30 text-amber-800 dark:text-amber-300'
+                : 'bg-success/5 border border-success/30 text-success',
+            ]">
+              <span class="text-lg flex-shrink-0">{{ form.payment.zarinpalSandbox ? '⚠️' : '✅' }}</span>
+              <span>
+                <template v-if="form.payment.zarinpalSandbox">
+                  حالت <strong>Sandbox</strong> فعال است — تراکنش‌های آزمایشی با کارت‌های تستی امکان‌پذیر است.
+                  برای پرداخت‌های واقعی حتماً به Production تغییر دهید.
+                </template>
+                <template v-else>
+                  حالت <strong>Production</strong> فعال است — تراکنش‌های واقعی پردازش می‌شوند.
+                </template>
+              </span>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- ── Tab: پیامک ────────────────────────────────── -->
+      <div v-show="activeTab === 'sms'" class="space-y-5">
+
+        <!-- Provider selector -->
+        <div class="admin-card space-y-5">
+          <div>
+            <h3 class="section-title">سرویس پیامک فعال</h3>
+            <p class="text-text-secondary text-sm mt-2">
+              هم OTP ورود و هم پیامک‌های اطلاع‌رسانی سفارش از همین سرویس ارسال می‌شوند.
+            </p>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <!-- Mock -->
+            <button
+              @click="form.sms.provider = 'mock'"
+              :class="[
+                'flex items-start gap-4 p-4 rounded-xl border-2 text-right transition-all',
+                form.sms.provider === 'mock'
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border hover:border-primary/40',
+              ]"
+            >
+              <div class="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center text-xl flex-shrink-0 mt-0.5">🔧</div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-text-primary text-sm">تستی (Mock)</p>
+                <p class="text-xs text-text-secondary mt-1 leading-relaxed">پیامک‌ها فقط در لاگ سرور نمایش داده می‌شوند</p>
+              </div>
+              <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1', form.sms.provider === 'mock' ? 'border-primary bg-primary' : 'border-border']">
+                <div v-if="form.sms.provider === 'mock'" class="w-full h-full rounded-full bg-white scale-[0.4]"></div>
+              </div>
+            </button>
+
+            <!-- Kavenegar -->
+            <button
+              @click="form.sms.provider = 'kavenegar'"
+              :class="[
+                'flex items-start gap-4 p-4 rounded-xl border-2 text-right transition-all',
+                form.sms.provider === 'kavenegar'
+                  ? 'border-primary bg-primary/5 shadow-sm'
+                  : 'border-border hover:border-primary/40',
+              ]"
+            >
+              <div class="w-10 h-10 rounded-xl bg-surface border border-border flex items-center justify-center text-xl flex-shrink-0 mt-0.5">📨</div>
+              <div class="flex-1 min-w-0">
+                <p class="font-semibold text-text-primary text-sm">کاوه‌نگار</p>
+                <p class="text-xs text-text-secondary mt-1 leading-relaxed">ارسال واقعی از طریق API کاوه‌نگار</p>
+              </div>
+              <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-1', form.sms.provider === 'kavenegar' ? 'border-primary bg-primary' : 'border-border']">
+                <div v-if="form.sms.provider === 'kavenegar'" class="w-full h-full rounded-full bg-white scale-[0.4]"></div>
+              </div>
+            </button>
+          </div>
+        </div>
+
+        <!-- Kavenegar config -->
+        <Transition name="slide-down">
+          <div v-if="form.sms.provider === 'kavenegar'" class="admin-card space-y-5">
+            <h3 class="section-title">تنظیمات کاوه‌نگار</h3>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+              <AdminInput
+                v-model="form.sms.kavenegarApiKey"
+                label="API Key"
+                placeholder="xxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                dir="ltr"
+                hint="از پنل کاوه‌نگار → تنظیمات → API Keys"
+              />
+              <AdminInput
+                v-model="form.sms.kavenegarSender"
+                label="شماره فرستنده"
+                placeholder="10004346"
+                dir="ltr"
+                hint="خط اختصاصی یا اشتراکی کاوه‌نگار"
+              />
+            </div>
+
+            <AdminInput
+              v-model="form.sms.kavenegarOtpTemplate"
+              label="نام قالب OTP"
+              placeholder="storein-otp"
+              dir="ltr"
+              hint="نام قالب verify/lookup که در پنل کاوه‌نگار ساخته‌اید"
+            />
+
+            <!-- Info box -->
+            <div class="bg-blue-50 dark:bg-blue-400/10 border border-blue-200 dark:border-blue-400/30 rounded-xl p-4 text-sm text-blue-800 dark:text-blue-300 space-y-2">
+              <p class="font-semibold">راهنمای قالب OTP:</p>
+              <ul class="space-y-1 text-xs list-disc list-inside">
+                <li>در پنل کاوه‌نگار یک قالب تأیید (verify) بسازید</li>
+                <li>متغیر کد را <span class="font-mono bg-blue-100 dark:bg-blue-400/20 px-1 rounded">token</span> نام‌گذاری کنید</li>
+                <li>نام قالب را عیناً در فیلد بالا وارد کنید</li>
+              </ul>
+            </div>
+          </div>
+        </Transition>
+      </div>
+
+      <!-- ── Tab: اعتماد ───────────────────────────────────── -->
+      <!-- ── Announcement Bar ────────────────────────────────── -->
+      <div v-show="activeTab === 'announcement'" class="space-y-5">
+        <div class="admin-card space-y-5">
+          <div>
+            <h3 class="section-title">نوار اطلاع‌رسانی</h3>
+            <p class="text-text-secondary text-xs mt-0.5">نواری که در بالای صفحه فروشگاه نمایش داده می‌شود</p>
+          </div>
+
+          <!-- Toggle -->
+          <div class="flex items-center justify-between rounded-xl border border-border px-4 py-3">
+            <div>
+              <p class="text-sm font-medium text-text-primary">فعال‌سازی نوار</p>
+              <p class="text-xs text-text-secondary mt-0.5">در صورت غیرفعال بودن، نوار اصلاً نمایش داده نمی‌شود</p>
+            </div>
+            <button
+              type="button"
+              @click="form.announcementBar.isActive = !form.announcementBar.isActive"
+              :class="[
+                'relative w-12 h-6 rounded-full transition-colors duration-200 focus:outline-none',
+                form.announcementBar.isActive ? 'bg-primary' : 'bg-border',
+              ]"
+            >
+              <span
+                :class="[
+                  'absolute top-1 w-4 h-4 bg-white rounded-full shadow transition-all duration-200',
+                  form.announcementBar.isActive ? 'right-1' : 'left-1',
+                ]"
+              />
+            </button>
+          </div>
+
+          <!-- Text -->
+          <AdminInput
+            v-model="form.announcementBar.text"
+            label="متن نوار"
+            placeholder="ارسال رایگان برای خریدهای بالای ۵۰۰ هزار تومان 🎉"
+            hint="حداکثر ۲۰۰ کاراکتر"
+          />
+
+          <!-- Colors -->
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label class="field-label">رنگ پس‌زمینه</label>
+              <div class="flex items-center gap-2 mt-1">
+                <input
+                  type="color"
+                  v-model="form.announcementBar.bgColor"
+                  class="w-10 h-10 rounded-lg cursor-pointer border border-border"
+                />
+                <input
+                  type="text"
+                  v-model="form.announcementBar.bgColor"
+                  dir="ltr"
+                  maxlength="7"
+                  placeholder="#3b82f6"
+                  class="flex-1 admin-input text-sm font-mono"
+                />
+              </div>
+            </div>
+            <div>
+              <label class="field-label">رنگ متن</label>
+              <div class="flex items-center gap-2 mt-1">
+                <input
+                  type="color"
+                  v-model="form.announcementBar.textColor"
+                  class="w-10 h-10 rounded-lg cursor-pointer border border-border"
+                />
+                <input
+                  type="text"
+                  v-model="form.announcementBar.textColor"
+                  dir="ltr"
+                  maxlength="7"
+                  placeholder="#ffffff"
+                  class="flex-1 admin-input text-sm font-mono"
+                />
+              </div>
+            </div>
+          </div>
+
+          <!-- Link -->
+          <AdminInput
+            v-model="form.announcementBar.link"
+            label="لینک (اختیاری)"
+            placeholder="https://example.com/sale"
+            hint="اگر خالی بماند، نوار کلیک‌پذیر نخواهد بود"
+            dir="ltr"
+          />
+
+          <!-- Live preview -->
+          <div>
+            <p class="field-label mb-2">پیش‌نمایش</p>
+            <div class="rounded-xl overflow-hidden border border-border">
+              <div
+                v-if="form.announcementBar.text"
+                class="w-full text-center py-2 px-4 text-sm font-medium flex items-center justify-center gap-2"
+                :style="{ backgroundColor: form.announcementBar.bgColor, color: form.announcementBar.textColor }"
+              >
+                <span>{{ form.announcementBar.text }}</span>
+                <span class="opacity-60 text-xs">(× بستن)</span>
+              </div>
+              <div
+                v-else
+                class="w-full text-center py-2 text-xs text-text-disabled bg-surface/50"
+              >متن نوار وارد کنید تا پیش‌نمایش نمایش داده شود</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div v-show="activeTab === 'trust'" class="space-y-5">
+        <div class="admin-card space-y-5">
+          <div class="flex items-center justify-between">
+            <div>
+              <h3 class="section-title">نشان‌های اعتماد</h3>
+              <p class="text-text-secondary text-xs mt-0.5">این کارت‌ها در صفحه اصلی فروشگاه نمایش داده می‌شوند</p>
+            </div>
+            <AdminButton variant="ghost" size="sm" @click="addTrustItem">+ افزودن کارت</AdminButton>
+          </div>
+
+          <!-- Preview — click each card to open its editor -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-3 p-4 rounded-xl border border-dashed border-border bg-surface/50">
+            <button
+              v-for="(item, idx) in form.trustItems"
+              :key="idx"
+              type="button"
+              @click="openTrustIdx = openTrustIdx === idx ? null : idx"
+              :class="[
+                'rounded-xl p-3 flex items-start gap-2 shadow-sm text-right transition-all duration-150',
+                'hover:ring-2 hover:ring-primary/40',
+                openTrustIdx === idx ? 'ring-2 ring-primary' : '',
+              ]"
+              style="background-color: var(--color-card);"
+            >
+              <div
+                class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 text-xl"
+                :style="{ backgroundColor: item.bgColor || '#EBF4FF' }"
+              >{{ item.icon || '🏷️' }}</div>
+              <div class="min-w-0">
+                <p class="font-bold text-text-primary text-xs leading-tight truncate">{{ item.title || '...' }}</p>
+                <p class="text-text-secondary text-[10px] leading-relaxed line-clamp-2">{{ item.subtitle || '...' }}</p>
+              </div>
+            </button>
+          </div>
+
+          <!-- Editor rows — only the active one is shown -->
+          <div class="space-y-2">
+            <div
+              v-for="(item, idx) in form.trustItems"
+              :key="idx"
+              class="rounded-xl border transition-colors duration-150"
+              :class="openTrustIdx === idx ? 'border-primary/50' : 'border-border'"
+            >
+              <!-- Row header — always visible, click toggles -->
+              <button
+                type="button"
+                @click="openTrustIdx = openTrustIdx === idx ? null : idx"
+                class="w-full flex items-center justify-between px-4 py-3 text-sm"
+              >
+                <div class="flex items-center gap-2">
+                  <span class="text-base leading-none">{{ item.icon || '🏷️' }}</span>
+                  <span class="font-medium text-text-primary">{{ item.title || `کارت ${idx + 1}` }}</span>
+                </div>
+                <div class="flex items-center gap-1">
+                  <span class="text-text-disabled text-xs ml-2">{{ openTrustIdx === idx ? 'بستن' : 'ویرایش' }}</span>
+                  <span
+                    class="text-text-secondary transition-transform duration-200"
+                    :class="openTrustIdx === idx ? 'rotate-180' : ''"
+                  >▾</span>
+                </div>
+              </button>
+
+              <!-- Collapsible fields -->
+              <Transition name="collapse">
+                <div v-if="openTrustIdx === idx" class="px-4 pb-4 space-y-3 border-t border-border">
+                  <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-3">
+                    <AdminInput
+                      v-model="item.icon"
+                      label="آیکون (ایموجی)"
+                      placeholder="🔒"
+                      hint="یک ایموجی وارد کنید"
+                    />
+                    <div>
+                      <label class="field-label">رنگ پس‌زمینه</label>
+                      <div class="flex items-center gap-2 mt-1">
+                        <input
+                          type="color"
+                          v-model="item.bgColor"
+                          class="w-10 h-10 rounded-lg cursor-pointer border border-border"
+                        />
+                        <input
+                          type="text"
+                          v-model="item.bgColor"
+                          dir="ltr"
+                          maxlength="7"
+                          placeholder="#EBF4FF"
+                          class="flex-1 admin-input text-sm font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                  <AdminInput v-model="item.title"    label="عنوان"  placeholder="پرداخت امن" />
+                  <AdminInput v-model="item.subtitle" label="توضیح"  placeholder="درگاه پرداخت معتبر و رمزنگاری شده" />
+                  <div class="flex justify-end pt-1">
+                    <button
+                      type="button"
+                      @click="removeTrustItem(idx)"
+                      class="text-xs text-error hover:underline"
+                    >حذف این کارت</button>
+                  </div>
+                </div>
+              </Transition>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- Bottom save bar (sticky) -->
       <Transition name="slide-up">
         <div v-if="dirty"
@@ -569,25 +724,12 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { settingsService } from '@/services/settings.service'
 import { uploadService }   from '@/services/upload.service'
 import { useUiStore }      from '@/stores/ui.store'
-import { useAdminTheme }   from '@/composables/useAdminTheme'
 import AdminButton   from '@/components/common/AdminButton.vue'
 import AdminInput    from '@/components/common/AdminInput.vue'
 import AdminTextarea from '@/components/common/AdminTextarea.vue'
 import AdminSkeleton from '@/components/common/AdminSkeleton.vue'
 
 const ui = useUiStore()
-const { applyTheme } = useAdminTheme()
-
-// Contrast helper for mini navbar preview text
-const navbarTextColor = computed(() => {
-  const hex = form.theme.navbarBg
-  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return '#1f2937'
-  const r = parseInt(hex.slice(1, 3), 16)
-  const g = parseInt(hex.slice(3, 5), 16)
-  const b = parseInt(hex.slice(5, 7), 16)
-  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
-  return luminance > 0.5 ? '#1f2937' : '#f9fafb'
-})
 
 const loading = ref(false)
 const saving  = ref(false)
@@ -601,43 +743,15 @@ const activeTab = ref('general')
 
 const tabs = [
   { key: 'general', icon: '⚙️', label: 'عمومی' },
-  { key: 'theme',   icon: '🎨', label: 'تم سایت' },
   { key: 'seo',     icon: '🔍', label: 'سئو' },
   { key: 'social',  icon: '📱', label: 'شبکه‌های اجتماعی' },
   { key: 'footer',  icon: '📄', label: 'فوتر' },
   { key: 'contact', icon: '📞', label: 'تماس' },
+  { key: 'payment', icon: '💳', label: 'پرداخت' },
+  { key: 'sms',     icon: '📱', label: 'پیامک' },
+  { key: 'trust',        icon: '🛡️', label: 'اعتماد' },
+  { key: 'announcement', icon: '📢', label: 'نوار اطلاع‌رسانی' },
 ]
-
-const displayModes = [
-  { key: 'light',  label: 'روشن',    desc: 'همیشه حالت روشن' },
-  { key: 'dark',   label: 'تیره',    desc: 'همیشه حالت تیره' },
-  { key: 'system', label: 'خودکار',  desc: 'بر اساس تنظیمات دستگاه' },
-]
-
-const colorPresets = [
-  { key: 'blue',    label: 'آبی',        color: '#3B82F6' },
-  { key: 'indigo',  label: 'نیلی',       color: '#6366F1' },
-  { key: 'violet',  label: 'بنفش',       color: '#8B5CF6' },
-  { key: 'rose',    label: 'صورتی',      color: '#F43F5E' },
-  { key: 'orange',  label: 'نارنجی',     color: '#F97316' },
-  { key: 'amber',   label: 'زرد',        color: '#F59E0B' },
-  { key: 'emerald', label: 'سبز',        color: '#10B981' },
-  { key: 'teal',    label: 'فیروزه‌ای',  color: '#14B8A6' },
-  { key: 'cyan',    label: 'آبی روشن',   color: '#06B6D4' },
-  { key: 'slate',   label: 'خاکستری',    color: '#64748B' },
-  { key: 'custom',  label: 'سفارشی',     color: null },
-]
-
-function selectPreset(preset) {
-  form.theme.preset = preset.key
-  if (preset.color) form.theme.primaryColor = preset.color
-}
-
-const activePresetColor = computed(() =>
-  form.theme.preset === 'custom'
-    ? form.theme.primaryColor
-    : (colorPresets.find(p => p.key === form.theme.preset)?.color ?? '#3B82F6')
-)
 
 const socialPlatforms = [
   { key: 'instagram', icon: '📷', label: 'اینستاگرام', placeholder: 'https://instagram.com/storein' },
@@ -670,15 +784,29 @@ const emptyForm = () => ({
   phone:           '',
   email:           '',
   address:         '',
-  theme: {
-    preset:       'blue',
-    primaryColor: '#3B82F6',
-    defaultMode:  'light',
-    navbarBg:     '',
-    navbarBorder: '',
-    footerBg:     '',
-    footerText:   '',
-    sidebarBg:    '',
+  payment: {
+    gateway:             'mock',
+    zarinpalMerchantId:  '',
+    zarinpalSandbox:     true,
+  },
+  sms: {
+    provider:             'mock',
+    kavenegarApiKey:      '',
+    kavenegarSender:      '',
+    kavenegarOtpTemplate: 'storein-otp',
+  },
+  trustItems: [
+    { icon: '🔒', title: 'پرداخت امن',    subtitle: 'درگاه پرداخت معتبر و رمزنگاری شده',    bgColor: '#EBF4FF' },
+    { icon: '↩️', title: 'ضمانت ۷ روزه', subtitle: 'بازگشت کالا در صورت عدم رضایت',        bgColor: '#F0FDF4' },
+    { icon: '✅', title: 'اصالت کالا',    subtitle: 'تمام محصولات دارای گارانتی اصالت',     bgColor: '#FFFBEB' },
+    { icon: '🚚', title: 'ارسال سریع',   subtitle: 'ارسال به سراسر کشور در کمترین زمان',  bgColor: '#FFF1F2' },
+  ],
+  announcementBar: {
+    isActive:  false,
+    text:      '',
+    bgColor:   '#3b82f6',
+    textColor: '#ffffff',
+    link:      '',
   },
 })
 
@@ -714,15 +842,29 @@ function applyData(data) {
     phone:           data.phone           ?? '',
     email:           data.email           ?? '',
     address:         data.address         ?? '',
-    theme: {
-      preset:       data.theme?.preset       ?? 'blue',
-      primaryColor: data.theme?.primaryColor ?? '#3B82F6',
-      defaultMode:  data.theme?.defaultMode  ?? 'light',
-      navbarBg:     data.theme?.navbarBg     ?? '',
-      navbarBorder: data.theme?.navbarBorder ?? '',
-      footerBg:     data.theme?.footerBg     ?? '',
-      footerText:   data.theme?.footerText   ?? '',
-      sidebarBg:    data.theme?.sidebarBg    ?? '',
+    payment: {
+      gateway:            data.payment?.gateway            ?? 'mock',
+      zarinpalMerchantId: data.payment?.zarinpalMerchantId ?? '',
+      zarinpalSandbox:    data.payment?.zarinpalSandbox    ?? true,
+    },
+    sms: {
+      provider:             data.sms?.provider             ?? 'mock',
+      kavenegarApiKey:      data.sms?.kavenegarApiKey      ?? '',
+      kavenegarSender:      data.sms?.kavenegarSender      ?? '',
+      kavenegarOtpTemplate: data.sms?.kavenegarOtpTemplate ?? 'storein-otp',
+    },
+    trustItems: (data.trustItems ?? []).map(t => ({
+      icon:     t.icon     ?? '',
+      title:    t.title    ?? '',
+      subtitle: t.subtitle ?? '',
+      bgColor:  t.bgColor  ?? '#EBF4FF',
+    })),
+    announcementBar: {
+      isActive:  data.announcementBar?.isActive  ?? false,
+      text:      data.announcementBar?.text      ?? '',
+      bgColor:   data.announcementBar?.bgColor   ?? '#3b82f6',
+      textColor: data.announcementBar?.textColor ?? '#ffffff',
+      link:      data.announcementBar?.link      ?? '',
     },
   })
   snapshot()
@@ -768,20 +910,33 @@ async function saveAll() {
       phone:   form.phone.trim(),
       email:   form.email.trim(),
       address: form.address.trim(),
-      theme: {
-        preset:       form.theme.preset,
-        primaryColor: form.theme.primaryColor.trim(),
-        defaultMode:  form.theme.defaultMode,
-        navbarBg:     form.theme.navbarBg.trim(),
-        navbarBorder: form.theme.navbarBorder.trim(),
-        footerBg:     form.theme.footerBg.trim(),
-        footerText:   form.theme.footerText.trim(),
-        sidebarBg:    form.theme.sidebarBg.trim(),
+      payment: {
+        gateway:            form.payment.gateway,
+        zarinpalMerchantId: form.payment.zarinpalMerchantId.trim(),
+        zarinpalSandbox:    form.payment.zarinpalSandbox,
+      },
+      sms: {
+        provider:             form.sms.provider,
+        kavenegarApiKey:      form.sms.kavenegarApiKey.trim(),
+        kavenegarSender:      form.sms.kavenegarSender.trim(),
+        kavenegarOtpTemplate: form.sms.kavenegarOtpTemplate.trim(),
+      },
+      trustItems: form.trustItems.map(t => ({
+        icon:     t.icon.trim(),
+        title:    t.title.trim(),
+        subtitle: t.subtitle.trim(),
+        bgColor:  t.bgColor.trim(),
+      })),
+      announcementBar: {
+        isActive:  form.announcementBar.isActive,
+        text:      form.announcementBar.text.trim(),
+        bgColor:   form.announcementBar.bgColor.trim(),
+        textColor: form.announcementBar.textColor.trim(),
+        link:      form.announcementBar.link.trim(),
       },
     }
     const { data } = await settingsService.update(dto)
     applyData(data)
-    applyTheme(data.theme)
     ui.addToast('تنظیمات ذخیره شد ✓', 'success')
   } catch (err) {
     const msg = err.response?.data?.message
@@ -790,6 +945,20 @@ async function saveAll() {
   } finally {
     saving.value = false
   }
+}
+
+// ── Trust items ───────────────────────────────────────────
+const openTrustIdx = ref(null)
+
+function addTrustItem() {
+  form.trustItems.push({ icon: '🏷️', title: '', subtitle: '', bgColor: '#EBF4FF' })
+  openTrustIdx.value = form.trustItems.length - 1
+}
+
+function removeTrustItem(idx) {
+  form.trustItems.splice(idx, 1)
+  if (openTrustIdx.value === idx) openTrustIdx.value = null
+  else if (openTrustIdx.value > idx) openTrustIdx.value--
 }
 
 // ── Footer links ──────────────────────────────────────────
@@ -838,4 +1007,7 @@ async function onFileChange(e, target) {
 .slide-up-enter-from, .slide-up-leave-to { opacity: 0; transform: translate(-50%, 1rem); }
 .slide-down-enter-active, .slide-down-leave-active { transition: all 0.2s ease; }
 .slide-down-enter-from, .slide-down-leave-to { opacity: 0; transform: translateY(-8px); }
+.collapse-enter-active, .collapse-leave-active { transition: all 0.2s ease; overflow: hidden; }
+.collapse-enter-from, .collapse-leave-to { opacity: 0; max-height: 0; }
+.collapse-enter-to, .collapse-leave-from { opacity: 1; max-height: 400px; }
 </style>

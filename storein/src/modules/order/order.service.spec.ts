@@ -159,6 +159,54 @@ describe('OrderService', () => {
         service.createFromCart(userId, { addressId: addrId.toString() }),
       ).rejects.toThrow(BadRequestException);
     });
+
+    it('creates order when variant has empty SKU (regression for required:true bug)', async () => {
+      const cartItemNoSku = { ...mockCartItem(), sku: '' };
+      cartService.getRawCart.mockResolvedValue({
+        userId, updatedAt: '', items: [cartItemNoSku],
+      });
+
+      await service.createFromCart(userId, { addressId: addrId.toString() });
+
+      expect(orderModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          items: expect.arrayContaining([
+            expect.objectContaining({ sku: '' }),
+          ]),
+        }),
+      );
+    });
+
+    it('throws when variant is inactive', async () => {
+      productService.findById.mockResolvedValue({
+        variants: [{ ...mockProductVariant(), isActive: false }],
+      });
+      await expect(
+        service.createFromCart(userId, { addressId: addrId.toString() }),
+      ).rejects.toThrow(BadRequestException);
+    });
+
+    it('applies coupon discount and records usage after order creation', async () => {
+      discountService.validate.mockResolvedValue({
+        isValid:        true,
+        discountAmount: 2_000_000,
+        coupon:         { _id: new Types.ObjectId() },
+      });
+
+      await service.createFromCart(userId, {
+        addressId:  addrId.toString(),
+        couponCode: 'SAVE20',
+      });
+
+      expect(orderModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          discount:   2_000_000,
+          total:      18_000_000,    // 20_000_000 subtotal − 2_000_000
+          couponCode: 'SAVE20',
+        }),
+      );
+      expect(discountService.recordUsage).toHaveBeenCalled();
+    });
   });
 
   describe('cancelMyOrder', () => {
@@ -217,6 +265,107 @@ describe('OrderService', () => {
 
       expect(productService.adjustStock).toHaveBeenCalledWith(prodId, varId, 2);
       expect(order.cancelReason).toBe('موجود نیست');
+    });
+  });
+
+  describe('findMyOrderById', () => {
+    it('returns order when found', async () => {
+      const order = mockOrder();
+      orderModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(order),
+        }),
+      });
+
+      const result = await service.findMyOrderById(userId, orderId);
+      expect(result).toEqual(order);
+    });
+
+    it('throws NotFoundException when order not found', async () => {
+      orderModel.findOne.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(null),
+        }),
+      });
+
+      await expect(service.findMyOrderById(userId, orderId))
+        .rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('adminFindById', () => {
+    it('returns order when found', async () => {
+      const order = mockOrder();
+      orderModel.findById.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(order),
+          }),
+        }),
+      });
+
+      const result = await service.adminFindById(orderId);
+      expect(result).toEqual(order);
+    });
+
+    it('throws NotFoundException when order not found', async () => {
+      orderModel.findById.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          populate: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(null),
+          }),
+        }),
+      });
+
+      await expect(service.adminFindById(orderId))
+        .rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('findMyOrders', () => {
+    it('returns paginated orders for user', async () => {
+      const orders = [mockOrder()];
+      orderModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue(orders),
+              }),
+            }),
+          }),
+        }),
+      });
+      orderModel.countDocuments.mockResolvedValue(1);
+
+      const result = await service.findMyOrders(userId, 1, 10);
+      expect(result.orders).toEqual(orders);
+      expect(result.total).toBe(1);
+      expect(result.totalPages).toBe(1);
+    });
+  });
+
+  describe('adminFindAll', () => {
+    it('returns paginated orders with populated user', async () => {
+      const orders = [mockOrder()];
+      orderModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                populate: jest.fn().mockReturnValue({
+                  lean: jest.fn().mockResolvedValue(orders),
+                }),
+              }),
+            }),
+          }),
+        }),
+      });
+      orderModel.countDocuments.mockResolvedValue(1);
+
+      const result = await service.adminFindAll(1, 20);
+      expect(result.items).toEqual(orders);
+      expect(result.total).toBe(1);
     });
   });
 });

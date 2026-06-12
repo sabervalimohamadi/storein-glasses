@@ -72,6 +72,16 @@ export class UserController {
   }
 
   @UseGuards(AdminGuard)
+  @Get(':id/reviews')
+  getUserReviews(
+    @Param('id') id: string,
+    @Query('page')  page  = 1,
+    @Query('limit') limit = 10,
+  ) {
+    return this.userService.getUserReviews(id, +page, +limit);
+  }
+
+  @UseGuards(AdminGuard)
   @Patch(':id/block')
   block(@Param('id') id: string) {
     return this.userService.toggleBlock(id);

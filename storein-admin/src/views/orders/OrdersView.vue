@@ -34,9 +34,9 @@
         <template #cell-user="{ row }">
           <div>
             <p class="font-medium text-text-primary text-sm">
-              {{ row.user?.firstName ?? '' }} {{ row.user?.lastName ?? '' }}
+              {{ row.userId?.firstName ?? '' }} {{ row.userId?.lastName ?? '' }}
             </p>
-            <p class="text-text-disabled text-xs font-fanum" dir="ltr">{{ row.user?.phone }}</p>
+            <p class="text-text-disabled text-xs font-fanum" dir="ltr">{{ row.userId?.phone }}</p>
           </div>
         </template>
 

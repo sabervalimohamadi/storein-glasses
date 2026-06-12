@@ -67,6 +67,9 @@ export class Product {
   @Prop({ default: 0, index: true })
   totalStock: number;
 
+  @Prop({ default: 0 })
+  maxComparePrice: number;
+
   @Prop({ type: [String], default: [] })
   tags: string[];
 
@@ -97,3 +100,4 @@ export const ProductSchema = SchemaFactory.createForClass(Product);
 ProductSchema.index({ name: 'text', description: 'text', tags: 'text' });
 ProductSchema.index({ category: 1, status: 1, minPrice: 1 });
 ProductSchema.index({ status: 1, totalStock: 1 });
+ProductSchema.index({ status: 1, maxComparePrice: -1, minPrice: 1 });

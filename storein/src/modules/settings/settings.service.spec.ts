@@ -13,6 +13,13 @@ const mockLogger = {
   debug: jest.fn(),
 };
 
+const DEFAULT_TRUST_ITEMS = [
+  { icon: '🔒', title: 'پرداخت امن',    subtitle: 'درگاه پرداخت معتبر و رمزنگاری شده',    bgColor: '#EBF4FF' },
+  { icon: '↩️', title: 'ضمانت ۷ روزه', subtitle: 'بازگشت کالا در صورت عدم رضایت',        bgColor: '#F0FDF4' },
+  { icon: '✅', title: 'اصالت کالا',    subtitle: 'تمام محصولات دارای گارانتی اصالت',     bgColor: '#FFFBEB' },
+  { icon: '🚚', title: 'ارسال سریع',   subtitle: 'ارسال به سراسر کشور در کمترین زمان',   bgColor: '#FFF1F2' },
+];
+
 const defaultDoc = {
   siteName:        'استورین',
   tagline:         'فروشگاه تخصصی عینک',
@@ -28,6 +35,7 @@ const defaultDoc = {
   phone:           '',
   email:           '',
   address:         '',
+  trustItems:      DEFAULT_TRUST_ITEMS,
 };
 
 /** Simulates Mongoose chainable query: .select().lean() */
@@ -98,6 +106,14 @@ describe('SettingsService', () => {
       await service.findSettings();
 
       expect(mockLogger.log).not.toHaveBeenCalled();
+    });
+
+    it('returns trustItems from the existing document', async () => {
+      model.findOne.mockReturnValue(chainable(defaultDoc));
+
+      const result = await service.findSettings();
+
+      expect(result.trustItems).toEqual(DEFAULT_TRUST_ITEMS);
     });
 
     it('calls create with singleton key when no document exists', async () => {
@@ -211,6 +227,59 @@ describe('SettingsService', () => {
       expect(mockLogger.log).toHaveBeenCalledWith(
         'Site settings updated',
         expect.objectContaining({ footerLinksCount: 0 }),
+      );
+    });
+
+    it('logs trustItemsCount when trustItems are included in DTO', async () => {
+      model.findOneAndUpdate.mockReturnValue(chainable(defaultDoc));
+      const dto = { trustItems: DEFAULT_TRUST_ITEMS };
+
+      await service.updateSettings(dto as any);
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Site settings updated',
+        expect.objectContaining({ trustItemsCount: 4 }),
+      );
+    });
+
+    it('logs trustItemsCount: 0 when trustItems is absent', async () => {
+      model.findOneAndUpdate.mockReturnValue(chainable(defaultDoc));
+
+      await service.updateSettings({ siteName: 'تست' });
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Site settings updated',
+        expect.objectContaining({ trustItemsCount: 0 }),
+      );
+    });
+
+    it('passes trustItems through $set unchanged', async () => {
+      model.findOneAndUpdate.mockReturnValue(chainable(defaultDoc));
+      const dto = {
+        trustItems: [
+          { icon: '🎁', title: 'هدیه رایگان', subtitle: 'با هر خرید بالای ۵۰۰ هزار تومان', bgColor: '#FDF4FF' },
+        ],
+      };
+
+      await service.updateSettings(dto as any);
+
+      expect(model.findOneAndUpdate).toHaveBeenCalledWith(
+        { _key: 'default' },
+        { $set: dto },
+        expect.any(Object),
+      );
+    });
+
+    it('handles empty trustItems array without throwing', async () => {
+      model.findOneAndUpdate.mockReturnValue(chainable({ ...defaultDoc, trustItems: [] }));
+
+      await expect(
+        service.updateSettings({ trustItems: [] } as any),
+      ).resolves.toBeDefined();
+
+      expect(mockLogger.log).toHaveBeenCalledWith(
+        'Site settings updated',
+        expect.objectContaining({ trustItemsCount: 0 }),
       );
     });
 

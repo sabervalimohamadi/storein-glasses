@@ -33,7 +33,7 @@
       <!-- Scrollable container -->
       <div
         ref="scrollEl"
-        class="flex gap-3 overflow-x-auto scrollbar-hide pb-2"
+        class="flex gap-3 overflow-x-auto scrollbar-hide pt-2 pb-2"
         @scroll="onScroll"
       >
         <!-- Skeleton state -->
@@ -58,9 +58,17 @@
           <div
             v-for="product in products"
             :key="product._id"
-            class="min-w-[200px] max-w-[200px] flex-shrink-0"
+            :class="featured ? 'min-w-[300px] max-w-[300px]' : 'min-w-[200px] max-w-[200px]'"
+            class="flex-shrink-0"
           >
+            <BaseFeaturedCard
+              v-if="featured"
+              :product="product"
+              :wishlist="wishlistStore.isInWishlist(product._id)"
+              @toggle-wish="wishlistStore.toggle(product._id)"
+            />
             <BaseProductCard
+              v-else
               :product="product"
               :wishlist="wishlistStore.isInWishlist(product._id)"
               @add-to-cart="handleAddToCart(product)"
@@ -95,16 +103,18 @@ import { ref, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cart.store'
 import { useWishlistStore } from '@/stores/wishlist.store'
 import { useUiStore } from '@/stores/ui.store'
-import BaseProductCard from '@/components/common/BaseProductCard.vue'
-import BaseSkeleton    from '@/components/common/BaseSkeleton.vue'
-import BaseEmpty       from '@/components/common/BaseEmpty.vue'
+import BaseProductCard  from '@/components/common/BaseProductCard.vue'
+import BaseFeaturedCard from '@/components/common/BaseFeaturedCard.vue'
+import BaseSkeleton     from '@/components/common/BaseSkeleton.vue'
+import BaseEmpty        from '@/components/common/BaseEmpty.vue'
 
 const props = defineProps({
-  title:         { type: String, required: true },
-  link:          { type: String, default: '/products' },
-  products:      { type: Array,  default: () => [] },
+  title:         { type: String,  required: true },
+  link:          { type: String,  default: '/products' },
+  products:      { type: Array,   default: () => [] },
   loading:       { type: Boolean, default: false },
-  skeletonCount: { type: Number, default: 5 },
+  skeletonCount: { type: Number,  default: 5 },
+  featured:      { type: Boolean, default: false },
 })
 
 const cartStore     = useCartStore()

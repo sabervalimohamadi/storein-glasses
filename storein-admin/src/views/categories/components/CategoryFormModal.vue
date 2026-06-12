@@ -40,6 +40,23 @@
         <ImageUploader v-model="formImages" :max-images="1" />
       </div>
 
+      <!-- جنسیت -->
+      <div>
+        <label class="field-label mb-2 block">جنسیت (اختیاری)</label>
+        <div class="grid grid-cols-5 gap-2">
+          <button
+            v-for="opt in GENDER_OPTS" :key="opt.value"
+            type="button"
+            @click="form.gender = form.gender === opt.value ? '' : opt.value"
+            class="py-2 rounded-lg border text-xs font-medium transition-colors"
+            :class="form.gender === opt.value
+              ? 'border-primary bg-primary text-white'
+              : 'border-border text-text-secondary hover:border-primary/50'"
+          >{{ opt.label }}</button>
+        </div>
+        <p class="text-text-disabled text-xs mt-1.5">برای فیلتر جنسیت در فروشگاه استفاده می‌شود</p>
+      </div>
+
       <div class="grid grid-cols-2 gap-4">
         <AdminInput
           v-model.number="form.order"
@@ -106,11 +123,20 @@ const ui   = useUiStore()
 const isEdit = computed(() => !!props.category)
 const saving = ref(false)
 
+const GENDER_OPTS = [
+  { label: 'بدون',     value: ''       },
+  { label: 'مردانه',   value: 'men'    },
+  { label: 'زنانه',    value: 'women'  },
+  { label: 'بچگانه',   value: 'kids'   },
+  { label: 'یونیسکس',  value: 'unisex' },
+]
+
 const form = reactive({
   name:        '',
   slug:        '',
   parentId:    '',
   description: '',
+  gender:      '',
   order:       0,
   isActive:    true,
 })
@@ -124,11 +150,13 @@ watch(() => props.modelValue, (open) => {
     form.slug        = props.category.slug        ?? ''
     form.parentId    = props.category.parentId    ?? ''
     form.description = props.category.description ?? ''
-    form.order       = props.category.order       ?? 0
+    form.gender      = props.category.gender      ?? ''
+    form.order       = props.category.sortOrder    ?? 0
     form.isActive    = props.category.isActive    ?? true
     formImages.value = props.category.image ? [props.category.image] : []
   } else {
     form.name = form.slug = form.description = form.parentId = ''
+    form.gender   = ''
     form.order    = 0
     form.isActive = true
     formImages.value = []
@@ -150,6 +178,7 @@ async function submit() {
       description: form.description.trim() || undefined,
       image:       formImages.value[0]?.original?.url || undefined,
       sortOrder:   Number(form.order),
+      gender:      form.gender || '',
       isActive:    form.isActive,
     }
     let result

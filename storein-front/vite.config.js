@@ -9,5 +9,14 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url)),
     },
   },
-  server: { port: 3000 },
+  server: {
+  port: 3000,
+  allowedHosts: 'all',
+  proxy: {
+    '/api/v1/': {
+      target: 'http://localhost:3001',  // backend محلی
+      changeOrigin: true,
+    }
+  }
+},
 })

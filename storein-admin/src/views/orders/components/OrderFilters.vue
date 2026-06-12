@@ -15,14 +15,16 @@
       </div>
 
       <div class="flex items-end gap-2">
-        <div>
-          <label class="field-label text-xs">از تاریخ</label>
-          <input v-model="f.startDate" type="date" class="field-input text-sm w-36" dir="ltr" />
-        </div>
-        <div>
-          <label class="field-label text-xs">تا تاریخ</label>
-          <input v-model="f.endDate" type="date" class="field-input text-sm w-36" dir="ltr" />
-        </div>
+        <AdminDatePicker
+          v-model="f.startDate"
+          label="از تاریخ"
+          placeholder="از تاریخ"
+        />
+        <AdminDatePicker
+          v-model="f.endDate"
+          label="تا تاریخ"
+          placeholder="تا تاریخ"
+        />
       </div>
 
       <AdminButton v-if="hasActive" variant="ghost" @click="reset">پاک کردن</AdminButton>
@@ -36,6 +38,7 @@ import { useDebounce }    from '@/composables/useDebounce'
 import AdminInput         from '@/components/common/AdminInput.vue'
 import AdminSelect        from '@/components/common/AdminSelect.vue'
 import AdminButton        from '@/components/common/AdminButton.vue'
+import AdminDatePicker    from '@/components/common/AdminDatePicker.vue'
 import { ORDER_STATUSES } from '@/utils/constants'
 
 defineProps({ loading: Boolean })

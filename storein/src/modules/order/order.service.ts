@@ -21,7 +21,8 @@ import {
 } from '../notification/notification.listener';
 import type { UserDocument } from '../user/entities/user.schema';
 import { User } from '../user/entities/user.schema';
-import { AppLoggerService } from '../../common/logger/app-logger.service';
+import { AppLoggerService }      from '../../common/logger/app-logger.service';
+import { NotificationsGateway }  from '../../common/gateway/notifications.gateway';
 
 @Injectable()
 export class OrderService {
@@ -33,6 +34,7 @@ export class OrderService {
     private discountService: DiscountService,
     private eventEmitter: EventEmitter2,
     private readonly logger: AppLoggerService,
+    private readonly gateway: NotificationsGateway,
   ) {
     this.logger.setContext('OrderService');
   }
@@ -44,7 +46,7 @@ export class OrderService {
 
     const user = await this.userModel
       .findById(userId)
-      .select('addresses')
+      .select('addresses firstName lastName phone')
       .lean<UserDocument>();
     if (!user) throw new NotFoundException('کاربر یافت نشد');
 
@@ -59,12 +61,21 @@ export class OrderService {
       const variant  = product.variants.find(
         (v) => v._id.toString() === item.variantId,
       );
-      if (!variant?.isActive)
+      if (!variant?.isActive) {
+        this.logger.warn('Order blocked: variant inactive', {
+          userId, productId: item.productId, variantId: item.variantId, name: item.name,
+        });
         throw new BadRequestException(`ویریانت "${item.name}" موجود نیست`);
-      if (variant.stock < item.quantity)
+      }
+      if (variant.stock < item.quantity) {
+        this.logger.warn('Order blocked: insufficient stock', {
+          userId, productId: item.productId, variantId: item.variantId,
+          name: item.name, requested: item.quantity, available: variant.stock,
+        });
         throw new BadRequestException(
           `موجودی "${item.name}" کافی نیست. موجود: ${variant.stock}`,
         );
+      }
     }
 
     const subtotal = cart.items.reduce((s, i) => s + i.price * i.quantity, 0);
@@ -76,9 +87,17 @@ export class OrderService {
       const result = await this.discountService.validate(
         userId, dto.couponCode, subtotal,
       );
-      if (!result.isValid) throw new BadRequestException(result.message);
+      if (!result.isValid) {
+        this.logger.warn('Order blocked: coupon invalid', {
+          userId, couponCode: dto.couponCode, reason: result.message,
+        });
+        throw new BadRequestException(result.message);
+      }
       discount  = result.discountAmount;
       couponDoc = result.coupon;
+      this.logger.log('Coupon applied', {
+        userId, couponCode: dto.couponCode, discountAmount: discount,
+      });
     }
 
     const total = subtotal - discount;
@@ -137,12 +156,25 @@ export class OrderService {
       itemCount:   cart.items.length,
     });
 
+    const customerName =
+      `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
+      (user.phone ?? '').slice(0, -4) + '****';
+
+    this.gateway.emitNewOrder({
+      orderId:      (order._id as any).toString(),
+      orderNumber:  order.orderNumber,
+      total:        order.total,
+      customerName,
+      createdAt:    (order as any).createdAt?.toISOString() ?? new Date().toISOString(),
+    });
+
     return order.toObject();
   }
 
-  async findMyOrders(userId: string, page = 1, limit = 10) {
-    const filter = { userId: new Types.ObjectId(userId) };
-    const skip   = (page - 1) * limit;
+  async findMyOrders(userId: string, page = 1, limit = 10, status?: OrderStatus) {
+    const filter: Record<string, any> = { userId: new Types.ObjectId(userId) };
+    if (status) filter.status = status;
+    const skip = (page - 1) * limit;
 
     const [orders, total] = await Promise.all([
       this.orderModel
@@ -212,23 +244,69 @@ export class OrderService {
     return order.toObject();
   }
 
-  async adminFindAll(page = 1, limit = 20, status?: OrderStatus) {
-    const filter: Record<string, any> = status ? { status } : {};
+  async adminFindAll(
+    page  = 1,
+    limit = 20,
+    filters: {
+      status?:    OrderStatus;
+      search?:    string;
+      startDate?: string;
+      endDate?:   string;
+    } = {},
+  ) {
+    const filter: Record<string, any> = {};
+
+    if (filters.status)    filter.status = filters.status;
+    if (filters.startDate || filters.endDate) {
+      filter.createdAt = {};
+      if (filters.startDate) filter.createdAt.$gte = new Date(filters.startDate);
+      if (filters.endDate)   filter.createdAt.$lte = new Date(filters.endDate + 'T23:59:59');
+    }
+    if (filters.search) {
+      const s = filters.search.trim();
+      filter.$or = [
+        { orderNumber: { $regex: s, $options: 'i' } },
+      ];
+    }
+
     const skip = (page - 1) * limit;
 
+    let query = this.orderModel
+      .find(filter)
+      .select('-__v')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('userId', 'phone firstName lastName');
+
+    // When searching by phone we need to match populated user — do a two-step query
+    if (filters.search && /^[\d\+]/.test(filters.search.trim())) {
+      const matchedUsers = await this.userModel
+        .find({ phone: { $regex: filters.search.trim(), $options: 'i' } })
+        .select('_id')
+        .lean<{ _id: Types.ObjectId }[]>();
+      if (matchedUsers.length) {
+        const userIds = matchedUsers.map(u => u._id);
+        filter.$or = [
+          ...(filter.$or ?? []),
+          { userId: { $in: userIds } },
+        ];
+        query = this.orderModel
+          .find(filter)
+          .select('-__v')
+          .sort({ createdAt: -1 })
+          .skip(skip)
+          .limit(limit)
+          .populate('userId', 'phone firstName lastName');
+      }
+    }
+
     const [orders, total] = await Promise.all([
-      this.orderModel
-        .find(filter)
-        .select('-__v')
-        .sort({ createdAt: -1 })
-        .skip(skip)
-        .limit(limit)
-        .populate('userId', 'phone firstName lastName')
-        .lean<OrderDocument[]>(),
+      query.lean<OrderDocument[]>(),
       this.orderModel.countDocuments(filter),
     ]);
 
-    return { orders, total, page, totalPages: Math.ceil(total / limit) };
+    return { items: orders, total, page, totalPages: Math.ceil(total / limit) };
   }
 
   async adminFindById(orderId: string): Promise<OrderDocument> {

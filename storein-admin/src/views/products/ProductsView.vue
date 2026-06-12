@@ -20,11 +20,20 @@
     </div>
 
     <!-- Filters -->
-    <ProductFilters :categories="categories" @change="onFilterChange" />
+    <ProductFilters :categories="categories" :brands="brands" @change="onFilterChange" />
 
     <!-- Table -->
     <div class="admin-card p-0 overflow-hidden">
       <AdminTable :columns="columns" :rows="products" :loading="loading" :skeleton-rows="10" empty-text="محصولی یافت نشد">
+
+        <!-- Checkbox -->
+        <template #cell-select="{ row }">
+          <input type="checkbox"
+            :checked="selectedIds.has(row._id)"
+            @change="toggleSelect(row)"
+            class="w-4 h-4 rounded accent-primary cursor-pointer"
+            @click.stop />
+        </template>
 
         <!-- Image + name -->
         <template #cell-name="{ row }">
@@ -49,7 +58,13 @@
               >
                 {{ row.name }}
               </RouterLink>
-              <p class="text-text-disabled text-xs font-mono" dir="ltr">{{ row.slug }}</p>
+              <div class="flex items-center gap-1.5 mt-0.5">
+                <p class="text-text-disabled text-xs font-mono" dir="ltr">{{ row.slug }}</p>
+                <span v-if="row.brand?.name"
+                  class="inline-flex items-center px-1.5 py-0.5 rounded-md bg-primary/10 text-primary text-[10px] font-medium">
+                  {{ row.brand.name }}
+                </span>
+              </div>
             </div>
           </div>
         </template>
@@ -64,6 +79,36 @@
           <span class="font-fanum text-sm font-medium text-text-primary">
             {{ formatPrice(row.minPrice) }}
           </span>
+        </template>
+
+        <!-- Discount -->
+        <template #cell-discount="{ row }">
+          <div class="flex items-center justify-center gap-1">
+            <template v-if="getDiscount(row) > 0">
+              <span class="inline-flex items-center px-2 py-0.5 rounded-lg bg-red-100 text-red-600 text-xs font-bold font-fanum">
+                {{ getDiscount(row) }}٪
+              </span>
+              <button @click.stop="openDiscountModal(row)"
+                class="w-6 h-6 rounded flex items-center justify-center text-text-disabled hover:text-primary hover:bg-primary/10 transition-colors"
+                title="ویرایش تخفیف">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                </svg>
+              </button>
+              <button @click.stop="clearDiscount(row)"
+                class="w-6 h-6 rounded flex items-center justify-center text-text-disabled hover:text-error hover:bg-red-50 transition-colors"
+                title="حذف تخفیف">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            </template>
+            <button v-else @click.stop="openDiscountModal(row)"
+              class="text-xs text-text-disabled hover:text-primary transition-colors px-1"
+              title="افزودن تخفیف">
+              + تخفیف
+            </button>
+          </div>
         </template>
 
         <!-- Stock -->
@@ -97,14 +142,24 @@
         <!-- Actions -->
         <template #cell-actions="{ row }">
           <div class="flex items-center gap-1 justify-center">
+            <button @click="openDetail(row)"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-blue-50 hover:text-blue-500 dark:hover:bg-blue-900/20 transition-colors"
+              title="جزئیات">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </button>
             <RouterLink :to="{ name: 'product-edit', params: { id: row._id } }"
-              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-primary/10 hover:text-primary transition-colors">
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
+              title="ویرایش">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
             </RouterLink>
             <button @click="confirmDelete(row)"
-              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-red-50 hover:text-error transition-colors">
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-red-50 hover:text-error transition-colors"
+              title="حذف">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
               </svg>
@@ -121,6 +176,107 @@
       :total-pages="totalPages"
       :loading="loading"
       @update:modelValue="fetchProducts"
+    />
+
+    <!-- Discount modal -->
+    <Teleport to="body">
+      <div v-if="discountModal.open"
+        class="fixed inset-0 z-modal flex items-center justify-center p-4"
+        style="background: rgba(0,0,0,0.5);"
+        @click.self="discountModal.open = false"
+      >
+        <div class="rounded-2xl shadow-modal w-full max-w-sm p-6 space-y-5" style="background-color: var(--color-card);">
+
+          <div>
+            <h3 class="text-base font-bold text-text-primary">تنظیم تخفیف</h3>
+            <p class="text-sm text-text-secondary mt-0.5 line-clamp-1">{{ discountModal.product?.name }}</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="text-sm font-medium text-text-secondary">درصد تخفیف</label>
+            <div class="flex items-center gap-3">
+              <input
+                v-model.number="discountModal.pct"
+                type="number" min="0" max="90" step="1"
+                class="field-input w-28 text-center font-fanum font-bold text-xl"
+                dir="ltr"
+                @keyup.enter="saveDiscount"
+              />
+              <span class="text-text-secondary">٪</span>
+            </div>
+            <p class="text-xs text-text-disabled">
+              عدد ۰ یعنی بدون تخفیف — حداکثر ۹۰٪
+            </p>
+          </div>
+
+          <!-- Preview -->
+          <div v-if="discountModal.pct > 0 && discountModal.product" class="rounded-xl p-3 space-y-1 text-sm" style="background-color: var(--color-bg);">
+            <div class="flex justify-between text-text-secondary">
+              <span>قیمت اصلی</span>
+              <span class="font-fanum font-medium text-text-primary">{{ formatPrice(discountModal.product.minPrice) }}</span>
+            </div>
+            <div class="flex justify-between text-text-secondary">
+              <span>قیمت قبل از تخفیف</span>
+              <span class="font-fanum line-through">{{ formatPrice(Math.round(discountModal.product.minPrice / (1 - discountModal.pct / 100))) }}</span>
+            </div>
+          </div>
+
+          <div class="flex gap-2 pt-1">
+            <AdminButton variant="secondary" class="flex-1" @click="discountModal.open = false" :disabled="discountModal.loading">
+              انصراف
+            </AdminButton>
+            <AdminButton class="flex-1" :loading="discountModal.loading" @click="saveDiscount">
+              ذخیره
+            </AdminButton>
+          </div>
+
+        </div>
+      </div>
+    </Teleport>
+
+    <!-- Bulk action bar -->
+    <Transition name="bulk-bar">
+      <div v-if="selectedIds.size > 0"
+        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3
+               bg-slate-900 dark:bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10">
+        <span class="font-fanum text-sm font-medium">
+          {{ selectedIds.size }} محصول انتخاب شده
+        </span>
+        <div class="w-px h-5 bg-white/20" />
+        <button @click="selectAll"
+          class="text-sm text-blue-300 hover:text-white transition-colors">
+          انتخاب همه صفحه
+        </button>
+        <div class="w-px h-5 bg-white/20" />
+        <button @click="bulkModal = true"
+          class="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-xl transition-colors font-medium">
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
+          </svg>
+          تخفیف گروهی
+        </button>
+        <button @click="clearSelection"
+          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </Transition>
+
+    <!-- Bulk discount modal -->
+    <BulkDiscountModal
+      v-model="bulkModal"
+      :initial-products="selectedProducts"
+      :categories="categories"
+      :brands="brands"
+      @applied="onBulkApplied"
+    />
+
+    <!-- Product detail modal -->
+    <ProductDetailModal
+      v-model="detailModal.open"
+      :product-id="detailModal.productId"
     />
 
     <!-- Delete confirm -->
@@ -141,15 +297,18 @@
 import { ref, computed, onMounted } from 'vue'
 import { productService }  from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
+import { brandService }    from '@/services/brand.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { formatPrice, formatNumber } from '@/utils/formatters'
 import { ITEMS_PER_PAGE } from '@/utils/constants'
 
-import ProductFilters  from './components/ProductFilters.vue'
-import AdminTable      from '@/components/common/AdminTable.vue'
-import AdminButton     from '@/components/common/AdminButton.vue'
-import AdminPagination from '@/components/common/AdminPagination.vue'
-import AdminConfirm    from '@/components/common/AdminConfirm.vue'
+import ProductFilters    from './components/ProductFilters.vue'
+import BulkDiscountModal from './components/BulkDiscountModal.vue'
+import ProductDetailModal from './components/ProductDetailModal.vue'
+import AdminTable        from '@/components/common/AdminTable.vue'
+import AdminButton       from '@/components/common/AdminButton.vue'
+import AdminPagination   from '@/components/common/AdminPagination.vue'
+import AdminConfirm      from '@/components/common/AdminConfirm.vue'
 
 const ui = useUiStore()
 
@@ -158,21 +317,66 @@ const noImagePlaceholder = `<svg class="w-6 h-6" style="color:#CBD5E1" fill="non
 
 const products      = ref([])
 const categories    = ref([])
+const brands        = ref([])
 const loading       = ref(true)
 const total         = ref(0)
 const page          = ref(1)
 const activeFilters = ref({ search: '', categoryId: '', status: '', sortBy: 'newest' })
 const deleteDialog  = ref({ open: false, product: null, loading: false })
+const discountModal = ref({ open: false, product: null, pct: 0, loading: false })
+const detailModal   = ref({ open: false, productId: null })
+
+// ── Bulk select ───────────────────────────────────
+const selectedIds      = ref(new Set())
+const selectedProducts = ref([])
+const bulkModal        = ref(false)
+
+function toggleSelect(row) {
+  if (selectedIds.value.has(row._id)) {
+    selectedIds.value.delete(row._id)
+    selectedProducts.value = selectedProducts.value.filter(p => p._id !== row._id)
+  } else {
+    selectedIds.value.add(row._id)
+    selectedProducts.value.push(row)
+  }
+  selectedIds.value = new Set(selectedIds.value)
+}
+
+function selectAll() {
+  products.value.forEach(p => {
+    if (!selectedIds.value.has(p._id)) {
+      selectedIds.value.add(p._id)
+      selectedProducts.value.push(p)
+    }
+  })
+  selectedIds.value = new Set(selectedIds.value)
+}
+
+function clearSelection() {
+  selectedIds.value      = new Set()
+  selectedProducts.value = []
+}
+
+function onBulkApplied() {
+  fetchProducts()
+  clearSelection()
+}
+
+function openDetail(row) {
+  detailModal.value = { open: true, productId: row._id }
+}
 
 const totalPages = computed(() => Math.ceil(total.value / ITEMS_PER_PAGE))
 
 const columns = [
-  { key: 'name',       label: 'نام محصول',  width: '300px' },
-  { key: 'category',   label: 'دسته‌بندی',  width: '120px' },
+  { key: 'select',     label: '',            width: '44px',  align: 'center' },
+  { key: 'name',       label: 'نام محصول',  width: '260px' },
+  { key: 'category',   label: 'دسته‌بندی',  width: '110px' },
   { key: 'minPrice',   label: 'قیمت',        width: '130px', align: 'center' },
+  { key: 'discount',   label: 'تخفیف',       width: '120px', align: 'center' },
   { key: 'totalStock', label: 'موجودی',      width: '90px',  align: 'center', sortable: true },
   { key: 'status',     label: 'وضعیت',       width: '110px', align: 'center' },
-  { key: 'actions',    label: '',            width: '80px',  align: 'center' },
+  { key: 'actions',    label: '',            width: '112px', align: 'center' },
 ]
 
 async function fetchProducts() {
@@ -183,6 +387,7 @@ async function fetchProducts() {
       limit:    ITEMS_PER_PAGE,
       search:   activeFilters.value.search     || undefined,
       category: activeFilters.value.categoryId || undefined,
+      brand:    activeFilters.value.brandId    || undefined,
       status:   activeFilters.value.status     || undefined,
       sort:     activeFilters.value.sortBy,
     })
@@ -198,7 +403,14 @@ async function fetchProducts() {
 async function fetchCategories() {
   try {
     const { data } = await categoryService.getAll({ limit: 200 })
-    categories.value = data?.items ?? []
+    categories.value = Array.isArray(data) ? data : (data?.items ?? [])
+  } catch { /* non-critical */ }
+}
+
+async function fetchBrands() {
+  try {
+    const { data } = await brandService.getAll()
+    brands.value = Array.isArray(data) ? data : []
   } catch { /* non-critical */ }
 }
 
@@ -240,6 +452,69 @@ async function doDelete() {
   }
 }
 
+// ── Discount helpers ──────────────────────────────
+function getDiscount(row) {
+  const maxCompare = Math.max(
+    0,
+    ...(row.variants ?? [])
+      .filter(v => v.comparePrice > 0 && v.isActive !== false)
+      .map(v => v.comparePrice),
+  )
+  if (!maxCompare || !row.minPrice || maxCompare <= row.minPrice) return 0
+  return Math.round((1 - row.minPrice / maxCompare) * 100)
+}
+
+function openDiscountModal(row) {
+  discountModal.value = { open: true, product: row, pct: getDiscount(row), loading: false }
+}
+
+function buildVariantsWithDiscount(variants, pct) {
+  return (variants ?? []).map(v => ({
+    ...(v._id ? { _id: v._id } : {}),
+    sku:          v.sku ?? '',
+    price:        Number(v.price),
+    comparePrice: pct > 0 ? Math.round(Number(v.price) / (1 - pct / 100)) : 0,
+    stock:        Number(v.stock ?? 0),
+    attributes:   Array.isArray(v.attributes) ? v.attributes : [],
+  }))
+}
+
+async function saveDiscount() {
+  const { product, pct } = discountModal.value
+  if (pct < 0 || pct > 90) { ui.addToast('درصد تخفیف باید بین ۰ تا ۹۰ باشد', 'error'); return }
+  discountModal.value.loading = true
+  try {
+    const updatedVariants = buildVariantsWithDiscount(product.variants, pct)
+    await productService.update(product._id, {
+      name:     product.name,
+      category: product.category?._id ?? product.category,
+      variants: updatedVariants,
+    })
+    product.variants = product.variants.map((v, i) => ({ ...v, comparePrice: updatedVariants[i].comparePrice }))
+    ui.addToast('تخفیف با موفقیت ذخیره شد', 'success')
+    discountModal.value.open = false
+  } catch {
+    ui.addToast('خطا در ذخیره تخفیف', 'error')
+  } finally {
+    discountModal.value.loading = false
+  }
+}
+
+async function clearDiscount(row) {
+  try {
+    const updatedVariants = buildVariantsWithDiscount(row.variants, 0)
+    await productService.update(row._id, {
+      name:     row.name,
+      category: row.category?._id ?? row.category,
+      variants: updatedVariants,
+    })
+    row.variants = row.variants.map(v => ({ ...v, comparePrice: 0 }))
+    ui.addToast('تخفیف حذف شد', 'success')
+  } catch {
+    ui.addToast('خطا در حذف تخفیف', 'error')
+  }
+}
+
 function statusSelectClass(status) {
   return {
     active:   'bg-green-100 text-green-700 border-green-200',
@@ -248,5 +523,15 @@ function statusSelectClass(status) {
   }[status] ?? 'bg-gray-100 text-gray-600 border-gray-200'
 }
 
-onMounted(() => Promise.allSettled([fetchProducts(), fetchCategories()]))
+onMounted(() => Promise.allSettled([fetchProducts(), fetchCategories(), fetchBrands()]))
 </script>
+
+<style scoped>
+.bulk-bar-enter-active, .bulk-bar-leave-active {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+.bulk-bar-enter-from, .bulk-bar-leave-to {
+  opacity: 0;
+  transform: translateX(-50%) translateY(16px);
+}
+</style>

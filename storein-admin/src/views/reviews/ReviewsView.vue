@@ -58,15 +58,32 @@
 
         <!-- Product -->
         <template #cell-product="{ row }">
-          <div class="flex items-center gap-3 min-w-0">
-            <img :src="row.product?.images?.[0]?.thumbnail"
-                 class="w-10 h-10 rounded-lg object-contain border
-                        border-border bg-surface flex-shrink-0 p-0.5"
-                 @error="(e) => e.target.style.opacity = '0'" />
-            <span class="text-text-primary text-sm font-medium
-                         truncate max-w-[160px]">
-              {{ row.product?.name ?? '—' }}
-            </span>
+          <div class="flex items-center gap-2.5 min-w-0">
+            <img
+              :src="row.productId?.thumbnail"
+              class="w-10 h-10 rounded-lg object-contain border border-border bg-surface flex-shrink-0 p-0.5"
+              @error="(e) => e.target.style.display = 'none'" />
+            <div class="min-w-0 flex-1">
+              <router-link
+                v-if="row.productId?._id"
+                :to="{ name: 'product-edit', params: { id: row.productId._id } }"
+                class="text-sm font-medium text-text-primary hover:text-primary hover:underline transition-colors truncate block max-w-[150px]"
+                :title="row.productId.name">
+                {{ row.productId.name || '(بدون نام)' }}
+              </router-link>
+              <span v-else class="text-text-disabled text-sm">محصول حذف شده</span>
+              <a
+                v-if="row.productId?.slug"
+                :href="`http://localhost:5173/product/${row.productId.slug}`"
+                target="_blank"
+                rel="noopener"
+                class="text-xs text-text-disabled hover:text-primary transition-colors flex items-center gap-1 mt-0.5">
+                <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
+                </svg>
+                مشاهده در سایت
+              </a>
+            </div>
           </div>
         </template>
 
@@ -74,10 +91,10 @@
         <template #cell-user="{ row }">
           <div>
             <p class="text-text-primary text-sm font-medium">
-              {{ row.user?.firstName ?? '' }} {{ row.user?.lastName ?? '' }}
+              {{ row.userId?.firstName ?? '' }} {{ row.userId?.lastName ?? '' }}
             </p>
             <p class="text-text-disabled text-xs font-fanum" dir="ltr">
-              {{ row.user?.phone }}
+              {{ row.userId?.phone }}
             </p>
           </div>
         </template>
@@ -99,9 +116,9 @@
               {{ row.title }}
             </p>
             <p class="text-text-secondary text-xs leading-5 line-clamp-2">
-              {{ row.comment }}
+              {{ row.body }}
             </p>
-            <button v-if="row.comment?.length > 80"
+            <button v-if="row.body?.length > 80"
               @click="expandedId = expandedId === row._id ? null : row._id"
               class="text-primary text-xs mt-1 hover:underline">
               {{ expandedId === row._id ? 'بستن' : 'بیشتر...' }}
@@ -109,7 +126,7 @@
             <div v-if="expandedId === row._id"
                  class="mt-2 p-3 bg-surface rounded-lg border border-border
                         text-text-secondary text-xs leading-6">
-              {{ row.comment }}
+              {{ row.body }}
             </div>
           </div>
         </template>

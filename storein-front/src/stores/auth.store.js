@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { authService } from '@/services/auth.service'
+import { logger } from '@/utils/logger'
 
 export const useAuthStore = defineStore('auth', () => {
   const user         = ref(null)
@@ -16,6 +17,9 @@ export const useAuthStore = defineStore('auth', () => {
     try {
       await authService.sendOtp(phone)
       pendingPhone.value = phone
+    } catch (error) {
+      logger.error('auth: sendOtp failed', error, {}, 'AuthStore')
+      throw error
     } finally {
       loading.value = false
     }
@@ -35,6 +39,9 @@ export const useAuthStore = defineStore('auth', () => {
       pendingPhone.value = ''
       await _postLoginSync()
       return data
+    } catch (error) {
+      logger.error('auth: verifyOtp failed', error, {}, 'AuthStore')
+      throw error
     } finally {
       loading.value = false
     }

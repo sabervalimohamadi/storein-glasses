@@ -5,6 +5,12 @@ import { Types } from 'mongoose';
 import { DiscountService } from './discount.service';
 import { Coupon, DiscountType } from './entities/coupon.schema';
 import { CouponUsage } from './entities/coupon-usage.schema';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
 
 const userId   = new Types.ObjectId().toString();
 const couponId = new Types.ObjectId();
@@ -59,6 +65,7 @@ describe('DiscountService', () => {
         DiscountService,
         { provide: getModelToken(Coupon.name),      useValue: couponModel },
         { provide: getModelToken(CouponUsage.name), useValue: usageModel },
+        { provide: AppLoggerService,                useValue: mockLogger },
       ],
     }).compile();
 
@@ -214,6 +221,106 @@ describe('DiscountService', () => {
       });
       await expect(service.adminDeactivate(couponId.toString()))
         .rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── adminUpdate ───────────────────────────────────────────────
+  describe('adminUpdate', () => {
+    it('updates coupon and returns updated doc', async () => {
+      couponModel.exists.mockResolvedValue(null);
+      couponModel.findByIdAndUpdate.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(mockCoupon({ value: 30 })),
+        }),
+      });
+
+      const res = await service.adminUpdate(couponId.toString(), { value: 30 } as any);
+      expect(res.value).toBe(30);
+    });
+
+    it('throws ConflictException on duplicate code', async () => {
+      couponModel.exists.mockResolvedValue({ _id: new Types.ObjectId() });
+      await expect(
+        service.adminUpdate(couponId.toString(), { code: 'DUPLICATE' } as any),
+      ).rejects.toThrow(ConflictException);
+    });
+
+    it('throws NotFoundException when coupon not found', async () => {
+      couponModel.exists.mockResolvedValue(null);
+      couponModel.findByIdAndUpdate.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          lean: jest.fn().mockResolvedValue(null),
+        }),
+      });
+      await expect(
+        service.adminUpdate(couponId.toString(), { value: 10 } as any),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  // ── recordUsage ───────────────────────────────────────────────
+  describe('recordUsage', () => {
+    it('increments usageCount and creates usage record', async () => {
+      couponModel.findByIdAndUpdate.mockResolvedValue({});
+      const orderId = new Types.ObjectId().toString();
+
+      await service.recordUsage(couponId, userId, orderId, 2_000_000);
+
+      expect(couponModel.findByIdAndUpdate).toHaveBeenCalledWith(
+        couponId, { $inc: { usageCount: 1 } },
+      );
+      expect(usageModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ discountAmount: 2_000_000 }),
+      );
+    });
+  });
+
+  // ── adminFindAll ──────────────────────────────────────────────
+  describe('adminFindAll', () => {
+    it('returns paginated coupons', async () => {
+      couponModel.find.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([mockCoupon()]),
+              }),
+            }),
+          }),
+        }),
+      });
+      couponModel.countDocuments.mockResolvedValue(1);
+
+      const result = await service.adminFindAll(1, 20);
+      expect(result.coupons).toHaveLength(1);
+      expect(result.total).toBe(1);
+    });
+  });
+
+  // ── validate — WARN logs ──────────────────────────────────────
+  describe('validate — warn logs', () => {
+    it('logs WARN when coupon is expired', async () => {
+      couponModel.findOne.mockReturnValue({
+        lean: jest.fn().mockResolvedValue(mockCoupon({ endDate: past })),
+      });
+
+      await service.validate(userId, 'SAVE20', 10_000_000);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Coupon expired', expect.objectContaining({ code: 'SAVE20' }),
+      );
+    });
+
+    it('logs WARN when usage limit reached', async () => {
+      couponModel.findOne.mockReturnValue({
+        lean: jest.fn().mockResolvedValue(
+          mockCoupon({ usageLimit: 5, usageCount: 5 }),
+        ),
+      });
+
+      await service.validate(userId, 'SAVE20', 10_000_000);
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Coupon usage limit reached', expect.any(Object),
+      );
     });
   });
 });

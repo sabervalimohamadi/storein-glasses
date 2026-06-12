@@ -1,10 +1,12 @@
-import { ExecutionContext, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ExecutionContext, Injectable, Logger, UnauthorizedException } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { AuthGuard } from '@nestjs/passport';
 import { IS_PUBLIC_KEY } from '../../../common/decorators/public.decorator';
 
 @Injectable()
 export class JwtAuthGuard extends AuthGuard('jwt') {
+  private readonly logger = new Logger(JwtAuthGuard.name);
+
   constructor(private reflector: Reflector) { super(); }
 
   canActivate(ctx: ExecutionContext) {
@@ -15,7 +17,10 @@ export class JwtAuthGuard extends AuthGuard('jwt') {
   }
 
   handleRequest(err: any, user: any) {
-    if (err || !user) throw new UnauthorizedException('لطفاً وارد حساب کاربری خود شوید');
+    if (err || !user) {
+      this.logger.warn('JWT auth failed', { error: err?.message });
+      throw new UnauthorizedException('لطفاً وارد حساب کاربری خود شوید');
+    }
     return user;
   }
 }

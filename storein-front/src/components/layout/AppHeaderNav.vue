@@ -1,23 +1,32 @@
 <template>
   <nav class="hidden md:block border-t border-surface-border" style="background-color: var(--color-card);">
-    <div class="container-main">
-      <ul class="flex items-stretch overflow-x-auto scrollbar-hide">
-        <!-- Fixed quick links -->
-        <li v-for="link in quickLinks" :key="link.label">
-          <RouterLink
-            :to="link.to"
-            :class="[
-              'flex items-center px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
-              'hover:text-brand hover:border-brand',
-              isLinkActive(link) ? 'text-brand border-brand' : 'text-text-secondary border-transparent',
-            ]"
-          >
-            {{ link.label }}
-          </RouterLink>
-        </li>
+    <div class="container-main flex items-stretch">
 
-        <!-- Dynamic categories with mega-dropdown -->
-        <li
+      <!-- Quick links (صفحه اصلی، بلاگ) -->
+      <div class="flex items-stretch">
+        <RouterLink
+          v-for="link in quickLinks"
+          :key="link.label"
+          :to="link.to"
+          :class="[
+            'flex items-center px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 border-b-2',
+            isLinkActive(link)
+              ? 'text-brand border-brand'
+              : 'text-text-secondary border-transparent hover:text-brand hover:border-brand/40',
+          ]"
+        >
+          {{ link.label }}
+        </RouterLink>
+      </div>
+
+      <!-- Divider -->
+      <div class="flex items-center px-2">
+        <span class="w-px h-5 rounded-full" style="background-color: var(--color-border);"></span>
+      </div>
+
+      <!-- Dynamic categories -->
+      <div class="flex items-stretch flex-1">
+        <div
           v-for="cat in categories"
           :key="cat._id"
           class="relative"
@@ -27,43 +36,54 @@
           <RouterLink
             :to="{ name: 'category', params: { slug: cat.slug } }"
             :class="[
-              'flex items-center gap-1 px-4 py-3 text-sm font-medium whitespace-nowrap transition-colors border-b-2',
-              'hover:text-brand hover:border-brand',
-              hoveredId === cat._id ? 'text-brand border-brand' : 'text-text-secondary border-transparent',
+              'flex items-center gap-1.5 px-4 py-3 text-sm whitespace-nowrap transition-all duration-200 border-b-2 h-full',
+              hoveredId === cat._id
+                ? 'text-brand border-brand font-semibold'
+                : 'text-text-secondary border-transparent font-medium hover:text-text-primary hover:border-brand/30',
             ]"
           >
+            <!-- category icon if exists -->
+            <span v-if="cat.icon" class="text-base leading-none">{{ cat.icon }}</span>
             {{ cat.name }}
-            <svg v-if="cat.children?.length" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"
-              :class="['w-3.5 h-3.5 transition-transform duration-200', hoveredId === cat._id ? 'rotate-180' : '']"
+            <svg
+              v-if="cat.children?.length"
+              class="w-3 h-3 flex-shrink-0 transition-transform duration-200"
+              :class="hoveredId === cat._id ? 'rotate-180 text-brand' : 'text-text-disabled'"
+              fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"
             >
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
             </svg>
           </RouterLink>
 
-          <!-- Mega-dropdown -->
-          <Transition name="mega">
-            <div
-              v-if="hoveredId === cat._id && cat.children?.length"
-              class="absolute top-full right-0 z-dropdown shadow-dropdown rounded-b-xl border border-surface-border border-t-0 p-4 min-w-56"
-              style="background-color: var(--color-card);"
-              @mouseenter="onEnter(cat._id)"
-              @mouseleave="onLeave"
-            >
-              <div class="grid grid-cols-2 gap-x-4 gap-y-1">
-                <RouterLink
+          <!-- Dropdown panel -->
+          <div
+            v-show="hoveredId === cat._id && cat.children?.length"
+            class="nav-drop absolute top-full right-0 z-[300] min-w-[11rem] pt-1"
+            @mouseenter="onEnter(cat._id)"
+            @mouseleave="onLeave"
+          >
+            <div class="rounded-xl shadow-xl border border-surface-border"
+                 style="background-color: var(--color-card);">
+              <!-- Category header -->
+              <div class="px-4 py-2.5 border-b border-surface-border flex items-center gap-2 rounded-t-xl"
+                   style="background-color: var(--color-card);">
+                <span v-if="cat.icon" class="text-base leading-none">{{ cat.icon }}</span>
+                <span class="text-xs font-bold text-brand tracking-wide">{{ cat.name }}</span>
+              </div>
+              <!-- Items -->
+              <ul class="p-1.5 flex flex-col gap-0.5">
+                <NavDropdownItem
                   v-for="child in cat.children"
                   :key="child._id"
-                  :to="{ name: 'category', params: { slug: child.slug } }"
-                  class="text-sm text-text-secondary hover:text-brand py-1.5 px-2 rounded-lg hover:bg-surface transition-colors whitespace-nowrap"
-                  @click="hoveredId = null"
-                >
-                  {{ child.name }}
-                </RouterLink>
-              </div>
+                  :item="child"
+                  @close="hoveredId = null"
+                />
+              </ul>
             </div>
-          </Transition>
-        </li>
-      </ul>
+          </div>
+        </div>
+      </div>
+
     </div>
   </nav>
 </template>
@@ -73,6 +93,7 @@ import { ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { useCategoryStore } from '@/stores/category.store'
 import { storeToRefs } from 'pinia'
+import NavDropdownItem from '@/components/layout/NavDropdownItem.vue'
 
 const route         = useRoute()
 const categoryStore = useCategoryStore()
@@ -82,12 +103,8 @@ const hoveredId = ref(null)
 let closeTimer  = null
 
 const quickLinks = [
-  { label: 'صفحه اصلی',   to: { name: 'home' } },
-  { label: 'عینک آفتابی', to: { name: 'category', params: { slug: 'sunglasses' } } },
-  { label: 'عینک طبی',    to: { name: 'category', params: { slug: 'prescription' } } },
-  { label: 'لنز طبی',     to: { name: 'category', params: { slug: 'contact-lens' } } },
-  { label: 'لوازم جانبی', to: { name: 'category', params: { slug: 'accessories' } } },
-  { label: 'بلاگ',        to: { name: 'blog' } },
+  { label: 'صفحه اصلی', to: { name: 'home' } },
+  { label: 'بلاگ',      to: { name: 'blog' } },
 ]
 
 function isLinkActive(link) {
@@ -101,18 +118,18 @@ function onEnter(id) {
   clearTimeout(closeTimer)
   hoveredId.value = id
 }
-
 function onLeave() {
-  closeTimer = setTimeout(() => { hoveredId.value = null }, 200)
+  closeTimer = setTimeout(() => { hoveredId.value = null }, 150)
 }
 </script>
 
 <style scoped>
-.scrollbar-hide::-webkit-scrollbar { display: none; }
-.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
-
-.mega-enter-active,
-.mega-leave-active { transition: all 0.15s ease; }
-.mega-enter-from,
-.mega-leave-to { opacity: 0; transform: translateY(-6px); }
+/* Dropdown fade-in via CSS — no v-show conflict */
+.nav-drop {
+  animation: dropIn 0.15s ease;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
 </style>

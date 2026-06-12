@@ -26,10 +26,11 @@ export class OrderController {
   @Get('my')
   findMyOrders(
     @CurrentUser() user: UserDocument,
-    @Query('page') page = 1,
-    @Query('limit') limit = 10,
+    @Query('page')   page    = 1,
+    @Query('limit')  limit   = 10,
+    @Query('status') status?: OrderStatus,
   ) {
-    return this.orderService.findMyOrders(uid(user), +page, +limit);
+    return this.orderService.findMyOrders(uid(user), +page, +limit, status);
   }
 
   @Get('my/:id')
@@ -45,11 +46,14 @@ export class OrderController {
   @UseGuards(AdminGuard)
   @Get('admin')
   adminFindAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
-    @Query('status') status?: OrderStatus,
+    @Query('page')      page       = 1,
+    @Query('limit')     limit      = 20,
+    @Query('status')    status?:   OrderStatus,
+    @Query('search')    search?:   string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate')   endDate?:   string,
   ) {
-    return this.orderService.adminFindAll(+page, +limit, status);
+    return this.orderService.adminFindAll(+page, +limit, { status, search, startDate, endDate });
   }
 
   @UseGuards(AdminGuard)

@@ -1,5 +1,5 @@
 import {
-  IsBoolean, IsMongoId, IsNumber,
+  IsBoolean, IsIn, IsMongoId, IsNumber,
   IsOptional, IsString, MaxLength, Min,
 } from 'class-validator';
 
@@ -24,6 +24,9 @@ export class CreateCategoryDto {
 
   @IsOptional() @IsNumber() @Min(0)
   sortOrder?: number;
+
+  @IsOptional() @IsIn(['', 'men', 'women', 'kids', 'unisex'])
+  gender?: string;
 
   @IsOptional() @IsBoolean()
   isActive?: boolean;

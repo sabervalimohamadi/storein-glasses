@@ -2,8 +2,8 @@
   <section class="py-6">
     <div class="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
       <div
-        v-for="item in trustItems"
-        :key="item.id"
+        v-for="(item, idx) in trustItems"
+        :key="idx"
         class="rounded-xl p-4 flex items-start gap-3 shadow-card hover:shadow-md transition-shadow duration-200"
         style="background-color: var(--color-card);"
       >
@@ -23,34 +23,6 @@
 </template>
 
 <script setup>
-const trustItems = [
-  {
-    id: 1,
-    icon: '🔒',
-    title: 'پرداخت امن',
-    subtitle: 'درگاه پرداخت معتبر و رمزنگاری شده',
-    bgColor: '#EBF4FF',
-  },
-  {
-    id: 2,
-    icon: '↩️',
-    title: 'ضمانت ۷ روزه',
-    subtitle: 'بازگشت کالا در صورت عدم رضایت',
-    bgColor: '#F0FDF4',
-  },
-  {
-    id: 3,
-    icon: '✅',
-    title: 'اصالت کالا',
-    subtitle: 'تمام محصولات دارای گارانتی اصالت',
-    bgColor: '#FFFBEB',
-  },
-  {
-    id: 4,
-    icon: '🚚',
-    title: 'ارسال سریع',
-    subtitle: 'ارسال به سراسر کشور در کمترین زمان',
-    bgColor: '#FFF1F2',
-  },
-]
+import { useSettingsStore } from '@/stores/settings.store'
+const { trustItems } = useSettingsStore()
 </script>

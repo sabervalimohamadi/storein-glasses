@@ -9,7 +9,7 @@
         error ? '!border-error !ring-error/15' : '',
       ]"
     >
-      <option v-if="placeholder" value="" disabled>{{ placeholder }}</option>
+      <option v-if="placeholder" value="">{{ placeholder }}</option>
       <option v-for="opt in options" :key="opt.value" :value="opt.value">
         {{ opt.label }}
       </option>

@@ -60,7 +60,7 @@
 
     <!-- Order -->
     <td class="px-4 py-3 text-center">
-      <span class="font-fanum text-sm text-text-secondary">{{ category.order ?? 0 }}</span>
+      <span class="font-fanum text-sm text-text-secondary">{{ category.sortOrder ?? 0 }}</span>
     </td>
 
     <!-- Status -->

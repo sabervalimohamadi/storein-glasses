@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { cartService } from '@/services/cart.service'
+import { logger } from '@/utils/logger'
 
 export const useCartStore = defineStore('cart', () => {
   const items   = ref([])
@@ -14,22 +15,39 @@ export const useCartStore = defineStore('cart', () => {
     try {
       const { data } = await cartService.get()
       items.value = data.items ?? []
+    } catch (error) {
+      logger.error('cart: fetchCart failed', error, {}, 'CartStore')
     } finally { loading.value = false }
   }
 
   async function addItem(productId, variantId, quantity = 1) {
-    const { data } = await cartService.addItem(productId, variantId, quantity)
-    items.value = data.items
+    try {
+      const { data } = await cartService.addItem(productId, variantId, quantity)
+      items.value = data.items
+    } catch (error) {
+      logger.error('cart: addItem failed', error, { productId, variantId }, 'CartStore')
+      throw error
+    }
   }
 
   async function updateItem(productId, variantId, quantity) {
-    const { data } = await cartService.updateItem(productId, variantId, quantity)
-    items.value = data.items
+    try {
+      const { data } = await cartService.updateItem(productId, variantId, quantity)
+      items.value = data.items
+    } catch (error) {
+      logger.error('cart: updateItem failed', error, { productId, variantId }, 'CartStore')
+      throw error
+    }
   }
 
   async function removeItem(productId, variantId) {
-    const { data } = await cartService.removeItem(productId, variantId)
-    items.value = data.items
+    try {
+      const { data } = await cartService.removeItem(productId, variantId)
+      items.value = data.items
+    } catch (error) {
+      logger.error('cart: removeItem failed', error, { productId, variantId }, 'CartStore')
+      throw error
+    }
   }
 
   async function clearCart() {

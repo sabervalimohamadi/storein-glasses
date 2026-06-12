@@ -3,6 +3,7 @@ import { ref } from 'vue'
 import { wishlistService } from '@/services/wishlist.service'
 import { useAuthStore } from '@/stores/auth.store'
 import { useUiStore } from '@/stores/ui.store'
+import { logger } from '@/utils/logger'
 
 export const useWishlistStore = defineStore('wishlist', () => {
   // Set of product _id strings for O(1) lookup
@@ -51,10 +52,11 @@ export const useWishlistStore = defineStore('wishlist', () => {
         'success'
       )
       return !wasIn
-    } catch {
+    } catch (error) {
       // Rollback on error
       if (wasIn) wishlistIds.value.add(id)
       else       wishlistIds.value.delete(id)
+      logger.error('wishlist: toggle failed', error, { productId }, 'WishlistStore')
       ui.addToast('خطا در بروزرسانی علاقه‌مندی‌ها', 'error')
       return wasIn
     }

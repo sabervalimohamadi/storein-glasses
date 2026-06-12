@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { logger } from '@/utils/logger'
 
 export function useApi(fn) {
   const data    = ref(null)
@@ -14,6 +15,7 @@ export function useApi(fn) {
       return res.data
     } catch (e) {
       error.value = e.response?.data?.message ?? 'خطایی رخ داده است'
+      logger.error('useApi: execute failed', e, { message: error.value }, 'useApi')
       throw e
     } finally {
       loading.value = false

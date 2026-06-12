@@ -22,6 +22,15 @@ export const useSettingsStore = defineStore('settings', () => {
   const footerCopyright = computed(() => settings.value?.footerCopyright ?? 'تمامی حقوق برای استورین محفوظ است')
   const footerLinks     = computed(() => settings.value?.footerLinks     ?? [])
   const theme           = computed(() => settings.value?.theme ?? { preset: 'blue', primaryColor: '#1B4F8A', defaultMode: 'light' })
+  const trustItems      = computed(() => settings.value?.trustItems?.length
+    ? settings.value.trustItems
+    : [
+        { icon: '🔒', title: 'پرداخت امن',    subtitle: 'درگاه پرداخت معتبر و رمزنگاری شده',    bgColor: '#EBF4FF' },
+        { icon: '↩️', title: 'ضمانت ۷ روزه', subtitle: 'بازگشت کالا در صورت عدم رضایت',        bgColor: '#F0FDF4' },
+        { icon: '✅', title: 'اصالت کالا',    subtitle: 'تمام محصولات دارای گارانتی اصالت',     bgColor: '#FFFBEB' },
+        { icon: '🚚', title: 'ارسال سریع',   subtitle: 'ارسال به سراسر کشور در کمترین زمان',  bgColor: '#FFF1F2' },
+      ]
+  )
 
   async function fetchSettings() {
     if (fetched) return
@@ -43,7 +52,7 @@ export const useSettingsStore = defineStore('settings', () => {
     logoUrl, faviconUrl, ogImage, social,
     phone, email, address,
     footerTagline, footerCopyright, footerLinks,
-    theme,
+    theme, trustItems,
     fetchSettings,
   }
 })

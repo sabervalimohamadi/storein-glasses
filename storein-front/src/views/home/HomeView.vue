@@ -2,7 +2,7 @@
   <div class="pb-4">
 
     <!-- ① Hero Banner — full width, outside container -->
-    <HeroBanner />
+    <HeroBanner class="mt-4" />
 
     <div class="container-main">
 
@@ -26,6 +26,7 @@
 
       <!-- ⑥ Bestsellers -->
       <ProductRow
+        featured
         title="پرفروش‌ترین‌ها"
         link="/products?sort=bestseller"
         :products="bestsellers"
@@ -93,7 +94,7 @@ onMounted(() => {
   Promise.allSettled([
     fetchSection({ sort: 'newest' },                           newArrivals, loadingNew),
     fetchSection({ sort: 'bestseller' },                       bestsellers, loadingBest),
-    fetchSection({ sort: 'newest', category: 'sunglasses' },  sunglasses,  loadingSun),
+    fetchSection({ sort: 'newest', category: 'eynak-aftabi' }, sunglasses,  loadingSun),
     wishlistStore.fetchWishlist(),
   ])
 })

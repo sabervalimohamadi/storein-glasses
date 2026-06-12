@@ -10,6 +10,7 @@ import { Coupon, CouponDocument, DiscountType } from './entities/coupon.schema';
 import { CouponUsage, CouponUsageDocument } from './entities/coupon-usage.schema';
 import { CreateCouponDto } from './dto/create-coupon.dto';
 import { UpdateCouponDto } from './dto/update-coupon.dto';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 export interface CouponValidateResult {
   isValid:        boolean;
@@ -23,7 +24,10 @@ export class DiscountService {
   constructor(
     @InjectModel(Coupon.name)      private couponModel: Model<CouponDocument>,
     @InjectModel(CouponUsage.name) private usageModel:  Model<CouponUsageDocument>,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('DiscountService');
+  }
 
   // ── Core: Calculate Discount ──────────────────────────────────
   calcDiscount(coupon: CouponDocument, cartTotal: number): number {
@@ -55,8 +59,10 @@ export class DiscountService {
     const now = new Date();
     if (now < coupon.startDate)
       return { isValid: false, discountAmount: 0, message: 'کد تخفیف هنوز فعال نشده است' };
-    if (now > coupon.endDate)
+    if (now > coupon.endDate) {
+      this.logger.warn('Coupon expired', { code, userId, endDate: coupon.endDate });
       return { isValid: false, discountAmount: 0, message: 'کد تخفیف منقضی شده است' };
+    }
 
     if (coupon.minOrderAmount > 0 && cartTotal < coupon.minOrderAmount)
       return {
@@ -65,15 +71,19 @@ export class DiscountService {
         message: `حداقل مبلغ سفارش برای این کد: ${coupon.minOrderAmount.toLocaleString()} تومان`,
       };
 
-    if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit)
+    if (coupon.usageLimit > 0 && coupon.usageCount >= coupon.usageLimit) {
+      this.logger.warn('Coupon usage limit reached', { code, usageCount: coupon.usageCount, usageLimit: coupon.usageLimit });
       return { isValid: false, discountAmount: 0, message: 'ظرفیت کد تخفیف تکمیل شده است' };
+    }
 
     const userUsage = await this.usageModel.countDocuments({
       couponId: coupon._id,
       userId:   new Types.ObjectId(userId),
     });
-    if (userUsage >= coupon.perUserLimit)
+    if (userUsage >= coupon.perUserLimit) {
+      this.logger.warn('Coupon already used by user', { code, userId });
       return { isValid: false, discountAmount: 0, message: 'شما قبلاً از این کد تخفیف استفاده کرده‌اید' };
+    }
 
     const discountAmount = this.calcDiscount(coupon, cartTotal);
 
@@ -125,6 +135,13 @@ export class DiscountService {
       applicableCategories: (dto.applicableCategories ?? []).map(
         (id) => new Types.ObjectId(id),
       ),
+    });
+
+    this.logger.log('Coupon created', {
+      couponId: (coupon._id as any).toString(),
+      code:     coupon.code,
+      type:     coupon.type,
+      value:    coupon.value,
     });
 
     return coupon.toObject();
@@ -196,6 +213,7 @@ export class DiscountService {
       .select('-__v')
       .lean<CouponDocument>();
     if (!coupon) throw new NotFoundException('کوپن یافت نشد');
+    this.logger.log('Coupon deactivated', { couponId: id, code: coupon.code });
     return coupon;
   }
 

@@ -18,14 +18,6 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
-        <AdminButton variant="secondary" @click="saveDraft" :loading="savingDraft">
-          💾 ذخیره پیش‌نویس
-        </AdminButton>
-        <AdminButton @click="publish" :loading="savingPublish">
-          🚀 {{ isEdit ? 'ذخیره تغییرات' : 'انتشار محصول' }}
-        </AdminButton>
-      </div>
     </div>
 
     <!-- Loading skeleton -->
@@ -98,7 +90,12 @@
             <span>🎨</span> تنوع‌های محصول
             <span class="text-text-disabled font-normal text-xs mr-1">(حداقل یک تنوع الزامی است)</span>
           </h2>
-          <VariantEditor v-model="form.variants" :errors="variantErrors" />
+          <VariantEditor
+            v-model="form.variants"
+            :errors="variantErrors"
+            :frame-shapes="FRAME_SHAPE_OPTS"
+            :frame-materials="FRAME_MATERIAL_OPTS"
+          />
           <p v-if="errors.variants" class="text-error text-xs mt-2">{{ errors.variants }}</p>
         </div>
 
@@ -140,12 +137,59 @@
           <ImageUploader v-model="form.images" :max-images="8" />
         </div>
 
-        <!-- برچسب‌ها -->
+        <!-- تخفیف -->
         <div class="admin-card">
           <h2 class="section-title mb-4 flex items-center gap-2">
-            <span>🏷️</span> برچسب‌ها
+            <span>💸</span> تخفیف
+          </h2>
+          <div class="space-y-3">
+            <div class="space-y-1.5">
+              <label class="field-label">درصد تخفیف</label>
+              <div class="flex items-center gap-2">
+                <input
+                  v-model.number="form.discountPct"
+                  type="number" min="0" max="90" step="1"
+                  class="field-input w-24 text-center font-fanum font-bold text-xl"
+                  dir="ltr"
+                  placeholder="0"
+                />
+                <span class="text-text-secondary text-sm">٪</span>
+              </div>
+              <p class="text-text-disabled text-xs">۰ = بدون تخفیف &mdash; حداکثر ۹۰٪</p>
+            </div>
+
+            <!-- Live preview -->
+            <div v-if="form.discountPct > 0 && form.variants[0]?.price > 0"
+              class="rounded-xl p-3 space-y-1.5 text-sm" style="background-color: var(--color-bg);">
+              <div class="flex justify-between items-center">
+                <span class="text-text-secondary">قیمت اصلی</span>
+                <span class="font-fanum text-text-primary font-medium">
+                  {{ formatPrice(form.variants[0].price) }}
+                </span>
+              </div>
+              <div class="flex justify-between items-center">
+                <span class="text-text-secondary">قیمت قبل از تخفیف</span>
+                <span class="font-fanum line-through text-text-secondary">
+                  {{ formatPrice(form.variants[0].comparePrice) }}
+                </span>
+              </div>
+            </div>
+
+            <button v-if="form.discountPct > 0" type="button"
+              class="text-xs text-error hover:underline"
+              @click="form.discountPct = 0">
+              ✕ حذف تخفیف
+            </button>
+          </div>
+        </div>
+
+        <!-- برچسب‌های دیگر -->
+        <div class="admin-card">
+          <h2 class="section-title mb-3 flex items-center gap-2">
+            <span>🏷️</span> برچسب‌های دیگر
           </h2>
           <TagInput v-model="form.tags" />
+          <p class="text-text-disabled text-xs mt-2">برچسب‌هایی برای فیلتر و جستجو (مثلاً: UV400، پلاریزه)</p>
         </div>
 
         <!-- آمار (edit only) -->
@@ -169,17 +213,33 @@
 
       </div>
     </div>
+
+    <!-- Sticky action bar -->
+    <div class="sticky bottom-0 z-40 mt-6 -mx-6 px-6 py-3 bg-card/80 backdrop-blur border-t border-border flex items-center justify-between gap-3">
+      <p class="text-text-disabled text-xs hidden sm:block">
+        {{ isEdit ? 'ویرایش: ' + form.name : 'محصول جدید' }}
+      </p>
+      <div class="flex items-center gap-2 mr-auto">
+        <AdminButton variant="secondary" @click="saveDraft" :loading="savingDraft">
+          💾 ذخیره پیش‌نویس
+        </AdminButton>
+        <AdminButton @click="publish" :loading="savingPublish">
+          🚀 {{ isEdit ? 'ذخیره تغییرات' : 'انتشار محصول' }}
+        </AdminButton>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productService }  from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService }    from '@/services/brand.service'
 import { useUiStore }      from '@/stores/ui.store'
-import { formatNumber }    from '@/utils/formatters'
+import { formatNumber, formatPrice } from '@/utils/formatters'
+import { frameAttributeService } from '@/services/frame-attribute.service'
 
 import ImageUploader from './components/ImageUploader.vue'
 import VariantEditor from './components/VariantEditor.vue'
@@ -201,6 +261,8 @@ const savingDraft     = ref(false)
 const savingPublish   = ref(false)
 const categories      = ref([])
 const brands          = ref([])
+const FRAME_SHAPE_OPTS    = ref([])
+const FRAME_MATERIAL_OPTS = ref([])
 const originalProduct = ref(null)
 
 const form = reactive({
@@ -212,7 +274,18 @@ const form = reactive({
   images:      [],
   variants:    [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }],
   tags:        [],
-  status:      'draft',
+  status:      'active',
+  discountPct: 0,
+})
+
+// When discountPct changes, recalculate comparePrice on all variants
+watch(() => form.discountPct, (pct) => {
+  const p = Math.max(0, Math.min(90, Number(pct) || 0))
+  form.variants.forEach(v => {
+    v.comparePrice = p > 0 && v.price > 0
+      ? Math.round(Number(v.price) / (1 - p / 100))
+      : 0
+  })
 })
 
 const errors        = reactive({})
@@ -268,6 +341,8 @@ function validate(targetStatus) {
 function buildDto(statusOverride) {
   return {
     name:        form.name.trim(),
+    // Send existing slug on edit to prevent backend from regenerating it from Persian name
+    ...(isEdit.value && form.slug ? { slug: form.slug } : {}),
     description: form.description.trim() || undefined,
     category:    form.categoryId,
     brand:       form.brandId || undefined,
@@ -279,23 +354,24 @@ function buildDto(statusOverride) {
       if (!first) return undefined
       if (typeof first === 'string') return first
       // upload response: { thumbnail: { url }, original: { url } }
-      if (first.thumbnail?.url)  return first.thumbnail.url
-      // normalized: { url }
-      if (first.url)             return first.url
-      if (first.original?.url)   return first.original.url
+      if (first.thumbnail?.url) return first.thumbnail.url
+      // string thumbnail (normalized from fillForm): { url, thumbnail: string }
+      if (typeof first.thumbnail === 'string' && first.thumbnail) return first.thumbnail
+      if (first.url)            return first.url
+      if (first.original?.url)  return first.original.url
       return undefined
     })(),
     variants:    form.variants.map(v => ({
       ...(v._id ? { _id: v._id } : {}),
       sku:          v.sku?.trim() || '',
       price:        Number(v.price),
-      comparePrice: v.comparePrice > 0 ? Number(v.comparePrice) : undefined,
+      comparePrice: Number(v.comparePrice) > 0 ? Number(v.comparePrice) : 0,
       stock:        Number(v.stock),
       attributes:   Object.entries(v.attributes || {})
         .filter(([k, val]) => k && val)
         .map(([key, value]) => ({ key: String(key), value: String(value) })),
     })),
-    tags:   form.tags.filter(Boolean),
+    tags: form.tags.filter(Boolean),
     status: statusOverride ?? form.status,
   }
 }
@@ -351,11 +427,21 @@ function fillForm(p) {
   form.description = p.description ?? ''
   form.categoryId  = p.category?._id  ?? p.category  ?? ''
   form.brandId     = p.brand?._id     ?? p.brand     ?? ''
-  form.images      = (p.images ?? []).map(img =>
-    typeof img === 'string' ? { url: img, thumbnail: img } : img
-  )
-  form.tags        = p.tags        ?? []
+  form.images      = (p.images ?? []).map((img, idx) => {
+    if (typeof img !== 'string') return img
+    const thumbnail = (idx === 0 && p.thumbnail) ? p.thumbnail : img
+    return { url: img, thumbnail }
+  })
+  form.tags = p.tags ?? []
   form.status      = p.status      ?? 'draft'
+
+  // Compute discountPct from existing variants (use highest comparePrice vs minPrice)
+  const maxCompare = Math.max(0, ...(p.variants ?? []).filter(v => v.comparePrice > 0).map(v => v.comparePrice))
+  const minPrice   = p.minPrice ?? 0
+  form.discountPct = (maxCompare > minPrice && minPrice > 0)
+    ? Math.round((1 - minPrice / maxCompare) * 100)
+    : 0
+
   form.variants    = p.variants?.length
     ? p.variants.map(v => ({
         _id:          v._id,
@@ -373,14 +459,20 @@ function fillForm(p) {
 // ── Lifecycle ─────────────────────────────────────
 onMounted(async () => {
   try {
-    const [catRes, brandRes] = await Promise.allSettled([
+    const [catRes, brandRes, shapeRes, matRes] = await Promise.allSettled([
       categoryService.getAll({ limit: 200 }),
       brandService.getAll(),
+      frameAttributeService.getActive('frameShape'),
+      frameAttributeService.getActive('frameMaterial'),
     ])
     if (catRes.status === 'fulfilled')
       categories.value = Array.isArray(catRes.value.data) ? catRes.value.data : (catRes.value.data?.items ?? [])
     if (brandRes.status === 'fulfilled')
       brands.value = Array.isArray(brandRes.value.data) ? brandRes.value.data : []
+    if (shapeRes.status === 'fulfilled')
+      FRAME_SHAPE_OPTS.value = Array.isArray(shapeRes.value.data) ? shapeRes.value.data : []
+    if (matRes.status === 'fulfilled')
+      FRAME_MATERIAL_OPTS.value = Array.isArray(matRes.value.data) ? matRes.value.data : []
   } catch { /* non-critical */ }
 
   if (isEdit.value) {

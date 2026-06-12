@@ -42,7 +42,8 @@ export class SettingsService {
     this.logger.log('Site settings updated', {
       fields:           Object.keys(dto),
       hasSocial:        !!dto.social,
-      footerLinksCount: dto.footerLinks?.length ?? 0,
+      footerLinksCount: dto.footerLinks?.length  ?? 0,
+      trustItemsCount:  dto.trustItems?.length   ?? 0,
     });
 
     return doc;

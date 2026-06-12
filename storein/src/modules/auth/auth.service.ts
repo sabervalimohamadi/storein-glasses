@@ -1,5 +1,5 @@
 import {
-  BadRequestException, Inject, Injectable,
+  BadRequestException, ForbiddenException, Inject, Injectable,
   Logger, UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -31,12 +31,21 @@ export class AuthService {
   // ── OTP ──────────────────────────────────────────────────────
   async sendOtp(dto: SendOtpDto) {
     const phone = this.normalizePhone(dto.phone);
-    const rlKey = `otp:rl:${phone}`;
 
+    // Block check before doing anything (don't waste SMS quota on blocked users)
+    const existingUser = await this.userModel.findOne({ phone }).select('isActive').lean();
+    if (existingUser && !existingUser.isActive) {
+      this.logger.warn(`OTP blocked — inactive user: ${this.maskPhone(phone)}`);
+      throw new ForbiddenException('حساب کاربری شما مسدود شده است. با پشتیبانی سایت تماس بگیرید');
+    }
+
+    const rlKey = `otp:rl:${phone}`;
     const attempts = await this.redis.incr(rlKey);
     if (attempts === 1) await this.redis.expire(rlKey, 600);
-    if (attempts > 3)
+    if (attempts > 3) {
+      this.logger.warn(`OTP rate-limit hit: ${this.maskPhone(phone)} (attempts=${attempts})`);
       throw new BadRequestException('درخواست زیاد. ۱۰ دقیقه دیگر تلاش کنید');
+    }
 
     const length = this.configService.get<number>('otp.length')!;
     const ttl = this.configService.get<number>('otp.expiresIn')!;
@@ -54,8 +63,14 @@ export class AuthService {
     const key = `otp:${phone}`;
     const stored = await this.redis.get(key);
 
-    if (!stored) throw new UnauthorizedException('کد منقضی شده است');
-    if (stored !== dto.code) throw new UnauthorizedException('کد اشتباه است');
+    if (!stored) {
+      this.logger.warn(`OTP expired: ${this.maskPhone(phone)}`);
+      throw new UnauthorizedException('کد منقضی شده است');
+    }
+    if (stored !== dto.code) {
+      this.logger.warn(`OTP mismatch: ${this.maskPhone(phone)}`);
+      throw new UnauthorizedException('کد اشتباه است');
+    }
 
     await this.redis.del(key, `otp:rl:${phone}`);
 
@@ -66,6 +81,7 @@ export class AuthService {
       user = await this.userModel.create({ phone });
       this.logger.log(`New user registered: ${this.maskPhone(phone)}`);
     } else if (!user.isActive) {
+      this.logger.warn(`Login blocked — inactive user: ${this.maskPhone(phone)}`);
       throw new UnauthorizedException('حساب کاربری غیرفعال است');
     }
 
@@ -80,10 +96,16 @@ export class AuthService {
       userId, token: refreshToken, isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
-    if (!doc) throw new UnauthorizedException('توکن نامعتبر است');
+    if (!doc) {
+      this.logger.warn(`Refresh token invalid/expired: userId=${userId}`);
+      throw new UnauthorizedException('توکن نامعتبر است');
+    }
 
     const user = await this.userModel.findById(userId);
-    if (!user?.isActive) throw new UnauthorizedException('کاربر یافت نشد');
+    if (!user?.isActive) {
+      this.logger.warn(`Refresh blocked — inactive user: userId=${userId}`);
+      throw new UnauthorizedException('کاربر یافت نشد');
+    }
 
     await this.rtModel.findByIdAndUpdate(doc._id, { isRevoked: true });
     return this.issueTokens(user, meta);

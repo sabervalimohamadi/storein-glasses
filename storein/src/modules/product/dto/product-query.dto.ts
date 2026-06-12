@@ -6,6 +6,9 @@ export class ProductQueryDto {
   @IsOptional() @IsString()
   category?: string;
 
+  @IsOptional() @IsMongoId()
+  brand?: string;
+
   @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
   minPrice?: number;
 
@@ -23,6 +26,16 @@ export class ProductQueryDto {
 
   @IsOptional() @IsString()
   search?: string;
+
+  // Comma-separated tag filters (stored in product.tags)
+  @IsOptional() @IsString()
+  gender?: string;
+
+  @IsOptional() @IsString()
+  frameShape?: string;
+
+  @IsOptional() @IsString()
+  frameMaterial?: string;
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
   page?: number = 1;

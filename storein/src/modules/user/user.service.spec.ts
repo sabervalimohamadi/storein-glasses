@@ -4,6 +4,8 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { UserService } from './user.service';
 import { User } from './entities/user.schema';
+import { Order } from '../order/entities/order.schema';
+import { Review } from '../review/entities/review.schema';
 
 const addrId = new Types.ObjectId();
 const userId = new Types.ObjectId().toString();
@@ -24,16 +26,49 @@ describe('UserService', () => {
 
   beforeEach(async () => {
     model = {
-      findById: jest.fn(),
+      findById:          jest.fn(),
       findByIdAndUpdate: jest.fn(),
-      find: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ skip: jest.fn().mockReturnValue({ limit: jest.fn().mockResolvedValue([]) }) }) }),
+      find:              jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                lean: jest.fn().mockResolvedValue([]),
+              }),
+            }),
+          }),
+        }),
+      }),
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+
+    const orderModel = {
+      aggregate: jest.fn().mockResolvedValue([{ count: 2, total: 50_000_000 }]),
+    };
+
+    const reviewModel = {
+      find:           jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          sort: jest.fn().mockReturnValue({
+            skip: jest.fn().mockReturnValue({
+              limit: jest.fn().mockReturnValue({
+                populate: jest.fn().mockReturnValue({
+                  lean: jest.fn().mockResolvedValue([]),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
       countDocuments: jest.fn().mockResolvedValue(0),
     };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         UserService,
-        { provide: getModelToken(User.name), useValue: model },
+        { provide: getModelToken(User.name),   useValue: model },
+        { provide: getModelToken(Order.name),  useValue: orderModel },
+        { provide: getModelToken(Review.name), useValue: reviewModel },
       ],
     }).compile();
 
@@ -101,6 +136,82 @@ describe('UserService', () => {
       const result = await service.toggleBlock(userId);
       expect(user.isActive).toBe(false);
       expect(result.isBlocked).toBe(true);
+    });
+  });
+
+  describe('updateProfile', () => {
+    it('returns updated user', async () => {
+      const updated = { ...mockUser(), firstName: 'علی' };
+      model.findByIdAndUpdate.mockReturnValue({
+        select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(updated) }),
+      });
+      const result = await service.updateProfile(userId, { firstName: 'علی' });
+      expect(result.firstName).toBe('علی');
+    });
+
+    it('throws NotFoundException when user not found', async () => {
+      model.findByIdAndUpdate.mockReturnValue({
+        select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }),
+      });
+      await expect(service.updateProfile(userId, {})).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateAddress', () => {
+    it('updates address fields', async () => {
+      const user = mockUser();
+      const addr = { _id: addrId, isDefault: false, city: 'تهران' };
+      user.addresses = [addr] as any;
+      model.findById.mockResolvedValue(user);
+
+      await service.updateAddress(userId, addrId.toString(), { city: 'مشهد' } as any);
+      expect(addr.city).toBe('مشهد');
+      expect(user.save).toHaveBeenCalled();
+    });
+
+    it('throws when address not found', async () => {
+      const user = mockUser();
+      model.findById.mockResolvedValue(user);
+      await expect(
+        service.updateAddress(userId, new Types.ObjectId().toString(), {}),
+      ).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('setDefaultAddress', () => {
+    it('sets only target address as default', async () => {
+      const user = mockUser();
+      const a1 = { _id: addrId,                    isDefault: false };
+      const a2 = { _id: new Types.ObjectId(), isDefault: true  };
+      user.addresses = [a1, a2] as any;
+      model.findById.mockResolvedValue(user);
+
+      await service.setDefaultAddress(userId, addrId.toString());
+      expect(a1.isDefault).toBe(true);
+      expect(a2.isDefault).toBe(false);
+    });
+  });
+
+  describe('findById', () => {
+    it('returns user with order stats', async () => {
+      model.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockUser()) }) });
+
+      const result = await service.findById(userId);
+      expect(result.ordersCount).toBe(2);
+      expect(result.totalSpent).toBe(50_000_000);
+    });
+
+    it('throws NotFoundException when user not found', async () => {
+      model.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
+      await expect(service.findById(userId)).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('getUserReviews', () => {
+    it('returns paginated reviews', async () => {
+      const result = await service.getUserReviews(userId, 1, 10);
+      expect(result.items).toEqual([]);
+      expect(result.total).toBe(0);
     });
   });
 });

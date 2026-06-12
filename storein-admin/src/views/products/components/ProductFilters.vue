@@ -12,6 +12,11 @@
         <AdminSelect v-model="filters.categoryId" placeholder="همه دسته‌ها" :options="categoryOptions" />
       </div>
 
+      <!-- Brand -->
+      <div class="w-36">
+        <AdminSelect v-model="filters.brandId" placeholder="همه برندها" :options="brandOptions" />
+      </div>
+
       <!-- Status -->
       <div class="w-36">
         <AdminSelect v-model="filters.status" placeholder="همه وضعیت‌ها" :options="statusOptions" />
@@ -41,6 +46,7 @@ import { PRODUCT_STATUSES } from '@/utils/constants'
 
 const props = defineProps({
   categories: { type: Array, default: () => [] },
+  brands:     { type: Array, default: () => [] },
   loading:    Boolean,
 })
 const emit = defineEmits(['change'])
@@ -48,6 +54,7 @@ const emit = defineEmits(['change'])
 const filters = reactive({
   search:     '',
   categoryId: '',
+  brandId:    '',
   status:     '',
   sortBy:     'newest',
 })
@@ -55,26 +62,34 @@ const filters = reactive({
 const debouncedSearch = useDebounce(computed(() => filters.search))
 
 watch(debouncedSearch, () => emitChange())
-watch([() => filters.categoryId, () => filters.status, () => filters.sortBy], () => emitChange())
+watch([() => filters.categoryId, () => filters.brandId, () => filters.status, () => filters.sortBy], () => emitChange())
 
 function emitChange() {
   emit('change', {
     search:     debouncedSearch.value,
     categoryId: filters.categoryId,
+    brandId:    filters.brandId,
     status:     filters.status,
     sortBy:     filters.sortBy,
   })
 }
 
 function reset() {
-  filters.search = filters.categoryId = filters.status = ''
+  filters.search = filters.categoryId = filters.brandId = filters.status = ''
   filters.sortBy = 'newest'
 }
 
-const hasActiveFilters = computed(() => filters.search || filters.categoryId || filters.status)
+const hasActiveFilters = computed(() => filters.search || filters.categoryId || filters.brandId || filters.status)
 
 const categoryOptions = computed(() =>
-  props.categories.map(c => ({ value: c._id, label: c.name }))
+  props.categories.map(c => ({
+    value: c._id,
+    label: c.depth > 0 ? `${'— '.repeat(c.depth)}${c.name}` : c.name,
+  }))
+)
+
+const brandOptions = computed(() =>
+  props.brands.map(b => ({ value: b._id, label: b.name }))
 )
 
 const statusOptions = Object.entries(PRODUCT_STATUSES).map(([v, d]) => ({

@@ -1,10 +1,29 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 export const useUiStore = defineStore('ui', () => {
   const toasts            = ref([])
   const sidebarCollapsed  = ref(false)
   const sidebarMobileOpen = ref(false)
+
+  // ── Notifications ─────────────────────────────────────────────
+  const notifications = ref([])
+  const unreadCount   = computed(() => notifications.value.filter(n => !n.read).length)
+
+  function addNotification(notification) {
+    notifications.value.unshift({ ...notification, read: false, id: notification.id ?? (Date.now() + Math.random()) })
+    if (notifications.value.length > 50) notifications.value = notifications.value.slice(0, 50)
+  }
+  function markRead(id) {
+    const n = notifications.value.find(n => n.id === id)
+    if (n) n.read = true
+  }
+  function markAllRead() {
+    notifications.value.forEach(n => { n.read = true })
+  }
+  function clearNotifications() {
+    notifications.value = []
+  }
 
   // ── Dark mode ─────────────────────────────────────────────────
   const isDark = ref(false)
@@ -49,5 +68,7 @@ export const useUiStore = defineStore('ui', () => {
     addToast, removeToast,
     toggleSidebar, openMobileSidebar, closeMobileSidebar,
     isDark, toggleDark,
+    notifications, unreadCount,
+    addNotification, markRead, markAllRead, clearNotifications,
   }
 })

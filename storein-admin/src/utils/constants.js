@@ -1,3 +1,22 @@
+export const FRAME_SHAPES = [
+  { label: 'گرد',      value: 'round'       },
+  { label: 'مربعی',    value: 'square'      },
+  { label: 'بیضی',     value: 'oval'        },
+  { label: 'مستطیلی',  value: 'rectangular' },
+  { label: 'پایلوت',   value: 'aviator'     },
+  { label: 'گربه‌ای',  value: 'cat-eye'     },
+  { label: 'هشت‌ضلعی', value: 'octagonal'   },
+  { label: 'بی‌فریم',  value: 'rimless'     },
+]
+
+export const FRAME_MATERIALS = [
+  { label: 'استیل',    value: 'steel'    },
+  { label: 'تیتانیوم', value: 'titanium' },
+  { label: 'استات',    value: 'acetate'  },
+  { label: 'TR90',     value: 'tr90'     },
+  { label: 'کربن',     value: 'carbon'   },
+]
+
 export const ORDER_STATUSES = {
   pending:    { label: 'در انتظار پرداخت', color: 'warning' },
   paid:       { label: 'پرداخت شده',       color: 'info'    },

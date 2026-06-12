@@ -45,3 +45,7 @@ storein/uploads/
 
 # Admin panel build output
 storein-admin/dist/
+
+# Cloudflared tunnel binaries and config
+cloudflared*.exe
+config.yml

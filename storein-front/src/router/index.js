@@ -33,6 +33,13 @@ const routes = [
     component: () => import('@/views/products/SearchView.vue'),
     meta: { layout: 'default' },
   },
+  // ── Static Pages ────────────────────────────────────────────
+  {
+    path: '/pages/:slug',
+    name: 'page',
+    component: () => import('@/views/pages/PageView.vue'),
+    meta: { layout: 'default' },
+  },
   // ── Blog ────────────────────────────────────────────────────
   {
     path: '/blog',

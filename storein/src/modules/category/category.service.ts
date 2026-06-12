@@ -7,6 +7,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import slugify from 'slugify';
 import { Category, CategoryDocument } from './entities/category.schema';
+import { Product, ProductDocument } from '../product/entities/product.schema';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 
@@ -14,6 +15,7 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 export class CategoryService {
   constructor(
     @InjectModel(Category.name) private catModel: Model<CategoryDocument>,
+    @InjectModel(Product.name)  private productModel: Model<ProductDocument>,
   ) {}
 
   // ── Helpers ───────────────────────────────────────────────────
@@ -52,12 +54,22 @@ export class CategoryService {
 
   // ── Public ────────────────────────────────────────────────────
   async getTree(): Promise<any[]> {
-    const cats = await this.catModel
-      .find({ isActive: true })
-      .select('-__v')
-      .sort({ sortOrder: 1 })
-      .lean<CategoryDocument[]>();
-    return this.buildTree(cats);
+    const [cats, counts] = await Promise.all([
+      this.catModel
+        .find({ isActive: true })
+        .select('-__v')
+        .sort({ sortOrder: 1 })
+        .lean<CategoryDocument[]>(),
+      this.productModel.aggregate<{ _id: string; count: number }>([
+        { $group: { _id: { $toString: '$category' }, count: { $sum: 1 } } },
+      ]),
+    ]);
+    const countMap = new Map(counts.map((c) => [c._id, c.count]));
+    const catsWithCount = cats.map((c) => ({
+      ...c,
+      productsCount: countMap.get((c._id as any).toString()) ?? 0,
+    }));
+    return this.buildTree(catsWithCount as any);
   }
 
   async getRoots(): Promise<CategoryDocument[]> {
@@ -98,12 +110,23 @@ export class CategoryService {
   }
 
   // ── Admin CRUD ────────────────────────────────────────────────
-  async findAll(): Promise<CategoryDocument[]> {
-    return this.catModel
-      .find()
-      .select('-__v')
-      .sort({ depth: 1, sortOrder: 1 })
-      .lean<CategoryDocument[]>();
+  async findAll(): Promise<any[]> {
+    const [cats, counts] = await Promise.all([
+      this.catModel
+        .find()
+        .select('-__v')
+        .sort({ depth: 1, sortOrder: 1 })
+        .lean<CategoryDocument[]>(),
+      this.productModel.aggregate<{ _id: string; count: number }>([
+        { $group: { _id: { $toString: '$category' }, count: { $sum: 1 } } },
+      ]),
+    ]);
+
+    const countMap = new Map(counts.map((c) => [c._id, c.count]));
+    return cats.map((c) => ({
+      ...c,
+      productsCount: countMap.get((c._id as any).toString()) ?? 0,
+    }));
   }
 
   async findById(id: string): Promise<CategoryDocument> {

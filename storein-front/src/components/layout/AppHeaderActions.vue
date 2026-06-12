@@ -17,22 +17,83 @@
       </svg>
     </button>
     <!-- Notification bell (logged in only) -->
-    <RouterLink
-      v-if="authStore.isLoggedIn"
-      :to="{ name: 'user-profile' }"
-      class="relative p-2 rounded-lg text-text-secondary hover:text-brand hover:bg-surface transition-colors"
-      title="اعلان‌ها"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
-      </svg>
-      <span
-        v-if="unreadCount > 0"
-        class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
+    <div v-if="authStore.isLoggedIn" ref="notifRef" class="relative flex items-center">
+      <button
+        @click="toggleNotif"
+        class="relative p-2 rounded-lg text-text-secondary hover:text-brand hover:bg-surface transition-colors"
+        title="اعلان‌ها"
       >
-        {{ unreadCount > 99 ? '۹۹+' : unreadCount }}
-      </span>
-    </RouterLink>
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+        </svg>
+        <span
+          v-if="unreadCount > 0"
+          class="absolute top-0.5 right-0.5 min-w-[18px] h-[18px] bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
+        >
+          {{ unreadCount > 99 ? '۹۹+' : unreadCount }}
+        </span>
+      </button>
+
+      <!-- Notification dropdown -->
+      <Transition name="dropdown">
+        <div
+          v-if="notifOpen"
+          class="fixed sm:absolute top-16 sm:top-full inset-x-2 sm:inset-x-auto sm:end-0 sm:mt-2 sm:w-80 rounded-xl shadow-dropdown z-dropdown overflow-hidden"
+          style="background-color:var(--color-card);border:1px solid var(--color-border);"
+        >
+          <!-- Header -->
+          <div class="flex items-center justify-between px-4 py-3" style="border-bottom:1px solid var(--color-border);">
+            <p class="text-sm font-bold" style="color:var(--color-text-primary);">
+              اعلان‌ها
+              <span v-if="unreadCount > 0" class="mr-1.5 text-xs font-bold text-white bg-error rounded-full px-1.5 py-0.5 font-fanum">{{ unreadCount }}</span>
+            </p>
+            <button
+              v-if="unreadCount > 0"
+              @click="markAllRead"
+              class="text-xs font-medium hover:underline"
+              style="color:var(--color-brand);"
+            >
+              همه را خواندم
+            </button>
+          </div>
+
+          <!-- List -->
+          <div class="overflow-y-auto max-h-80">
+            <!-- Loading -->
+            <div v-if="notifLoading" class="py-8 flex justify-center">
+              <svg class="animate-spin w-5 h-5" style="color:var(--color-brand);" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"/>
+              </svg>
+            </div>
+
+            <!-- Empty -->
+            <div v-else-if="!notifications.length" class="py-10 text-center">
+              <p class="text-3xl mb-2">🔔</p>
+              <p class="text-sm" style="color:var(--color-text-secondary);">اعلانی وجود ندارد</p>
+            </div>
+
+            <!-- Items -->
+            <button
+              v-else
+              v-for="n in notifications"
+              :key="n._id"
+              @click="handleNotifClick(n)"
+              class="w-full flex items-start gap-3 px-4 py-3 text-right transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              :style="!n.isRead ? 'background-color:var(--color-brand-subtle,rgba(59,130,246,0.06))' : ''"
+            >
+              <!-- Unread dot -->
+              <span class="mt-1.5 w-2 h-2 rounded-full flex-shrink-0" :class="n.isRead ? 'bg-transparent' : 'bg-brand'" />
+              <div class="flex-1 min-w-0 text-right">
+                <p class="text-sm font-medium leading-snug" style="color:var(--color-text-primary);">{{ n.title }}</p>
+                <p class="text-xs mt-0.5 line-clamp-2 leading-relaxed" style="color:var(--color-text-secondary);">{{ n.body }}</p>
+                <p class="text-xs mt-1 font-fanum" style="color:var(--color-text-disabled);">{{ timeAgo(n.createdAt) }}</p>
+              </div>
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </div>
 
     <!-- Cart -->
     <RouterLink
@@ -147,13 +208,18 @@ const cartStore = useCartStore()
 const router    = useRouter()
 
 const userRef     = ref(null)
+const notifRef    = ref(null)
 const isOpen      = ref(false)
+const notifOpen   = ref(false)
 const unreadCount = ref(0)
+const notifications = ref([])
+const notifLoading  = ref(false)
 
 const { isDark, toggle: toggleTheme, init: initTheme } = useTheme()
 onMounted(() => initTheme())
 
-onClickOutside(userRef, () => { isOpen.value = false })
+onClickOutside(userRef,  () => { isOpen.value  = false })
+onClickOutside(notifRef, () => { notifOpen.value = false })
 
 const avatarLetter = computed(() => {
   const u = authStore.user
@@ -177,6 +243,61 @@ const userMenuItems = [
   { name: 'user-orders',    label: 'سفارش‌هایم',      icon: IconOrders },
   { name: 'user-favorites', label: 'علاقه‌مندی‌ها',   icon: IconHeart },
 ]
+
+async function toggleNotif() {
+  notifOpen.value = !notifOpen.value
+  if (notifOpen.value && !notifications.value.length) await fetchNotifications()
+}
+
+async function fetchNotifications() {
+  notifLoading.value = true
+  try {
+    const { data } = await http.get('/notifications', { params: { limit: 10 } })
+    notifications.value = data?.notifications ?? []
+    unreadCount.value   = data?.unreadCount   ?? 0
+  } catch {} finally {
+    notifLoading.value = false
+  }
+}
+
+async function handleNotifClick(n) {
+  if (!n.isRead) {
+    try {
+      await http.patch(`/notifications/${n._id}/read`)
+      n.isRead = true
+      unreadCount.value = Math.max(0, unreadCount.value - 1)
+    } catch {}
+  }
+  notifOpen.value = false
+  const dest = resolveNotifRoute(n)
+  if (dest) router.push(dest)
+}
+
+function resolveNotifRoute(n) {
+  const d = n.data
+  if (d?.orderId) return { name: 'user-order-detail', params: { id: d.orderId } }
+  if (n.type === 'order_update') return { name: 'user-orders' }
+  return null
+}
+
+async function markAllRead() {
+  try {
+    await http.patch('/notifications/read-all')
+    notifications.value.forEach(n => { n.isRead = true })
+    unreadCount.value = 0
+  } catch {}
+}
+
+function timeAgo(iso) {
+  if (!iso) return ''
+  const diff = Date.now() - new Date(iso).getTime()
+  const m = Math.floor(diff / 60000)
+  if (m < 1)  return 'همین الان'
+  if (m < 60) return `${m} دقیقه پیش`
+  const h = Math.floor(m / 60)
+  if (h < 24) return `${h} ساعت پیش`
+  return `${Math.floor(h / 24)} روز پیش`
+}
 
 async function handleLogout() {
   isOpen.value = false

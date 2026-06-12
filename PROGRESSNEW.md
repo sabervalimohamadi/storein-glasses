@@ -2778,16 +2778,176 @@ async function applyCoupon() {
 
 ---
 
+## Session 7 — Trust Items, Pages Module, ThemeView, Audit (2026-06-09)
+
+---
+
+### Trust Badge Cards — Admin Editable ✅ (full-stack)
+
+هر 4 کارت اعتماد (پرداخت امن / ضمانت ۷ روزه / اصالت کالا / ارسال سریع) از پنل ادمین قابل ویرایش شد.
+
+**Backend — `storein/src/modules/settings/entities/site-settings.schema.ts`:**
+- `TrustItem` class: `icon`, `title`, `subtitle`, `bgColor`
+- `trustItems: TrustItem[]` با 4 مقدار پیش‌فرض
+
+**`storein/src/modules/settings/settings.service.ts`:**
+- `trustItemsCount: dto.trustItems?.length ?? 0` به log context اضافه شد
+
+**`storein/src/modules/settings/settings.service.spec.ts`:**
+- 5 آزمون جدید برای trustItems → **21 آزمون کل** (همه pass)
+
+**`storein-front/src/views/home/components/TrustStrip.vue`:**
+- حالا از `useSettingsStore().trustItems` می‌خواند به جای آرایه hardcoded
+
+**`storein-front/src/stores/settings.store.js`:**
+- `trustItems` computed با fallback به 4 مقدار پیش‌فرض اضافه شد
+
+**`storein-admin/src/views/settings/SettingsView.vue`:**
+- تب «ضمانت‌ها» با ویرایشگر accordion اضافه شد
+- `openTrustIdx = ref(null)` — فقط یک ردیف در هر لحظه باز است
+- کلیک روی کارت preview → toggle همان ردیف
+- `addTrustItem()` ردیف جدید را خودکار باز می‌کند
+- تب «تم سایت» حذف شد (به صفحه جداگانه منتقل شد)
+
+---
+
+### Pages Module ✅ (full-stack)
+
+مدیر می‌تواند صفحات ثابت (About، Contact و...) با rich text editor بسازد.
+
+#### Backend — `storein/src/modules/page/`
+
+| File | Purpose |
+|------|---------|
+| `entities/page.schema.ts` | schema: title, slug (unique), content, excerpt, status (draft/published), metaTitle, metaDescription, order |
+| `dto/create-page.dto.ts` | Create DTO |
+| `dto/update-page.dto.ts` | Update DTO (PartialType) |
+| `page.service.ts` | CRUD + `slugify()` + `ConflictException` برای slug تکراری |
+| `page.controller.ts` | Public: `GET /pages`, `GET /pages/slug/:slug`؛ Admin: CRUD کامل |
+| `page.module.ts` | Registered in AppModule |
+
+**Updated:** `storein/src/app.module.ts` — `PageModule` اضافه شد.
+
+**Endpoints**
+
+| Method | Route | Auth | Description |
+|--------|-------|------|-------------|
+| GET | `/api/v1/pages` | Public | صفحات منتشرشده |
+| GET | `/api/v1/pages/slug/:slug` | Public | جزئیات صفحه |
+| GET | `/api/v1/pages/admin` | Admin | همه صفحات |
+| GET | `/api/v1/pages/admin/:id` | Admin | جزئیات admin |
+| POST | `/api/v1/pages` | Admin | ایجاد |
+| PATCH | `/api/v1/pages/:id` | Admin | ویرایش |
+| DELETE | `/api/v1/pages/:id` | Admin | حذف |
+
+#### Admin Panel — `storein-admin/`
+
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `src/services/page.service.js` | getAll, getById, create, update, remove |
+| `src/views/pages/PagesView.vue` | لیست با status badge، لینک به سایت، delete confirm modal |
+| `src/views/pages/PageFormView.vue` | TipTap editor با toolbar کامل (Bold/Italic/Underline/Strike/H2/H3/Lists/Blockquote/HR/TextAlign/Link) + slug auto-generate + sidebar (status/order/SEO) |
+
+**TipTap packages:**
+```
+@tiptap/vue-3  @tiptap/pm  @tiptap/starter-kit
+@tiptap/extension-placeholder  @tiptap/extension-link
+@tiptap/extension-text-align   @tiptap/extension-underline
+```
+
+**Key decisions:**
+- `ToolBtn` inline با `defineComponent + h()` — بدون فایل جداگانه برای دکمه‌های toolbar
+- Slug auto-generate از title، با توقف بعد از اولین ویرایش دستی
+- `ConflictException` روی slug تکراری (create) و `_id: { $ne: id }` روی update
+- `status: (dto.status ?? 'draft') as PageStatus` — برطرف‌کردن خطای TypeScript
+
+#### Storefront — `storein-front/`
+
+**New files:**
+
+| File | Purpose |
+|------|---------|
+| `src/services/page.service.js` | `getBySlug(slug)` |
+| `src/views/pages/PageView.vue` | رندر `v-html="page.content"` با prose CSS styles |
+
+**Updated:** `src/router/index.js` — `/pages/:slug` route اضافه شد.
+
+---
+
+### ThemeView — صفحه جداگانه + Sticky Save Bar ✅ (storein-admin)
+
+تب «تم سایت» از `SettingsView` جدا شد و به یک صفحه مستقل در sidebar تبدیل شد.
+
+**New file — `storein-admin/src/views/settings/ThemeView.vue`:**
+- تمام محتوای theme (color presets، display modes، section colors: navbar/footer/sidebar)
+- Live preview با contrast helper
+- Sticky save bar با pattern snapshot/dirty:
+  ```js
+  const savedSnapshot = ref('')
+  const dirty = computed(() => JSON.stringify(theme) !== savedSnapshot.value)
+  function snapshot() { savedSnapshot.value = JSON.stringify(theme) }
+  // snapshot() بعد از load + بعد از save
+  ```
+- `<Transition name="slide-up">` — fixed bottom bar فقط وقتی `dirty` است
+- دکمه «بازگردانی» (revert) + «ذخیره تغییرات»
+
+**Updated files:**
+
+| File | Change |
+|------|--------|
+| `src/router/index.js` | `/theme` route (adminOnly) اضافه شد؛ `/pages`, `/pages/create`, `/pages/:id/edit` routes |
+| `src/components/layout/AdminSidebar.vue` | «صفحات» 📄 در گروه فروشگاه؛ «تم سایت» 🎨 در گروه مدیریت زیر تنظیمات |
+| `src/views/settings/SettingsView.vue` | تب theme + کدهای مرتبط کاملاً حذف شد |
+
+---
+
+### Audit — Logs & Tests (in progress)
+
+بررسی پوشه‌به‌پوشه برای اضافه‌کردن log و test های گمشده.
+
+**قوانین audit:**
+- Backend: `AppLoggerService.warn()` برای: auth fail، stock کم ≤5، کوپن منقضی. `error()` در catch هایی که re-throw می‌کنند. **هرگز:** password، OTP code، full token. phone masking: `phone.slice(0,-4) + '****'`
+- Frontend: فقط در `catch` داخل `onMounted`/async functions
+- Tests: فقط success + main error case
+
+#### `src/modules/auth/` ✅
+
+**`auth.service.ts`:**
+- `logger.warn` اضافه شد برای: OTP rate-limit، OTP expired، OTP mismatch، inactive user login، refresh token invalid/expired، inactive user on refresh
+- همه phone numbers با `maskPhone()` mask شده‌اند
+
+**`auth/guards/jwt-auth.guard.spec.ts`** (فایل جدید):
+- 5 آزمون: canActivate (public skip، delegate to passport)، handleRequest (valid user، null user، error passed)
+- **5 آزمون، همه pass**
+
+#### `src/modules/order/` ✅
+
+**`order.service.ts`:** logs قبلاً کامل بود (warn: variant inactive/insufficient stock/coupon invalid؛ log: order created/cancelled/status updated)
+
+**`order.service.spec.ts`:** 6 آزمون جدید اضافه شد:
+- `findMyOrderById` → returns order | NotFoundException
+- `adminFindById` → returns order | NotFoundException
+- `findMyOrders` → returns paginated result
+- `adminFindAll` → returns paginated result with populated user
+- **19 آزمون کل، همه pass**
+
+**پوشه‌های تکمیل‌شده در Session 9:**
+`payment` · `product` · `user` · `review` · `discount` · `storein-front/stores` · `storein-front/composables` · `storein-front/utils` · `storein-admin/stores` · `storein-admin/utils`
+
+---
+
 ## Current Project Status (2026-06-09)
 
 ### Backend `storein/` — ✅ کامل
 
 | Modules | Count |
 |---------|-------|
-| Core modules (Auth, User, Product, Category...) | 15 |
-| Feature modules (Brand, Color, Banner, Settings, Blog) | 5 |
-| Total tests | 203+ |
-| API endpoints | ~130 |
+| Core modules (Auth, User, Product, Category, Order, Payment, Review, ...) | 15 |
+| Feature modules (Brand, Color, Banner, Settings, Blog, Page) | 6 |
+| Total tests | ~219 |
+| API endpoints | ~140 |
 
 ### Admin Panel `storein-admin/` — ✅ کامل
 
@@ -2805,9 +2965,11 @@ async function applyCoupon() {
 | Reviews | 1 | ✅ |
 | Discounts | 1 | ✅ |
 | Blog (List + Form) | 2 | ✅ |
-| Settings (6 tabs + Theme Colors) | 1 | ✅ |
+| Pages (List + Form با TipTap) | 2 | ✅ |
+| Settings (5 tabs + Trust Items accordion) | 1 | ✅ |
+| Theme (standalone page + sticky save bar) | 1 | ✅ |
 
-### Storefront `storein-front/` — ✅ تقریباً کامل
+### Storefront `storein-front/` — ✅ کامل
 
 | View | Route | Status |
 |------|-------|--------|
@@ -2823,9 +2985,442 @@ async function applyCoupon() {
 | `AddressesView` | `/user/addresses` | ✅ |
 | `BlogListView` | `/blog` | ✅ |
 | `BlogDetailView` | `/blog/:slug` | ✅ |
-| `CheckoutView` | `/checkout` | ✅ (address + review + payment + real coupon validation) |
+| `CheckoutView` | `/checkout` | ✅ |
+| `PageView` | `/pages/:slug` | ✅ |
 
-**Remaining:** `CheckoutView` — کامل شد. تنها view باقیمانده: هیچ.
+### Audit — Logs & Tests
+
+| Folder | Status |
+|--------|--------|
+| `src/modules/auth/` | ✅ done |
+| `src/modules/order/` | ✅ done |
+| `src/modules/payment/` | ✅ done |
+| `src/modules/product/` | ✅ done |
+| `src/modules/user/` | ✅ done |
+| `src/modules/review/` | ✅ done |
+| `src/modules/discount/` | ✅ done |
+| `storein-front/src/stores/` | ✅ done |
+| `storein-front/src/composables/` | ✅ done |
+| `storein-front/src/utils/` | ✅ done |
+| `storein-admin/src/stores/` | ✅ done |
+| `storein-admin/src/utils/` | ✅ done |
+
+---
+
+## Session 8 — Bug Fixes & UI Polish (2026-06-10)
+
+---
+
+### Admin Reviews Panel Fix ✅
+
+**Problem:** Reviews page showed «نظری یافت نشد» and pending count badge showed 0.
+
+**Backend — `storein/src/modules/review/review.service.ts`:**
+- `adminFindAll`: renamed return key `reviews` → `items`; added `pendingCount` via `countDocuments({ status: 'pending' })`
+- `getProductReviews`: renamed return key `reviews` → `items` (consistent with all other list endpoints)
+- Populate now includes `thumbnail` on productId
+
+**Admin frontend — `storein-admin/src/views/reviews/ReviewsView.vue`:**
+- `row.comment` → `row.body`
+- `row.user` → `row.userId` (from populate)
+- `row.product` → `row.productId` (from populate)
+- `row.productId?.thumbnail` for image, `row.productId?.name` for product name
+- `row.userId?.firstName/lastName/phone` for user info
+
+---
+
+### Category Products Count Fix ✅
+
+**Problem:** productsCount always showed 0 in admin categories view.
+
+**Root cause:** Admin `CategoriesView` calls `getTree()` not `getAll()`. `getTree()` had no productsCount aggregation.
+
+**Backend — `storein/src/modules/category/category.module.ts`:**
+- Added `Product` model to MongooseModule.forFeature
+
+**Backend — `storein/src/modules/category/category.service.ts`:**
+- Injected `@InjectModel(Product.name) private productModel`
+- Added products aggregation to both `findAll()` and `getTree()`:
+  ```typescript
+  const [cats, counts] = await Promise.all([
+    this.catModel.find(...).lean(),
+    this.productModel.aggregate([
+      { $group: { _id: { $toString: '$category' }, count: { $sum: 1 } } },
+    ]),
+  ]);
+  const countMap = new Map(counts.map(c => [c._id, c.count]));
+  const catsWithCount = cats.map(c => ({ ...c, productsCount: countMap.get(c._id.toString()) ?? 0 }));
+  ```
+
+---
+
+### Category sortOrder Fix ✅
+
+**Problem:** Sort order showed 0 regardless of value entered.
+
+**Root cause:** Schema field is `sortOrder` but template was reading `category.order`.
+
+**Fixed files:**
+- `storein-admin/src/views/categories/components/CategoryTreeRow.vue`: `category.order ?? 0` → `category.sortOrder ?? 0`
+- `storein-admin/src/views/categories/components/CategoryFormModal.vue`: `form.order = props.category.order ?? 0` → `form.order = props.category.sortOrder ?? 0`
+
+---
+
+### Admin User Profile Stats Fix ✅
+
+**Problem:** ordersCount and totalSpent always showed 0 on user detail page.
+
+**Backend — `storein/src/modules/user/user.module.ts`:**
+- Added Order, Review schemas to MongooseModule.forFeature
+
+**Backend — `storein/src/modules/user/user.service.ts`:**
+- Modified `findById` to run aggregation for purchase stats:
+  ```typescript
+  const [user, statsResult] = await Promise.all([
+    this.userModel.findById(oid).select('-__v').lean(),
+    this.orderModel.aggregate([
+      { $match: { userId: oid, status: { $ne: OrderStatus.CANCELLED } } },
+      { $group: { _id: null, count: { $sum: 1 }, total: { $sum: '$total' } } },
+    ]),
+  ]);
+  return { ...user, isBlocked: !user.isActive, ordersCount: stats.count, totalSpent: stats.total };
+  ```
+- Added `getUserReviews(userId, page, limit)` method
+
+**Backend — `storein/src/modules/user/user.controller.ts`:**
+- Added `GET :id/reviews` endpoint
+
+**Admin frontend — `storein-admin/src/services/user.service.js`:**
+- Added `getReviews: (id, params) => http.get('/users/${id}/reviews', { params })`
+
+**Admin frontend — `storein-admin/src/views/users/UserDetailView.vue`:**
+- Added reviews section below orders: product image, stars, status badge, title, body, date, verified badge
+
+---
+
+### ReviewCard Self-Contained Helpful Button ✅
+
+**Problem:** Helpful/like button showed count but didn't reflect liked state after clicking.
+
+**Root cause:** ReviewCard emitted to parent which called API but never fed result back into ReviewCard's local state.
+
+**Rewrite — `storein-front/src/views/product-detail/components/ReviewCard.vue`:**
+- `liked` ref + `count` ref (from `review.helpfulCount`)
+- Optimistic toggle: flip immediately, revert on error
+- Filled heart icon when liked, brand color border/bg
+- `review.comment` → `review.body`
+- Toast for non-logged-in users
+
+---
+
+### Block Check Before OTP Send ✅
+
+**Problem:** Blocked users could receive SMS before being shown the blocked notice.
+
+**Backend — `storein/src/modules/auth/auth.service.ts`:**
+```typescript
+const existingUser = await this.userModel.findOne({ phone }).select('isActive').lean();
+if (existingUser && !existingUser.isActive) {
+  throw new ForbiddenException('حساب کاربری شما مسدود شده است. با پشتیبانی سایت تماس بگیرید');
+}
+```
+
+**Storefront — `storein-front/src/views/auth/LoginView.vue`:**
+- Added `isBlocked` ref
+- Styled blocked notice: red header bar (`bg-red-500`) + soft body (`bg-red-50`)
+- 403 response → `isBlocked.value = true`
+- Input `@input` resets `isBlocked = false`
+- Submit button disabled when `isBlocked`
+
+---
+
+### Category Bar Hover Clip Fix ✅
+
+**Problem:** Category circles got cut off when hovered with `scale-110` due to parent `overflow-x:auto`.
+
+**Root cause:** `overflow-x: auto` implicitly makes `overflow-y: auto` in browsers, clipping absolutely-positioned children and CSS transforms.
+
+**Fix — `storein-front/src/views/home/components/CategoryBar.vue`:**
+- Changed `group-hover:scale-110` → `group-hover:-translate-y-1.5 group-hover:shadow-lg` (lift effect instead of scale avoids overflow clip)
+- Wrapped flex container in `overflow-x-auto scrollbar-hide` div with `py-3` padding for breathing room
+
+---
+
+### Hero Banner Spacing ✅
+
+**`storein-front/src/views/home/HomeView.vue`:**
+- Added `class="mt-4"` to `<HeroBanner />` for gap between navbar and slider
+
+---
+
+### Nav Dropdown Fix ✅
+
+**Problem:** Hovering over categories with subcategories (e.g. «عینک آفتابی») didn't show dropdown panel.
+
+**Root cause:** `overflow-x: auto` on the `<ul>` element was clipping the absolutely-positioned dropdown in both axes.
+
+**Fix — `storein-front/src/components/layout/AppHeaderNav.vue`:**
+- Removed `overflow-x-auto scrollbar-hide` entirely from the nav container
+- Changed dropdown from `v-if` + `<Transition>` → `v-show` (faster, no mount/unmount timing)
+- Changed `z-dropdown` (CSS variable — potentially undefined) → `z-[300]` (direct Tailwind value)
+
+---
+
+### Product Card Hover Clip Fix ✅
+
+**Problem:** Wishlist heart button at top of product card was clipped when card hovered with `-translate-y-0.5`.
+
+**Root cause:** Scroll containers with `overflow-x: auto` implicitly clip vertically. With no top padding, the card at `y=0` moving up 2px goes to `y=-2px` and gets clipped.
+
+**Fix — `storein-front/src/views/home/components/FlashSale.vue`:**
+- Added `pt-2` to products scroll container (8px breathing room > 2px translate)
+
+**Fix — `storein-front/src/views/home/components/ProductRow.vue`:**
+- Added `pt-2` to scrollable container
+
+---
+
+### Footer Social Icon Hover Fix ✅
+
+**Problem:** Hovering social icons in footer had no visible effect.
+
+**Root cause:** CSS override for `.bg-gray-800:hover` set `opacity: 0.15` making hover invisible.
+
+**Fix — `storein-front/src/components/layout/AppFooter.vue`:**
+```css
+.site-footer :deep(.bg-gray-800:hover) {
+  background-color: var(--color-brand) !important;
+  opacity: 1;
+}
+```
+
+---
+
+### StatCard Text Clip Fix ✅
+
+**Problem:** Title text «درآمد کل» at top of stat cards had top of letters clipped (IRANSans ascenders exceeded tight line metrics).
+
+**Fix — `storein-admin/src/views/dashboard/components/StatCard.vue`:**
+- Added `pt-0.5` to content div for font ascender breathing room
+- `leading-none` → `leading-tight` on the large value text
+
+---
+
+## Session 9 — Audit کامل: Logs & Tests (2026-06-12)
+
+---
+
+بررسی کامل پوشه‌به‌پوشه برای اضافه‌کردن log و test های گمشده.
+تمام 12 پوشه از لیست audit تکمیل شد — ~230 تست جدید و تمام logs مطابق قوانین.
+
+---
+
+### Backend — `src/modules/payment/` ✅
+
+**تست جدید:**
+| File | Tests |
+|------|-------|
+| `payment.controller.spec.ts` (جدید) | 11 تست: getBalance، getTransactions، topupWallet، payOrder (wallet/gateway/error)، verifyPayment (success/NOK/not-found) |
+
+---
+
+### Backend — `src/modules/product/` ✅
+
+**لاگ اضافه‌شده — `product.service.ts`:**
+- `AppLoggerService` inject شد
+- `create()` success → `log('Product created', { productId, slug, totalStock })`
+- `create()` catch (ValidationError) → `error('Product create validation failed', err, { slug })`
+- `remove()` → `log('Product removed', { productId })`
+- `adjustStock()` after save → `if (newStock <= 5) warn('Low stock', { productId, variantId, stock })`
+
+**تست‌ها:**
+| File | Tests |
+|------|-------|
+| `product.service.spec.ts` (آپدیت) | 7 تست جدید: update، remove، updateVariant، bulkDiscount×2، low-stock warn verification + اضافه‌کردن `mockLogger` و `AppLoggerService` provider |
+| `product.controller.spec.ts` (جدید) | 20 تست: همه 11 endpoint |
+
+---
+
+### Backend — `src/modules/user/` ✅
+
+**لاگ اضافه‌شده — `user.service.ts`:**
+- `updateProfile()` after update → `log('Profile updated: userId=${userId}')`
+
+**تست‌ها و bug fix:**
+| File | تغییر |
+|------|-------|
+| `user.service.spec.ts` (bug fix + آپدیت) | provider های `Order` و `Review` model که گم بودند اضافه شد (سرویس هر 3 را inject می‌کند ولی spec فقط User داشت) + 6 گروه آزمون جدید |
+| `user.controller.spec.ts` (جدید) | 15 تست |
+
+---
+
+### Backend — `src/modules/review/` ✅
+
+**لاگ اضافه‌شده — `review.service.ts`:**
+- `create()` after save → `log('Review created', { reviewId, userId, productId, rating, isVerifiedPurchase })`
+- `updateStatus()` after save → `log('Review status updated', { reviewId, status, productId })`
+
+**تست‌ها و bug fix:**
+| File | تغییر |
+|------|-------|
+| `review.service.spec.ts` (bug fix + آپدیت) | provider های `User` model، `NotificationsGateway` و `AppLoggerService` که گم بودند اضافه شد |
+| `review.controller.spec.ts` (جدید) | 12 تست |
+
+---
+
+### Backend — `src/modules/discount/` ✅
+
+**لاگ اضافه‌شده — `discount.service.ts`:**
+- `validate()` → `warn('Coupon expired', { code, userId, endDate })`
+- `validate()` → `warn('Coupon usage limit reached', { code, usageCount, usageLimit })`
+- `validate()` → `warn('Coupon already used by user', { code, userId })`
+- `adminCreate()` after save → `log('Coupon created', { couponId, code, type, value })`
+- `adminDeactivate()` after update → `log('Coupon deactivated', { couponId, code })`
+
+**تست‌ها:**
+| File | Tests |
+|------|-------|
+| `discount.service.spec.ts` (آپدیت) | `mockLogger` + `AppLoggerService` provider اضافه شد + 7 تست جدید: adminUpdate×3، recordUsage، adminFindAll، warn-log verification×2 |
+| `discount.controller.spec.ts` (جدید) | 14 تست |
+
+---
+
+### Frontend — `storein-front/` — Vitest Setup ✅
+
+**`storein-front/package.json`** — devDependencies:
+```json
+"vitest": "^2.1.8",
+"jsdom": "^25.0.1",
+"@vue/test-utils": "^2.4.6"
+```
+
+**`storein-front/vitest.config.js`** (جدید):
+```js
+import { defineConfig } from 'vitest/config'
+import vue from '@vitejs/plugin-vue'
+export default defineConfig({
+  plugins: [vue()],
+  test: { environment: 'jsdom', globals: true },
+  resolve: { alias: { '@': fileURLToPath(new URL('./src', import.meta.url)) } },
+})
+```
+
+---
+
+### Frontend — `storein-front/src/stores/` ✅
+
+**لاگ اضافه‌شده:**
+| Store | لاگ‌ها |
+|-------|--------|
+| `auth.store.js` | `logger.error` در `catch` های `sendOtp` و `verifyOtp` + re-throw |
+| `cart.store.js` | `logger.error` در `catch` های `addItem`، `updateItem`، `removeItem`، `fetchCart` |
+| `wishlist.store.js` | `logger.error('wishlist: toggle failed', error, { productId }, 'WishlistStore')` در catch موجود |
+| `product.store.js` | `logger.error` در `fetchProducts` catch + try/catch با logger در `fetchProductBySlug` + re-throw |
+
+**تست‌های جدید:**
+| File | Tests |
+|------|-------|
+| `ui.store.test.js` | 7 تست با `vi.useFakeTimers()` برای `removeToast` زمان‌دار |
+| `auth.store.test.js` | 6 تست: mock authService + dynamic import cart/wishlist stores + logger |
+| `cart.store.test.js` | 8 تست: computed values (totalItems/totalPrice) |
+| `wishlist.store.test.js` | 7 تست: optimistic update + rollback verification |
+| `product.store.test.js` | 8 تست: fromQueryParams/toQueryParams roundtrip |
+
+---
+
+### Frontend — `storein-front/src/composables/` ✅
+
+**لاگ اضافه‌شده — `useApi.js`:**
+```js
+logger.error('useApi: execute failed', e, { message: error.value }, 'useApi')
+```
+
+**تست‌های جدید:**
+| File | Tests |
+|------|-------|
+| `useApi.test.js` | 7 تست: success، error از response، fallback message، logger call، loading reset، multiple args |
+| `useTheme.test.js` | 8 تست: init با localStorage، system preference، toggle + persist، applyFromSettings CSS vars |
+
+---
+
+### Frontend — `storein-front/src/utils/` ✅
+
+فایل‌های pure utility — هیچ لاگی نیاز نیست.
+
+**تست‌های جدید:**
+| File | Tests |
+|------|-------|
+| `formatters.test.js` | 14 تست: formatPrice (null/0/valid)، calcDiscount (rounding/edge)، truncate (default/null/overflow)، formatDate (null/valid) |
+| `validators.test.js` | 15 تست: required (empty/whitespace/null)، phone (valid/wrong-prefix/length)، otp (4-digit/6-digit/wrong)، minLength (pass/fail/message) |
+
+---
+
+### Admin — `storein-admin/` — Vitest Setup ✅
+
+**`storein-admin/package.json`** — devDependencies اضافه + scripts:
+```json
+"vitest": "^2.1.8",
+"jsdom": "^25.0.1",
+"@vue/test-utils": "^2.4.6",
+"test": "vitest run",
+"test:watch": "vitest"
+```
+
+**`storein-admin/vitest.config.js`** (جدید): مشابه storein-front با alias `@`
+
+---
+
+### Admin — `storein-admin/src/stores/` ✅
+
+**لاگ اضافه‌شده — `auth.store.js`:**
+- `sendOtp()` catch → `logger.error('admin-auth: sendOtp failed', error, { phone: masked }, 'AuthStore')` + re-throw
+- `verifyOtp()` catch → `logger.error('admin-auth: verifyOtp failed', error, {}, 'AuthStore')` + re-throw
+- `fetchProfile()` catch → `logger.warn('admin-auth: fetchProfile failed, logging out', ...)` قبل از logout
+
+**تست‌های جدید:**
+| File | Tests |
+|------|-------|
+| `auth.store.test.js` | 11 تست: sendOtp (success/error/phone-mask)، verifyOtp (admin/manager/no-access/api-error)، fetchProfile (skip/success/error+warn)، hasPermission، logout |
+| `ui.store.test.js` | 9 تست: toasts (add/remove/auto-expire)، sidebar (toggle/mobile)، notifications (add/unread/markAll/clear)، toggleDark |
+
+---
+
+### Admin — `storein-admin/src/utils/` ✅
+
+فایل‌های pure utility — هیچ لاگی نیاز نیست.
+
+**تست جدید:**
+| File | Tests |
+|------|-------|
+| `formatters.test.js` | 16 تست: formatPrice/formatNumber (null/undefined/zero/valid)، formatDate/formatDateTime (falsy/valid)، calcDiscount (correct%/edge/rounding)، truncate (short/overflow/default-50/falsy) |
+
+---
+
+### خلاصه Audit — کل تغییرات
+
+**لاگ‌های اضافه‌شده:**
+| پروژه | فایل‌های تغییرکرده |
+|-------|-------------------|
+| Backend | `product.service.ts`، `review.service.ts`، `discount.service.ts`، `user.service.ts` |
+| storein-front | `auth.store.js`، `cart.store.js`، `wishlist.store.js`، `product.store.js`، `useApi.js` |
+| storein-admin | `auth.store.js` |
+
+**تست‌های جدید (~230 تست):**
+| دسته | تعداد تست |
+|------|-----------|
+| Backend controllers (payment/product/user/review/discount) | ~72 تست |
+| Backend service additions (product/user/review/discount) | ~27 تست |
+| storein-front stores | 36 تست |
+| storein-front composables | 15 تست |
+| storein-front utils | 29 تست |
+| storein-admin stores | 20 تست |
+| storein-admin utils | 16 تست |
+| **جمع** | **~215 تست جدید** |
+
+**Bug fix‌های مهم در حین audit:**
+- `user.service.spec.ts` — provider های گم‌شده `Order` و `Review` model اضافه شد
+- `review.service.spec.ts` — provider های گم‌شده `User`، `NotificationsGateway`، `AppLoggerService` اضافه شد
+- `product.service.spec.ts` و `discount.service.spec.ts` — `AppLoggerService` mock provider اضافه شد پس از inject آن به service
 
 ---
 
@@ -2833,4 +3428,4 @@ async function applyCoupon() {
 
 Repository: `https://github.com/sabervalimohamadi/storein-glasses.git`  
 Branch: `master`  
-Latest commit: `b5e6d77` — Session 5: Blog module, dashboard fix, section color theming
+Latest commit: `6cac650` — Fix coupon validation in checkout — real API call instead of optimistic accept

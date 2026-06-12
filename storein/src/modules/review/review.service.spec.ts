@@ -10,7 +10,17 @@ import { ReviewService } from './review.service';
 import { Review, ReviewStatus } from './entities/review.schema';
 import { Product } from '../product/entities/product.schema';
 import { Order } from '../order/entities/order.schema';
+import { User } from '../user/entities/user.schema';
 import { REDIS_CLIENT } from '../../redis/redis.module';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
+
+const mockGateway = { emitNewReview: jest.fn() };
 
 const userId    = new Types.ObjectId().toString();
 const productId = new Types.ObjectId().toString();
@@ -87,13 +97,20 @@ describe('ReviewService', () => {
       expire:    jest.fn(),
     };
 
+    const userModel = {
+      findById: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ReviewService,
         { provide: getModelToken(Review.name),   useValue: reviewModel },
         { provide: getModelToken(Product.name),  useValue: productModel },
         { provide: getModelToken(Order.name),    useValue: orderModel },
+        { provide: getModelToken(User.name),     useValue: userModel },
         { provide: REDIS_CLIENT,                 useValue: redis },
+        { provide: NotificationsGateway,         useValue: mockGateway },
+        { provide: AppLoggerService,             useValue: mockLogger },
       ],
     }).compile();
 

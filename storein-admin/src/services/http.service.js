@@ -42,10 +42,12 @@ http.interceptors.response.use(
     const message  = error.response?.data?.message ?? error.message
     const duration = Date.now() - (error.config?.metadata?.startTime ?? 0)
 
-    logger.apiError(`${method} ${url}`, status ?? 0, message, { duration: `${duration}ms` })
+    if (!error.config?.skipErrorLog) {
+      logger.apiError(`${method} ${url}`, status ?? 0, message, { duration: `${duration}ms` })
 
-    if (!error.response) {
-      logger.error('Network error — no response from server', error, { url, method }, 'HTTP')
+      if (!error.response) {
+        logger.error('Network error — no response from server', error, { url, method }, 'HTTP')
+      }
     }
 
     if (status === 401) {

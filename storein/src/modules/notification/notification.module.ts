@@ -8,20 +8,27 @@ import {
   PushNotificationChannel,
   SmsNotificationChannel,
 } from './channels/notification-channel.abstract';
-import { MockSmsChannel } from './channels/mock-sms.channel';
-import { MockPushChannel } from './channels/mock-push.channel';
+import { MockSmsChannel }      from './channels/mock-sms.channel';
+import { MockPushChannel }     from './channels/mock-push.channel';
+import { KavenegarSmsChannel } from './channels/kavenegar-sms.channel';
+import { DynamicSmsChannel }   from './channels/dynamic-sms.channel';
+import { SettingsModule }      from '../settings/settings.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
     ]),
+    SettingsModule,
   ],
   controllers: [NotificationController],
   providers: [
     NotificationService,
     NotificationListener,
-    { provide: SmsNotificationChannel,  useClass: MockSmsChannel },
+    MockSmsChannel,
+    KavenegarSmsChannel,
+    DynamicSmsChannel,
+    { provide: SmsNotificationChannel,  useExisting: DynamicSmsChannel },
     { provide: PushNotificationChannel, useClass: MockPushChannel },
   ],
   exports: [NotificationService],

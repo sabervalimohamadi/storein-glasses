@@ -92,7 +92,10 @@ const orderId      = ref(route.query.orderId ?? '')
 const orderNumber  = ref('')
 
 onMounted(async () => {
-  const { authority, status, orderId: qOrderId } = route.query
+  // ZarinPal sends capitalized params (Authority, Status); handle both
+  const authority = (route.query.authority || route.query.Authority) ?? ''
+  const status    = (route.query.status    || route.query.Status)    ?? ''
+  const qOrderId  = route.query.orderId ?? ''
 
   // Direct wallet payment success (no gateway redirect)
   if (status === 'success' && !authority) {

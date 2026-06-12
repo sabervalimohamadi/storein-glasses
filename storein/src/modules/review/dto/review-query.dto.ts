@@ -1,4 +1,4 @@
-import { IsEnum, IsMongoId, IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsEnum, IsIn, IsMongoId, IsNumber, IsOptional, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 import { ReviewStatus } from '../entities/review.schema';
 
@@ -17,4 +17,7 @@ export class ReviewQueryDto {
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
   limit?: number = 10;
+
+  @IsOptional() @IsIn(['createdAt', 'helpful', 'rating'])
+  sortBy?: 'createdAt' | 'helpful' | 'rating' = 'createdAt';
 }

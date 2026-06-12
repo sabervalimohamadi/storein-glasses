@@ -7,6 +7,7 @@ import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
+import { BulkDiscountDto } from './dto/bulk-discount.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -45,6 +46,12 @@ export class ProductController {
   @Post()
   create(@Body() dto: CreateProductDto) {
     return this.productService.create(dto);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch('bulk-discount')
+  bulkDiscount(@Body() dto: BulkDiscountDto) {
+    return this.productService.bulkDiscount(dto);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)

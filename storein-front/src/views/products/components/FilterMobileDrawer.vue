@@ -223,6 +223,7 @@ import { formatNumber } from '@/utils/formatters'
 const props = defineProps({
   modelValue: { type: Boolean, default: false },
   filters:    { type: Object,  required: true },
+  brands:     { type: Array,   default: () => [] },
 })
 const emit = defineEmits(['update:modelValue', 'apply', 'clear'])
 
@@ -231,6 +232,7 @@ const categoryStore = useCategoryStore()
 // Local copy — allows "Cancel" without modifying the real filters
 const localFilters = reactive({
   category:       null,
+  brand:          null,
   genders:        [],
   frameShapes:    [],
   frameMaterials: [],
@@ -243,6 +245,7 @@ const localFilters = reactive({
 watch(() => props.modelValue, (open) => {
   if (open) {
     localFilters.category       = props.filters.category
+    localFilters.brand          = props.filters.brand
     localFilters.genders        = [...(props.filters.genders || [])]
     localFilters.frameShapes    = [...(props.filters.frameShapes || [])]
     localFilters.frameMaterials = [...(props.filters.frameMaterials || [])]
@@ -252,8 +255,8 @@ watch(() => props.modelValue, (open) => {
   }
 })
 
-const rootCategories = computed(() =>
-  categoryStore.categories.filter(c => !c.parentId || c.depth === 0)
+const allCategories = computed(() =>
+  [...categoryStore.categories].sort((a, b) => (a.depth || 0) - (b.depth || 0) || a.name.localeCompare(b.name, 'fa'))
 )
 
 function toggleArray(key, value) {

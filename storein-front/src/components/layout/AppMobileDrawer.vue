@@ -62,49 +62,13 @@
         <!-- Categories -->
         <div class="py-2" style="border-top: 1px solid var(--color-border);" v-if="categories.length">
           <p class="px-4 py-1.5 text-xs font-semibold uppercase tracking-wider" style="color: var(--color-text-disabled);">دسته‌بندی‌ها</p>
-
-          <div v-for="cat in categories" :key="cat._id">
-            <!-- Category row -->
-            <div class="flex items-center transition-colors" style="color: var(--color-text-primary);">
-              <!-- Category name → navigates -->
-              <RouterLink
-                :to="{ name: 'category', params: { slug: cat.slug } }"
-                @click="close"
-                class="flex-1 px-4 py-2.5 text-sm"
-              >
-                {{ cat.name }}
-              </RouterLink>
-              <!-- Chevron → expands subcategories -->
-              <button
-                v-if="cat.children?.length"
-                @click.stop="toggleCat(cat._id)"
-                class="px-4 py-2.5 transition-transform duration-200"
-                :style="expandedCats.has(cat._id) ? 'transform: rotate(-90deg); color: var(--color-brand);' : 'color: var(--color-text-disabled);'"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
-                </svg>
-              </button>
-            </div>
-
-            <!-- Subcategories -->
-            <div v-if="expandedCats.has(cat._id) && cat.children?.length"
-                 style="background-color: var(--color-bg);">
-              <RouterLink
-                v-for="child in cat.children"
-                :key="child._id"
-                :to="{ name: 'category', params: { slug: child.slug } }"
-                @click="close"
-                class="flex items-center gap-2 pr-8 pl-4 py-2.5 text-sm transition-colors"
-                style="color: var(--color-text-secondary);"
-                @mouseenter="e => e.currentTarget.style.color = 'var(--color-brand)'"
-                @mouseleave="e => e.currentTarget.style.color = 'var(--color-text-secondary)'"
-              >
-                <span class="w-1 h-1 rounded-full flex-shrink-0" style="background-color: var(--color-text-disabled);"></span>
-                {{ child.name }}
-              </RouterLink>
-            </div>
-          </div>
+          <MobileNavItem
+            v-for="cat in categories"
+            :key="cat._id"
+            :item="cat"
+            :depth="0"
+            @close="close"
+          />
         </div>
 
         <!-- User actions -->
@@ -140,6 +104,7 @@ import { useUiStore }       from '@/stores/ui.store'
 import { useAuthStore }     from '@/stores/auth.store'
 import { useCategoryStore } from '@/stores/category.store'
 import { storeToRefs } from 'pinia'
+import MobileNavItem from '@/components/layout/MobileNavItem.vue'
 
 const router        = useRouter()
 const route         = useRoute()
@@ -157,17 +122,8 @@ const userName = computed(() => {
 })
 
 
-const expandedCats = ref(new Set())
-
-function toggleCat(id) {
-  const next = new Set(expandedCats.value)
-  next.has(id) ? next.delete(id) : next.add(id)
-  expandedCats.value = next
-}
-
 function close() {
   uiStore.isMenuOpen = false
-  expandedCats.value = new Set()
 }
 
 async function handleLogout() {

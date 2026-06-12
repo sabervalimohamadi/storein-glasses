@@ -708,7 +708,7 @@ async function placeOrder() {
     const payDto = {
       orderId:     order._id,
       method:      paymentMethod.value,
-      callbackUrl: `${window.location.origin}/payment/result`,
+      callbackUrl: `${window.location.origin}/payment/result?orderId=${order._id}`,
       ...(paymentMethod.value === 'mixed' ? { walletAmount: walletAmount.value } : {}),
     }
     const { data: payment } = await paymentService.payOrder(payDto)

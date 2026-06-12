@@ -6,6 +6,12 @@ import { ProductService } from './product.service';
 import { Product, ProductStatus } from './entities/product.schema';
 import { Category } from '../category/entities/category.schema';
 import { Color } from '../color/entities/color.schema';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
 
 const catId  = new Types.ObjectId().toString();
 const prodId = new Types.ObjectId().toString();
@@ -76,6 +82,7 @@ describe('ProductService', () => {
         { provide: getModelToken(Product.name),  useValue: model },
         { provide: getModelToken(Category.name), useValue: catModel },
         { provide: getModelToken(Color.name),    useValue: colorModel },
+        { provide: AppLoggerService,             useValue: mockLogger },
       ],
     }).compile();
 
@@ -160,6 +167,102 @@ describe('ProductService', () => {
     it('throws if product not found', async () => {
       model.findByIdAndDelete.mockResolvedValue(null);
       await expect(service.remove(prodId)).rejects.toThrow(NotFoundException);
+    });
+
+    it('removes product successfully', async () => {
+      model.findByIdAndDelete.mockResolvedValue(mockProduct());
+      await expect(service.remove(prodId)).resolves.toBeUndefined();
+    });
+  });
+
+  describe('update', () => {
+    it('updates product and returns updated doc', async () => {
+      const existing = mockProduct();
+      const updated  = mockProduct({ name: 'سامسونگ A55 جدید' });
+      model.findById.mockResolvedValue(existing);
+      model.findByIdAndUpdate.mockReturnValue({
+        select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(updated) }),
+      });
+
+      const result = await service.update(prodId, { name: 'سامسونگ A55 جدید' });
+      expect(result.name).toBe('سامسونگ A55 جدید');
+    });
+
+    it('throws NotFoundException when product not found', async () => {
+      model.findById.mockResolvedValue(null);
+      await expect(service.update(prodId, { name: 'x' })).rejects.toThrow(NotFoundException);
+    });
+  });
+
+  describe('updateVariant', () => {
+    it('updates variant fields', async () => {
+      const prod = mockProduct();
+      model.findById.mockResolvedValue(prod);
+
+      await service.updateVariant(prodId, varId.toString(), { price: 15_000_000 });
+
+      expect(prod.variants[0].price).toBe(15_000_000);
+      expect(prod.save).toHaveBeenCalled();
+    });
+
+    it('throws on duplicate SKU when updating', async () => {
+      const varId2 = new Types.ObjectId();
+      const prod = mockProduct({
+        variants: [
+          mockVariant({ _id: varId,  sku: 'SKU-001' }),
+          mockVariant({ _id: varId2, sku: 'SKU-002' }),
+        ],
+      });
+      model.findById.mockResolvedValue(prod);
+
+      await expect(
+        service.updateVariant(prodId, varId.toString(), { sku: 'SKU-002' }),
+      ).rejects.toThrow(BadRequestException);
+    });
+  });
+
+  describe('bulkDiscount', () => {
+    it('applies percentage discount to all variants', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 10_000_000, comparePrice: 0 })],
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      const result = await service.bulkDiscount({
+        productIds: [prodId], discountPct: 20,
+      });
+
+      expect(result.updated).toBe(1);
+      expect(prod.variants[0].comparePrice).toBe(10_000_000);
+      expect(prod.variants[0].price).toBe(8_000_000);
+    });
+
+    it('restores original price when discountPct is 0', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 8_000_000, comparePrice: 10_000_000 })],
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 0 });
+
+      expect(prod.variants[0].price).toBe(10_000_000);
+      expect(prod.variants[0].comparePrice).toBe(0);
+    });
+  });
+
+  describe('adjustStock — low stock warn', () => {
+    it('emits warn log when stock drops to ≤5', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ stock: 7 })],
+      });
+      model.findById.mockResolvedValue(prod);
+
+      await service.adjustStock(prodId, varId.toString(), -4);
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Low stock',
+        expect.objectContaining({ stock: 3 }),
+      );
     });
   });
 });
