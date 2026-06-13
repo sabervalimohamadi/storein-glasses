@@ -1,0 +1,208 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { mount } from '@vue/test-utils'
+import { setActivePinia, createPinia } from 'pinia'
+
+vi.mock('@/utils/logger', () => ({
+  logger: { warn: vi.fn(), info: vi.fn(), error: vi.fn() },
+}))
+
+vi.mock('vue-router', () => ({
+  RouterLink: {
+    name: 'RouterLink',
+    props: ['to'],
+    template: '<a :href="JSON.stringify(to)"><slot /></a>',
+  },
+  useRouter: () => ({}),
+  useRoute:  () => ({}),
+}))
+
+vi.mock('@/stores/settings.store', async () => {
+  const { defineStore } = await import('pinia')
+  return {
+    useSettingsStore: defineStore('settings', {
+      state: () => ({
+        siteName:        'استورین',
+        logoUrl:         '',
+        tagline:         'فروشگاه تخصصی عینک',
+        footerTagline:   '',
+        footerCopyright: 'تمامی حقوق محفوظ است',
+        footerLinks:     [],
+        email:           'test@storein.ir',
+        phone:           '09123456789',
+        address:         '',
+        social: {
+          instagram: '',
+          telegram:  '',
+          whatsapp:  '',
+          twitter:   '',
+          linkedin:  '',
+          youtube:   '',
+        },
+      }),
+    }),
+  }
+})
+
+import AppFooter from './AppFooter.vue'
+import { useSettingsStore } from '@/stores/settings.store'
+
+function factory(storeOverrides = {}) {
+  setActivePinia(createPinia())
+  const store = useSettingsStore()
+  Object.assign(store, storeOverrides)
+  return mount(AppFooter, { global: { stubs: { RouterLink: { template: '<a><slot /></a>' } } } })
+}
+
+describe('AppFooter', () => {
+  beforeEach(() => {
+    setActivePinia(createPinia())
+  })
+
+  describe('brand column', () => {
+    it('renders siteName text when no logoUrl', () => {
+      const wrapper = factory({ siteName: 'استورین', logoUrl: '' })
+      expect(wrapper.text()).toContain('استورین')
+    })
+
+    it('renders logo img when logoUrl is set', () => {
+      const wrapper = factory({ logoUrl: 'https://cdn.test/logo.png', siteName: 'استورین' })
+      const img = wrapper.find('img')
+      expect(img.exists()).toBe(true)
+      expect(img.attributes('src')).toBe('https://cdn.test/logo.png')
+    })
+
+    it('shows tagline from store', () => {
+      const wrapper = factory({ tagline: 'فروشگاه عینک طبی و آفتابی' })
+      expect(wrapper.text()).toContain('فروشگاه عینک طبی و آفتابی')
+    })
+
+    it('falls back to footerTagline when tagline is empty', () => {
+      const wrapper = factory({ tagline: '', footerTagline: 'tagline از footer' })
+      expect(wrapper.text()).toContain('tagline از footer')
+    })
+  })
+
+  describe('social links', () => {
+    it('hides all social icons when all URLs are empty', () => {
+      const wrapper = factory()
+      expect(wrapper.find('[data-testid="social-instagram"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="social-telegram"]').exists()).toBe(false)
+      expect(wrapper.find('[data-testid="social-whatsapp"]').exists()).toBe(false)
+    })
+
+    it('shows only the social icons that have a URL set', () => {
+      const wrapper = factory({ social: { instagram: 'https://instagram.com/test', telegram: '', whatsapp: '', twitter: '', linkedin: '', youtube: '' } })
+      expect(wrapper.find('[data-testid="social-instagram"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="social-telegram"]').exists()).toBe(false)
+    })
+
+    it('social link has correct href', () => {
+      const wrapper = factory({ social: { telegram: 'https://t.me/storein', instagram: '', whatsapp: '', twitter: '', linkedin: '', youtube: '' } })
+      const link = wrapper.find('[data-testid="social-telegram"]')
+      expect(link.attributes('href')).toBe('https://t.me/storein')
+    })
+
+    it('social links open in new tab with rel=noopener', () => {
+      const wrapper = factory({ social: { whatsapp: 'https://wa.me/123', instagram: '', telegram: '', twitter: '', linkedin: '', youtube: '' } })
+      const link = wrapper.find('[data-testid="social-whatsapp"]')
+      expect(link.attributes('target')).toBe('_blank')
+      expect(link.attributes('rel')).toBe('noopener')
+    })
+  })
+
+  describe('categories column', () => {
+    it('renders the categories heading', () => {
+      const wrapper = factory()
+      expect(wrapper.find('[data-testid="heading-categories"]').text()).toBe('دسته‌بندی‌ها')
+    })
+
+    it('renders all 4 footer categories', () => {
+      const wrapper = factory()
+      const links = wrapper.findAll('a')
+      const texts = links.map(l => l.text())
+      expect(texts).toContain('عینک آفتابی')
+      expect(texts).toContain('عینک طبی')
+      expect(texts).toContain('لنز طبی')
+      expect(texts).toContain('لوازم جانبی')
+    })
+  })
+
+  describe('quick links / footer links', () => {
+    it('shows default quick links when footerLinks is empty', () => {
+      const wrapper = factory({ footerLinks: [] })
+      expect(wrapper.text()).toContain('دسترسی سریع')
+    })
+
+    it('shows custom footerLinks when provided', () => {
+      const wrapper = factory({ footerLinks: [{ url: '/blog', label: 'وبلاگ' }, { url: '/faq', label: 'سوالات متداول' }] })
+      expect(wrapper.text()).toContain('لینک‌های سریع')
+      expect(wrapper.text()).toContain('وبلاگ')
+      expect(wrapper.text()).toContain('سوالات متداول')
+    })
+
+    it('custom footer link href is set correctly', () => {
+      const wrapper = factory({ footerLinks: [{ url: 'https://blog.storein.ir', label: 'وبلاگ' }] })
+      const link = wrapper.findAll('a').find(a => a.text() === 'وبلاگ')
+      expect(link?.attributes('href')).toBe('https://blog.storein.ir')
+    })
+  })
+
+  describe('contact section', () => {
+    it('shows store email', () => {
+      const wrapper = factory({ email: 'hello@storein.ir' })
+      expect(wrapper.find('[data-testid="contact-email"]').text()).toContain('hello@storein.ir')
+    })
+
+    it('falls back to default email when store.email is empty', () => {
+      const wrapper = factory({ email: '' })
+      expect(wrapper.find('[data-testid="contact-email"]').text()).toContain('support@storein.ir')
+    })
+
+    it('shows store phone', () => {
+      const wrapper = factory({ phone: '08733177189' })
+      expect(wrapper.find('[data-testid="contact-phone"]').text()).toContain('08733177189')
+    })
+
+    it('shows address when set', () => {
+      const wrapper = factory({ address: 'کردستان - سنندج' })
+      expect(wrapper.find('[data-testid="contact-address"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="contact-address"]').text()).toContain('کردستان - سنندج')
+    })
+
+    it('hides address element when address is empty', () => {
+      const wrapper = factory({ address: '' })
+      expect(wrapper.find('[data-testid="contact-address"]').exists()).toBe(false)
+    })
+  })
+
+  describe('trust badges', () => {
+    it('renders all 4 trust badges', () => {
+      const wrapper = factory()
+      expect(wrapper.find('[data-testid="badge-secure-pay"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="badge-return"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="badge-authentic"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="badge-fast-ship"]').exists()).toBe(true)
+    })
+
+    it('trust badge labels are visible', () => {
+      const wrapper = factory()
+      expect(wrapper.text()).toContain('پرداخت امن')
+      expect(wrapper.text()).toContain('ضمانت بازگشت ۷ روزه')
+      expect(wrapper.text()).toContain('اصالت کالا')
+      expect(wrapper.text()).toContain('ارسال سریع')
+    })
+  })
+
+  describe('copyright', () => {
+    it('shows footerCopyright text', () => {
+      const wrapper = factory({ footerCopyright: 'تمامی حقوق برای استورین محفوظ است' })
+      expect(wrapper.find('[data-testid="copyright"]').text()).toContain('تمامی حقوق برای استورین محفوظ است')
+    })
+
+    it('shows current year in copyright', () => {
+      const wrapper = factory()
+      const year = new Date().getFullYear().toString()
+      expect(wrapper.find('[data-testid="copyright"]').text()).toContain(year)
+    })
+  })
+})
