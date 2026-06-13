@@ -6,5 +6,5 @@ export default registerAs('app', () => ({
   name:                process.env.APP_NAME || 'storein',
   allowedOrigins:      (process.env.ALLOWED_ORIGINS ?? 'http://localhost:4000,http://localhost:5173')
                          .split(',').map(o => o.trim()).filter(Boolean),
-  paymentCallbackUrl:  process.env.PAYMENT_CALLBACK_URL ?? 'http://localhost:3000/api/v1/payments/verify',
+  paymentCallbackUrl:  process.env.PAYMENT_CALLBACK_URL,
 }));

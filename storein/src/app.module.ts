@@ -68,8 +68,8 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
         KAVENEGAR_API_KEY:       Joi.string().optional().allow(''),
         KAVENEGAR_SENDER:        Joi.string().optional().allow(''),
         KAVENEGAR_OTP_TEMPLATE:  Joi.string().optional().allow(''),
-        ALLOWED_ORIGINS:         Joi.string().optional().allow(''),
-        PAYMENT_CALLBACK_URL:    Joi.string().optional().allow(''),
+        ALLOWED_ORIGINS:         Joi.string().required(),
+        PAYMENT_CALLBACK_URL:    Joi.string().uri().required(),
       }),
     }),
     EventEmitterModule.forRoot({

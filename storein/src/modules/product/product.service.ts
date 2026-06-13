@@ -445,6 +445,34 @@ export class ProductService {
   }
 
   // ── Inventory ─────────────────────────────────────────────────
+  async bulkAdjustStock(
+    items: { productId: string; variantId: string; delta: number }[],
+  ): Promise<void> {
+    if (!items.length) return;
+
+    await this.productModel.bulkWrite(
+      items.map((item) => ({
+        updateOne: {
+          filter: {
+            _id: new Types.ObjectId(item.productId),
+            'variants._id': new Types.ObjectId(item.variantId),
+          },
+          update: { $inc: { 'variants.$.stock': item.delta } },
+        },
+      })),
+    );
+
+    const uniqueIds = [...new Set(items.map((i) => i.productId))];
+    await Promise.all(uniqueIds.map((id) => this.recalcDenormalized(id)));
+  }
+
+  private async recalcDenormalized(productId: string): Promise<void> {
+    const product = await this.productModel.findById(productId);
+    if (!product) return;
+    Object.assign(product, this.calcDenormalized(product.variants));
+    await product.save();
+  }
+
   async adjustStock(
     productId: string,
     variantId: string,

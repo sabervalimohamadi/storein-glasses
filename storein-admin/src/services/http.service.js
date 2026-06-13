@@ -4,6 +4,7 @@ import { logger } from '@/utils/logger'
 const http = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL,
   timeout: 15000,
+  withCredentials: true,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 })
 
@@ -56,7 +57,6 @@ http.interceptors.response.use(
     }
 
     if (status === 401) {
-      localStorage.removeItem('admin_refresh_token')
       window.location.href = '/login'
     }
     if (status === 403) {

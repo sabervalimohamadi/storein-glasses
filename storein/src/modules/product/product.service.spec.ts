@@ -28,7 +28,7 @@ const mockVariant = (overrides = {}) => ({
   ...overrides,
 });
 
-const mockProduct = (overrides = {}) => ({
+const mockProduct = (overrides: Record<string, any> = {}) => ({
   _id: new Types.ObjectId(prodId),
   name: 'سامسونگ گلکسی A55',
   slug: 'samsung-galaxy-a55',
@@ -43,6 +43,7 @@ const mockProduct = (overrides = {}) => ({
   tags: [],
   save: jest.fn().mockResolvedValue(true),
   toObject: jest.fn().mockReturnThis(),
+  markModified: jest.fn(),
   ...overrides,
 });
 

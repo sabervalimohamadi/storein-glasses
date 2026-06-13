@@ -1,5 +1,8 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, Req, UseGuards } from '@nestjs/common';
+import {
+  Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards,
+} from '@nestjs/common';
 import type { Request } from 'express';
+import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
@@ -10,9 +13,22 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtRefreshPayload } from './interfaces/jwt-payload.interface';
 import type { UserDocument } from '../user/entities/user.schema';
 
+const COOKIE_NAME = 'refresh_token';
+const COOKIE_PATH = '/api/v1/auth';
+
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
+
+  private setRefreshCookie(res: Response, token: string): void {
+    res.cookie(COOKIE_NAME, token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 30 * 24 * 60 * 60 * 1000,
+      path: COOKIE_PATH,
+    });
+  }
 
   @Public() @Post('send-otp') @HttpCode(HttpStatus.OK)
   sendOtp(@Body() dto: SendOtpDto) {
@@ -20,23 +36,41 @@ export class AuthController {
   }
 
   @Public() @Post('verify-otp') @HttpCode(HttpStatus.OK)
-  verifyOtp(@Body() dto: VerifyOtpDto, @Req() req: Request) {
-    return this.authService.verifyOtp(dto, {
+  async verifyOtp(
+    @Body() dto: VerifyOtpDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.verifyOtp(dto, {
       userAgent: req.headers['user-agent'], ip: req.ip,
     });
+    this.setRefreshCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken, isNewUser: result.isNewUser };
   }
 
   @UseGuards(JwtRefreshGuard) @Post('refresh') @HttpCode(HttpStatus.OK)
-  refresh(@Req() req: Request & { user: JwtRefreshPayload }) {
-    return this.authService.refreshTokens(req.user.sub, req.user.refreshToken!, {
-      userAgent: req.headers['user-agent'], ip: req.ip,
-    });
+  async refresh(
+    @Req() req: Request & { user: JwtRefreshPayload },
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.refreshTokens(
+      req.user.sub,
+      req.user.refreshToken!,
+      { userAgent: req.headers['user-agent'], ip: req.ip },
+    );
+    this.setRefreshCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken };
   }
 
   @UseGuards(JwtAuthGuard) @Post('logout') @HttpCode(HttpStatus.OK)
-  logout(@CurrentUser() user: UserDocument, @Req() req: Request) {
-    const token = req.headers.authorization?.replace('Bearer ', '').trim() ?? '';
-    return this.authService.logout((user._id as any).toString(), token);
+  async logout(
+    @CurrentUser() user: UserDocument,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const refreshToken = (req as any).cookies?.[COOKIE_NAME] ?? '';
+    res.clearCookie(COOKIE_NAME, { path: COOKIE_PATH });
+    return this.authService.logout((user._id as any).toString(), refreshToken);
   }
 
   @UseGuards(JwtAuthGuard) @Post('logout-all') @HttpCode(HttpStatus.OK)

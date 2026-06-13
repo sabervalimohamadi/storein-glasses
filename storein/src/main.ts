@@ -4,6 +4,7 @@ import { ValidationPipe }        from '@nestjs/common';
 import { ConfigService }         from '@nestjs/config';
 import * as path                 from 'path';
 import helmet                    from 'helmet';
+import cookieParser              from 'cookie-parser';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule }             from './app.module';
 import { AllExceptionsFilter }   from './common/filters/http-exception.filter';
@@ -58,6 +59,7 @@ async function bootstrap() {
     SwaggerModule.setup('api/docs', app, document);
   }
 
+  app.use(cookieParser());
   app.use(helmet());
   app.enableCors({
     origin:      allowedOrigins,

@@ -41,10 +41,7 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await authService.verifyOtp(phone, code)
 
       token.value = data.accessToken
-      // Refresh token persisted so the session survives page reload;
-      // access token stays in memory only
-      if (data.refreshToken)
-        localStorage.setItem('admin_refresh_token', data.refreshToken)
+      // Refresh token is now an HttpOnly cookie — browser handles it automatically
 
       const { data: profile } = await authService.getProfile()
       if (!hasAdminAccess(profile)) {
@@ -62,13 +59,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function initAuth() {
-    const refreshToken = localStorage.getItem('admin_refresh_token')
-    if (!refreshToken) return
+    // Browser sends the HttpOnly cookie automatically — no localStorage needed
     try {
-      const { data } = await authService.refresh(refreshToken)
+      const { data } = await authService.refresh()
       token.value = data.accessToken
-      if (data.refreshToken)
-        localStorage.setItem('admin_refresh_token', data.refreshToken)
       const { data: profile } = await authService.getProfile()
       if (!hasAdminAccess(profile)) { logout(); return }
       user.value = profile
@@ -94,7 +88,7 @@ export const useAuthStore = defineStore('auth', () => {
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
-    localStorage.removeItem('admin_refresh_token')
+    // Cookie is cleared by the server on POST /auth/logout
     const { socketService } = await import('@/services/socket.service')
     socketService.disconnect()
   }

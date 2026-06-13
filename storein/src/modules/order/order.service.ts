@@ -138,11 +138,13 @@ export class OrderService {
       note:       dto.note,
     });
 
-    for (const item of cart.items) {
-      await this.productService.adjustStock(
-        item.productId, item.variantId, -item.quantity,
-      );
-    }
+    await this.productService.bulkAdjustStock(
+      cart.items.map((item) => ({
+        productId: item.productId,
+        variantId: item.variantId,
+        delta: -item.quantity,
+      })),
+    );
     await this.cartService.clearCart(userId);
 
     if (couponDoc && discount > 0) {
@@ -215,11 +217,13 @@ export class OrderService {
 
     this.assertTransition(order.status, OrderStatus.CANCELLED);
 
-    for (const item of order.items) {
-      await this.productService.adjustStock(
-        item.productId.toString(), item.variantId, item.quantity,
-      );
-    }
+    await this.productService.bulkAdjustStock(
+      order.items.map((item) => ({
+        productId: item.productId.toString(),
+        variantId: item.variantId,
+        delta: item.quantity,
+      })),
+    );
 
     const previousStatus = order.status;
     order.status         = OrderStatus.CANCELLED;
@@ -334,11 +338,13 @@ export class OrderService {
     this.assertTransition(order.status, dto.status);
 
     if (dto.status === OrderStatus.CANCELLED) {
-      for (const item of order.items) {
-        await this.productService.adjustStock(
-          item.productId.toString(), item.variantId, item.quantity,
-        );
-      }
+      await this.productService.bulkAdjustStock(
+        order.items.map((item) => ({
+          productId: item.productId.toString(),
+          variantId: item.variantId,
+          delta: item.quantity,
+        })),
+      );
       if (dto.cancelReason) order.cancelReason = dto.cancelReason;
     }
 

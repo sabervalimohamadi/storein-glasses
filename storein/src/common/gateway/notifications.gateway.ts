@@ -15,7 +15,20 @@ import { User, UserDocument } from '../../modules/user/entities/user.schema';
 
 @WebSocketGateway({
   namespace: 'notifications',
-  cors: { origin: true, credentials: true },
+  cors: {
+    origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+      const allowed = (process.env.ALLOWED_ORIGINS ?? '')
+        .split(',')
+        .map((o) => o.trim())
+        .filter(Boolean);
+      if (!origin || allowed.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error(`WebSocket CORS blocked: ${origin}`));
+      }
+    },
+    credentials: true,
+  },
 })
 export class NotificationsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect

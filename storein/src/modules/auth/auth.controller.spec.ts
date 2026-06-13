@@ -15,7 +15,13 @@ const makeReq = (overrides = {}) => ({
   headers: { 'user-agent': 'jest', authorization: 'Bearer tok' },
   ip: '127.0.0.1',
   user: { sub: 'uid1', refreshToken: 'rtok' },
+  cookies: { refresh_token: 'rtok' },
   ...overrides,
+});
+
+const makeRes = () => ({
+  cookie: jest.fn(),
+  clearCookie: jest.fn(),
 });
 
 describe('AuthController', () => {
@@ -46,32 +52,38 @@ describe('AuthController', () => {
   it('verifyOtp passes user-agent and ip from request', async () => {
     mockService.verifyOtp.mockResolvedValue({ accessToken: 'at', refreshToken: 'rt', isNewUser: false });
     const req = makeReq() as any;
-    await controller.verifyOtp({ phone: '09121234567', code: '123456' }, req);
+    const res = makeRes() as any;
+    await controller.verifyOtp({ phone: '09121234567', code: '123456' }, req, res);
     expect(mockService.verifyOtp).toHaveBeenCalledWith(
       { phone: '09121234567', code: '123456' },
       { userAgent: 'jest', ip: '127.0.0.1' },
     );
+    expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt', expect.any(Object));
   });
 
   it('verifyOtp propagates UnauthorizedException on bad code', async () => {
     mockService.verifyOtp.mockRejectedValue(new UnauthorizedException());
     await expect(
-      controller.verifyOtp({ phone: '09121234567', code: 'wrong' }, makeReq() as any),
+      controller.verifyOtp({ phone: '09121234567', code: 'wrong' }, makeReq() as any, makeRes() as any),
     ).rejects.toThrow(UnauthorizedException);
   });
 
-  it('refresh delegates refreshToken from req.user', async () => {
+  it('refresh delegates refreshToken from cookie', async () => {
     mockService.refreshTokens.mockResolvedValue({ accessToken: 'at2', refreshToken: 'rt2' });
     const req = makeReq() as any;
-    await controller.refresh(req);
+    const res = makeRes() as any;
+    await controller.refresh(req, res);
     expect(mockService.refreshTokens).toHaveBeenCalledWith('uid1', 'rtok', expect.any(Object));
+    expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt2', expect.any(Object));
   });
 
-  it('logout strips Bearer prefix and delegates', async () => {
+  it('logout reads cookie and clears it', async () => {
     mockService.logout.mockResolvedValue({ message: 'ok' });
     const user = { _id: 'uid1' } as any;
-    await controller.logout(user, makeReq() as any);
-    expect(mockService.logout).toHaveBeenCalledWith('uid1', 'tok');
+    const res = makeRes() as any;
+    await controller.logout(user, makeReq() as any, res);
+    expect(mockService.logout).toHaveBeenCalledWith('uid1', 'rtok');
+    expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', expect.any(Object));
   });
 
   it('logoutAll delegates userId', async () => {
