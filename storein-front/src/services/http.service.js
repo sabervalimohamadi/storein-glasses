@@ -7,10 +7,25 @@ const http = axios.create({
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
 })
 
+// ── Token refresh state ───────────────────────────────────────────
+let isRefreshing = false
+let pendingQueue = []   // { resolve, reject }[]
+
+function processQueue(error, token = null) {
+  pendingQueue.forEach(({ resolve, reject }) =>
+    error ? reject(error) : resolve(token)
+  )
+  pendingQueue = []
+}
+
+// ── Request interceptor ───────────────────────────────────────────
 http.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('access_token')
-    if (token) config.headers.Authorization = `Bearer ${token}`
+    // Don't overwrite Authorization if the caller set it explicitly (e.g. refresh calls)
+    if (!config.headers.Authorization) {
+      const token = localStorage.getItem('access_token')
+      if (token) config.headers.Authorization = `Bearer ${token}`
+    }
     config.metadata = { startTime: Date.now() }
     return config
   },
@@ -20,6 +35,7 @@ http.interceptors.request.use(
   },
 )
 
+// ── Response interceptor ──────────────────────────────────────────
 http.interceptors.response.use(
   (response) => {
     // Unwrap backend envelope: { success, statusCode, data, timestamp } → data
@@ -38,7 +54,7 @@ http.interceptors.response.use(
 
     return response
   },
-  (error) => {
+  async (error) => {
     const status   = error.response?.status
     const url      = error.config?.url ?? 'unknown'
     const method   = error.config?.method?.toUpperCase() ?? 'UNKNOWN'
@@ -52,8 +68,56 @@ http.interceptors.response.use(
     }
 
     if (status === 401) {
-      localStorage.removeItem('access_token')
-      window.location.href = '/auth/login'
+      const originalRequest = error.config
+
+      // Already retried or this IS the refresh request — hard logout
+      if (originalRequest._retry || url.includes('/auth/refresh')) {
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        window.location.href = '/auth/login'
+        return Promise.reject(error)
+      }
+
+      const refreshToken = localStorage.getItem('refresh_token')
+      if (!refreshToken) {
+        localStorage.removeItem('access_token')
+        window.location.href = '/auth/login'
+        return Promise.reject(error)
+      }
+
+      // Queue concurrent 401 requests while refresh is in flight
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          pendingQueue.push({ resolve, reject })
+        }).then(token => {
+          originalRequest.headers.Authorization = `Bearer ${token}`
+          return http(originalRequest)
+        }).catch(err => Promise.reject(err))
+      }
+
+      originalRequest._retry = true
+      isRefreshing = true
+
+      try {
+        const { data } = await http.post(
+          '/auth/refresh', {},
+          { headers: { Authorization: `Bearer ${refreshToken}` } },
+        )
+        const newToken = data.accessToken
+        localStorage.setItem('access_token', newToken)
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken)
+        processQueue(null, newToken)
+        originalRequest.headers.Authorization = `Bearer ${newToken}`
+        return http(originalRequest)
+      } catch (refreshError) {
+        processQueue(refreshError, null)
+        localStorage.removeItem('access_token')
+        localStorage.removeItem('refresh_token')
+        window.location.href = '/auth/login'
+        return Promise.reject(refreshError)
+      } finally {
+        isRefreshing = false
+      }
     }
 
     return Promise.reject(error)

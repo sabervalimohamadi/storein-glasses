@@ -82,9 +82,34 @@ export const useAuthStore = defineStore('auth', () => {
     useWishlistStore().wishlistIds = new Set()
   }
 
+  // ── Init (called once on app startup) ────────────────────────
+  async function initAuth() {
+    const refreshToken = localStorage.getItem('refresh_token')
+    if (!token.value && !refreshToken) return
+
+    // No access token but we have a refresh token — silently obtain a new one
+    if (!token.value && refreshToken) {
+      try {
+        const { data } = await authService.refresh()
+        token.value = data.accessToken
+        localStorage.setItem('access_token', data.accessToken)
+        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken)
+      } catch {
+        localStorage.removeItem('refresh_token')
+        return
+      }
+    }
+
+    // Fetch profile — if access token is expired the http interceptor handles refresh
+    await fetchProfile()
+
+    // Load cart + wishlist in background once we know the user
+    if (user.value) _postLoginSync()
+  }
+
   return {
     user, token, loading, pendingPhone,
     isLoggedIn,
-    sendOtp, verifyOtp, fetchProfile, logout,
+    sendOtp, verifyOtp, fetchProfile, logout, initAuth,
   }
 })

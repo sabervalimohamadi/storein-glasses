@@ -195,6 +195,31 @@ export class ProductService {
     return { ...product, colorMap };
   }
 
+  async findRelated(slug: string, limit = 8): Promise<ProductDocument[]> {
+    const product = await this.productModel
+      .findOne({ slug, status: ProductStatus.ACTIVE })
+      .select('category tags')
+      .lean<ProductDocument>();
+    if (!product) return [];
+
+    const catIds = product.category
+      ? await this.resolveCategoryIds((product.category as Types.ObjectId).toString())
+      : null;
+
+    const filter: Record<string, any> = {
+      status: ProductStatus.ACTIVE,
+      slug:   { $ne: slug },
+    };
+    if (catIds?.length) filter.category = { $in: catIds };
+
+    return this.productModel
+      .find(filter)
+      .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount')
+      .sort({ soldCount: -1, createdAt: -1 })
+      .limit(limit)
+      .lean<ProductDocument[]>();
+  }
+
   // ── Admin ─────────────────────────────────────────────────────
   async adminFindAll(query: ProductQueryDto): Promise<{
     products: ProductDocument[];

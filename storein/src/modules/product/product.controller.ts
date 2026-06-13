@@ -29,6 +29,12 @@ export class ProductController {
     return this.productService.findBySlug(slug);
   }
 
+  @Public()
+  @Get(':slug/related')
+  findRelated(@Param('slug') slug: string) {
+    return this.productService.findRelated(slug);
+  }
+
   // ── Admin ─────────────────────────────────────────────────────
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get('admin')
