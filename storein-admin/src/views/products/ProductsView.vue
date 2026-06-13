@@ -213,11 +213,11 @@
           <div v-if="discountModal.pct > 0 && discountModal.product" class="rounded-xl p-3 space-y-1 text-sm" style="background-color: var(--color-bg);">
             <div class="flex justify-between text-text-secondary">
               <span>قیمت اصلی</span>
-              <span class="font-fanum font-medium text-text-primary">{{ formatPrice(discountModal.product.minPrice) }}</span>
+              <span class="font-fanum line-through text-text-disabled">{{ formatPrice(discountModalBase) }}</span>
             </div>
             <div class="flex justify-between text-text-secondary">
-              <span>قیمت قبل از تخفیف</span>
-              <span class="font-fanum line-through">{{ formatPrice(Math.round(discountModal.product.minPrice / (1 - discountModal.pct / 100))) }}</span>
+              <span>قیمت با تخفیف</span>
+              <span class="font-fanum font-medium text-success">{{ formatPrice(Math.round(discountModalBase * (1 - discountModal.pct / 100))) }}</span>
             </div>
           </div>
 
@@ -454,29 +454,42 @@ async function doDelete() {
 
 // ── Discount helpers ──────────────────────────────
 function getDiscount(row) {
-  const maxCompare = Math.max(
-    0,
-    ...(row.variants ?? [])
-      .filter(v => v.comparePrice > 0 && v.isActive !== false)
-      .map(v => v.comparePrice),
-  )
-  if (!maxCompare || !row.minPrice || maxCompare <= row.minPrice) return 0
-  return Math.round((1 - row.minPrice / maxCompare) * 100)
+  // Compare each variant's own price vs its own comparePrice — never cross-variant
+  const active = (row.variants ?? [])
+    .filter(v => v.isActive !== false && v.comparePrice > 0 && v.price > 0 && v.comparePrice > v.price)
+  if (!active.length) return 0
+  // Use the cheapest variant (the one driving minPrice in the table)
+  active.sort((a, b) => a.price - b.price)
+  const v = active[0]
+  return Math.round((1 - v.price / v.comparePrice) * 100)
 }
 
 function openDiscountModal(row) {
   discountModal.value = { open: true, product: row, pct: getDiscount(row), loading: false }
 }
 
+// Base price for the discount modal preview: original price before any discount
+const discountModalBase = computed(() => {
+  const p = discountModal.value.product
+  if (!p) return 0
+  return (p.maxComparePrice > 0 ? p.maxComparePrice : null)
+    ?? Math.max(0, ...(p.variants ?? []).filter(v => v.comparePrice > 0).map(v => v.comparePrice))
+    || p.minPrice
+})
+
 function buildVariantsWithDiscount(variants, pct) {
-  return (variants ?? []).map(v => ({
-    ...(v._id ? { _id: v._id } : {}),
-    sku:          v.sku ?? '',
-    price:        Number(v.price),
-    comparePrice: pct > 0 ? Math.round(Number(v.price) / (1 - pct / 100)) : 0,
-    stock:        Number(v.stock ?? 0),
-    attributes:   Array.isArray(v.attributes) ? v.attributes : [],
-  }))
+  return (variants ?? []).map(v => {
+    // Always discount from the original price (comparePrice if set, otherwise current price)
+    const base = v.comparePrice > 0 ? v.comparePrice : Number(v.price)
+    return {
+      ...(v._id ? { _id: v._id } : {}),
+      sku:          v.sku ?? '',
+      price:        pct > 0 ? Math.round(base * (1 - pct / 100)) : base,
+      comparePrice: pct > 0 ? base : 0,
+      stock:        Number(v.stock ?? 0),
+      attributes:   Array.isArray(v.attributes) ? v.attributes : [],
+    }
+  })
 }
 
 async function saveDiscount() {
@@ -490,7 +503,13 @@ async function saveDiscount() {
       category: product.category?._id ?? product.category,
       variants: updatedVariants,
     })
-    product.variants = product.variants.map((v, i) => ({ ...v, comparePrice: updatedVariants[i].comparePrice }))
+    // Optimistic update: sync both price and comparePrice in the local row
+    product.variants = product.variants.map((v, i) => ({
+      ...v,
+      price:        updatedVariants[i].price,
+      comparePrice: updatedVariants[i].comparePrice,
+    }))
+    product.minPrice = Math.min(...product.variants.filter(v => v.isActive !== false).map(v => v.price))
     ui.addToast('تخفیف با موفقیت ذخیره شد', 'success')
     discountModal.value.open = false
   } catch {
@@ -508,7 +527,13 @@ async function clearDiscount(row) {
       category: row.category?._id ?? row.category,
       variants: updatedVariants,
     })
-    row.variants = row.variants.map(v => ({ ...v, comparePrice: 0 }))
+    // Optimistic update: restore original price and clear comparePrice
+    row.variants = row.variants.map((v, i) => ({
+      ...v,
+      price:        updatedVariants[i].price,
+      comparePrice: 0,
+    }))
+    row.minPrice = Math.min(...row.variants.filter(v => v.isActive !== false).map(v => v.price))
     ui.addToast('تخفیف حذف شد', 'success')
   } catch {
     ui.addToast('خطا در حذف تخفیف', 'error')

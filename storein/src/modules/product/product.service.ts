@@ -341,27 +341,35 @@ export class ProductService {
       .find({ _id: { $in: productIds.map((id) => new Types.ObjectId(id)) } })
       .exec();
 
+    if (pct === 0) {
+      this.logger.warn('BulkDiscount: removing discount', { count: products.length });
+    } else {
+      this.logger.log('BulkDiscount: applying', { pct, count: products.length });
+    }
+
     let updated = 0;
     for (const product of products) {
       product.variants.forEach((v: any) => {
         if (pct === 0) {
-          // Remove discount: restore original price from comparePrice
           if (v.comparePrice > 0) {
             v.price = v.comparePrice;
             v.comparePrice = 0;
           }
         } else {
-          // Apply discount on base price (use existing comparePrice if already discounted)
+          // Always discount from the original price (comparePrice if set, otherwise current price)
           const basePrice = v.comparePrice > 0 ? v.comparePrice : v.price;
           v.comparePrice = basePrice;
           v.price = Math.round(basePrice * (1 - pct / 100));
         }
       });
+      // Required: Mongoose does not detect mutations on nested array elements automatically
+      product.markModified('variants');
       Object.assign(product, this.calcDenormalized(product.variants as any[]));
       await product.save();
       updated++;
     }
 
+    this.logger.log('BulkDiscount: done', { updated, pct });
     return { updated };
   }
 

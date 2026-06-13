@@ -222,24 +222,59 @@ describe('ProductService', () => {
   });
 
   describe('bulkDiscount', () => {
-    it('applies percentage discount to all variants', async () => {
+    it('applies discount from original price and saves with markModified', async () => {
       const prod = mockProduct({
         variants: [mockVariant({ price: 10_000_000, comparePrice: 0 })],
+        markModified: jest.fn(),
       });
       model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
 
-      const result = await service.bulkDiscount({
-        productIds: [prodId], discountPct: 20,
-      });
+      const result = await service.bulkDiscount({ productIds: [prodId], discountPct: 20 });
 
       expect(result.updated).toBe(1);
       expect(prod.variants[0].comparePrice).toBe(10_000_000);
       expect(prod.variants[0].price).toBe(8_000_000);
+      expect(prod.markModified).toHaveBeenCalledWith('variants');
+      expect(prod.save).toHaveBeenCalled();
     });
 
-    it('restores original price when discountPct is 0', async () => {
+    it('always discounts from the original comparePrice, not the already-discounted price', async () => {
+      // Product had 25% discount before (comparePrice=10M, price=7.5M)
+      // Applying 19% should give 19% off 10M = 8.1M, NOT 19% off 7.5M
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 7_500_000, comparePrice: 10_000_000 })],
+        markModified: jest.fn(),
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 19 });
+
+      expect(prod.variants[0].comparePrice).toBe(10_000_000);
+      expect(prod.variants[0].price).toBe(8_100_000); // 10M * 0.81
+    });
+
+    it('applies same discount across multiple variants correctly', async () => {
+      const prod = mockProduct({
+        variants: [
+          mockVariant({ _id: new Types.ObjectId(), sku: 'A', price: 5_000_000, comparePrice: 0 }),
+          mockVariant({ _id: new Types.ObjectId(), sku: 'B', price: 8_000_000, comparePrice: 0 }),
+        ],
+        markModified: jest.fn(),
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 10 });
+
+      expect(prod.variants[0].price).toBe(4_500_000);
+      expect(prod.variants[0].comparePrice).toBe(5_000_000);
+      expect(prod.variants[1].price).toBe(7_200_000);
+      expect(prod.variants[1].comparePrice).toBe(8_000_000);
+    });
+
+    it('restores original price and clears comparePrice when discountPct is 0', async () => {
       const prod = mockProduct({
         variants: [mockVariant({ price: 8_000_000, comparePrice: 10_000_000 })],
+        markModified: jest.fn(),
       });
       model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
 
@@ -247,6 +282,59 @@ describe('ProductService', () => {
 
       expect(prod.variants[0].price).toBe(10_000_000);
       expect(prod.variants[0].comparePrice).toBe(0);
+      expect(prod.markModified).toHaveBeenCalledWith('variants');
+    });
+
+    it('does not change variant price when discountPct is 0 and no comparePrice exists', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 5_000_000, comparePrice: 0 })],
+        markModified: jest.fn(),
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 0 });
+
+      expect(prod.variants[0].price).toBe(5_000_000);
+      expect(prod.variants[0].comparePrice).toBe(0);
+    });
+
+    it('updates multiple products and returns correct updated count', async () => {
+      const prod1 = mockProduct({ variants: [mockVariant({ price: 1_000_000, comparePrice: 0 })], markModified: jest.fn() });
+      const prod2 = mockProduct({ _id: new Types.ObjectId(), variants: [mockVariant({ price: 2_000_000, comparePrice: 0 })], save: jest.fn().mockResolvedValue(true), markModified: jest.fn() });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod1, prod2]) });
+
+      const result = await service.bulkDiscount({ productIds: [prodId, prod2._id.toString()], discountPct: 30 });
+
+      expect(result.updated).toBe(2);
+      expect(prod1.save).toHaveBeenCalled();
+      expect(prod2.save).toHaveBeenCalled();
+    });
+
+    it('clamps discountPct to 90 maximum', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 10_000_000, comparePrice: 0 })],
+        markModified: jest.fn(),
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 99 });
+
+      // 90% of 10M = 1M
+      expect(prod.variants[0].price).toBe(1_000_000);
+      expect(prod.variants[0].comparePrice).toBe(10_000_000);
+    });
+
+    it('logs warn when removing discount (pct=0) and logs done after completion', async () => {
+      const prod = mockProduct({
+        variants: [mockVariant({ price: 8_000_000, comparePrice: 10_000_000 })],
+        markModified: jest.fn(),
+      });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 0 });
+
+      expect(mockLogger.warn).toHaveBeenCalledWith('BulkDiscount: removing discount', expect.any(Object));
+      expect(mockLogger.log).toHaveBeenCalledWith('BulkDiscount: done', expect.objectContaining({ updated: 1, pct: 0 }));
     });
   });
 
