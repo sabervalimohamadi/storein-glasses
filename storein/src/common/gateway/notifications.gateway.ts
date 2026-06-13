@@ -34,15 +34,8 @@ export class NotificationsGateway
     this.allowedOrigins = this.configService.get<string[]>('app.allowedOrigins') ?? [];
   }
 
-  afterInit(server: Server) {
-    // Apply runtime origin check using configured allowedOrigins
-    server.engine.on('headers', (_: unknown, req: any) => {
-      const origin = req.headers?.origin as string | undefined;
-      if (origin && !this.allowedOrigins.includes(origin)) {
-        this.logger.warn(`WS rejected origin: ${origin}`);
-      }
-    });
-    this.logger.log(`WebSocket Gateway /notifications initialized (origins: ${this.allowedOrigins.join(', ')})`);
+  afterInit() {
+    this.logger.log(`WebSocket Gateway /notifications initialized (allowed origins: ${this.allowedOrigins.join(', ')})`);
   }
 
   async handleConnection(client: Socket) {
