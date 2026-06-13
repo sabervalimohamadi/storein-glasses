@@ -4,8 +4,9 @@ import { authService } from '@/services/auth.service'
 import { logger } from '@/utils/logger'
 
 export const useAuthStore = defineStore('auth', () => {
+  // Access token lives in memory only — never persisted to localStorage (XSS protection)
   const user         = ref(null)
-  const token        = ref(localStorage.getItem('admin_token') || null)
+  const token        = ref(null)
   const loading      = ref(false)
   const pendingPhone = ref('')
 
@@ -40,7 +41,8 @@ export const useAuthStore = defineStore('auth', () => {
       const { data } = await authService.verifyOtp(phone, code)
 
       token.value = data.accessToken
-      localStorage.setItem('admin_token', data.accessToken)
+      // Refresh token persisted so the session survives page reload;
+      // access token stays in memory only
       if (data.refreshToken)
         localStorage.setItem('admin_refresh_token', data.refreshToken)
 
@@ -59,6 +61,23 @@ export const useAuthStore = defineStore('auth', () => {
     } finally { loading.value = false }
   }
 
+  async function initAuth() {
+    const refreshToken = localStorage.getItem('admin_refresh_token')
+    if (!refreshToken) return
+    try {
+      const { data } = await authService.refresh(refreshToken)
+      token.value = data.accessToken
+      if (data.refreshToken)
+        localStorage.setItem('admin_refresh_token', data.refreshToken)
+      const { data: profile } = await authService.getProfile()
+      if (!hasAdminAccess(profile)) { logout(); return }
+      user.value = profile
+    } catch (error) {
+      logger.warn('admin-auth: initAuth failed, clearing session', { error: error?.message }, 'AuthStore')
+      logout()
+    }
+  }
+
   async function fetchProfile() {
     if (!token.value) return
     try {
@@ -75,11 +94,10 @@ export const useAuthStore = defineStore('auth', () => {
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
-    localStorage.removeItem('admin_token')
     localStorage.removeItem('admin_refresh_token')
     const { socketService } = await import('@/services/socket.service')
     socketService.disconnect()
   }
 
-  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, verifyOtp, fetchProfile, logout }
+  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, verifyOtp, fetchProfile, initAuth, logout }
 })

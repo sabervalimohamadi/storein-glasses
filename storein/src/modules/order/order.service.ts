@@ -55,11 +55,17 @@ export class OrderService {
     );
     if (!address) throw new NotFoundException('آدرس یافت نشد');
 
+    // Batch fetch all products in one query (eliminates N+1)
+    const productIds = [...new Set(cart.items.map(i => new Types.ObjectId(i.productId)))];
+    const products   = await this.productService.findManyByIds(productIds.map(id => id.toString()));
+    const productMap = new Map(products.map(p => [(p._id as Types.ObjectId).toString(), p]));
+
     // Full stock validation pass before any write
     for (const item of cart.items) {
-      const product = await this.productService.findById(item.productId);
+      const product = productMap.get(item.productId);
+      if (!product) throw new BadRequestException(`محصول "${item.name}" یافت نشد`);
       const variant  = product.variants.find(
-        (v) => v._id.toString() === item.variantId,
+        (v: any) => v._id.toString() === item.variantId,
       );
       if (!variant?.isActive) {
         this.logger.warn('Order blocked: variant inactive', {

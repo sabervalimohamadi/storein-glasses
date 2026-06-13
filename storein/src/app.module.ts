@@ -1,5 +1,7 @@
 import { Module, NestModule, MiddlewareConsumer, RequestMethod } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import * as Joi from 'joi';
 import appConfig from './config/app.config';
@@ -41,6 +43,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
   imports: [
     LoggerModule,
     GatewayModule,
+    ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ConfigModule.forRoot({
       isGlobal: true,
       load: [appConfig, databaseConfig, redisConfig, jwtConfig, otpConfig, uploadConfig],
@@ -65,6 +68,8 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
         KAVENEGAR_API_KEY:       Joi.string().optional().allow(''),
         KAVENEGAR_SENDER:        Joi.string().optional().allow(''),
         KAVENEGAR_OTP_TEMPLATE:  Joi.string().optional().allow(''),
+        ALLOWED_ORIGINS:         Joi.string().optional().allow(''),
+        PAYMENT_CALLBACK_URL:    Joi.string().optional().allow(''),
       }),
     }),
     EventEmitterModule.forRoot({
@@ -100,6 +105,9 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     PageModule,
     FrameAttributeModule,
     PopupModule,
+  ],
+  providers: [
+    { provide: APP_GUARD, useClass: ThrottlerGuard },
   ],
 })
 export class AppModule implements NestModule {

@@ -4,6 +4,7 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
+import { ConfigService } from '@nestjs/config';
 import { Model, Types } from 'mongoose';
 import { Wallet, WalletDocument } from './entities/wallet.schema';
 import {
@@ -11,6 +12,7 @@ import {
   TransactionStatus, TransactionType,
   PaymentMethod,
 } from './entities/transaction.schema';
+import { User, UserDocument } from '../user/entities/user.schema';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { PaymentGateway } from './gateway/payment-gateway.abstract';
 import { OrderService } from '../order/order.service';
@@ -23,19 +25,22 @@ import { PayOrderDto } from './dto/pay-order.dto';
 import { TopupWalletDto } from './dto/topup-wallet.dto';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 
-const DEFAULT_CALLBACK = 'http://localhost:3000/api/v1/payments/verify';
-
 @Injectable()
 export class PaymentService {
+  private readonly defaultCallback: string;
+
   constructor(
     @InjectModel(Wallet.name)      private walletModel: Model<WalletDocument>,
     @InjectModel(Transaction.name) private txModel: Model<TransactionDocument>,
+    @InjectModel(User.name)        private userModel: Model<UserDocument>,
     private gateway: PaymentGateway,
     private orderService: OrderService,
     private eventEmitter: EventEmitter2,
+    private configService: ConfigService,
     private readonly logger: AppLoggerService,
   ) {
     this.logger.setContext('PaymentService');
+    this.defaultCallback = this.configService.get<string>('app.paymentCallbackUrl')!;
   }
 
   // ── Wallet ────────────────────────────────────────────────────
@@ -75,7 +80,7 @@ export class PaymentService {
   async topupWallet(userId: string, dto: TopupWalletDto): Promise<{
     gatewayUrl: string; authority: string;
   }> {
-    const callbackUrl = dto.callbackUrl ?? DEFAULT_CALLBACK;
+    const callbackUrl = dto.callbackUrl ?? this.defaultCallback;
     const { authority, gatewayUrl } = await this.gateway.create(
       dto.amount, 'شارژ کیف پول', callbackUrl,
     );
@@ -114,7 +119,7 @@ export class PaymentService {
       amount:  order.total,
     });
 
-    const callbackUrl = dto.callbackUrl ?? DEFAULT_CALLBACK;
+    const callbackUrl = dto.callbackUrl ?? this.defaultCallback;
 
     // ── Wallet only ──────────────────────────────────────────────
     if (dto.method === PaymentMethod.WALLET) {
@@ -217,11 +222,10 @@ export class PaymentService {
         reason: result.message,
       });
 
-      const failedUser: any = await this.walletModel.db
-        .model('User')
+      const failedUser = await this.userModel
         .findById(tx.userId)
         .select('phone')
-        .lean();
+        .lean<UserDocument>();
       if (failedUser) {
         this.eventEmitter.emit(EVENTS.PAYMENT_FAILED, {
           userId: tx.userId.toString(),
@@ -237,11 +241,10 @@ export class PaymentService {
       refId:  result.refId,
     });
 
-    const successUser: any = await this.walletModel.db
-      .model('User')
+    const successUser = await this.userModel
       .findById(tx.userId)
       .select('phone')
-      .lean();
+      .lean<UserDocument>();
 
     // Wallet top-up (no order attached)
     if (!tx.orderId) {

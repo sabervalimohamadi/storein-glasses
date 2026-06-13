@@ -23,6 +23,7 @@
     "axios": "^1.16.1",
     "chart.js": "^4.5.1",
     "dayjs": "^1.11.21",
+    "dompurify": "^3.4.10",
     "jalaali-js": "^1.2.8",
     "pinia": "^3.0.4",
     "socket.io-client": "^4.8.3",
@@ -32,6 +33,7 @@
     "vue3-persian-datetime-picker": "^1.2.2"
   },
   "devDependencies": {
+    "@types/dompurify": "^3.0.5",
     "@vitejs/plugin-vue": "^6.0.6",
     "@vue/test-utils": "^2.4.11",
     "autoprefixer": "^10.5.0",

@@ -9,7 +9,8 @@ import { User } from '../user/entities/user.schema';
 import { CartService } from '../cart/cart.service';
 import { ProductService } from '../product/product.service';
 import { DiscountService } from '../discount/discount.service';
-import { AppLoggerService } from '../../common/logger/app-logger.service';
+import { AppLoggerService }    from '../../common/logger/app-logger.service';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 
 const mockLogger = {
   setContext: jest.fn().mockReturnThis(),
@@ -84,7 +85,7 @@ describe('OrderService', () => {
       }),
     };
     cartService      = { getRawCart: jest.fn(), clearCart: jest.fn() };
-    productService   = { findById: jest.fn(), adjustStock: jest.fn().mockResolvedValue({}) };
+    productService   = { findById: jest.fn(), findManyByIds: jest.fn(), adjustStock: jest.fn().mockResolvedValue({}) };
     discountService  = { validate: jest.fn(), recordUsage: jest.fn().mockResolvedValue(undefined) };
     eventEmitter     = { emit: jest.fn() };
 
@@ -98,6 +99,7 @@ describe('OrderService', () => {
         { provide: DiscountService,           useValue: discountService },
         { provide: EventEmitter2,             useValue: eventEmitter },
         { provide: AppLoggerService,          useValue: mockLogger },
+        { provide: NotificationsGateway,      useValue: { emitNewOrder: jest.fn() } },
       ],
     }).compile();
 
@@ -115,9 +117,9 @@ describe('OrderService', () => {
           lean: jest.fn().mockResolvedValue({ addresses: [mockAddress()] }),
         }),
       });
-      productService.findById.mockResolvedValue({
-        variants: [mockProductVariant()],
-      });
+      productService.findManyByIds.mockResolvedValue([{
+        _id: new Types.ObjectId(prodId), variants: [mockProductVariant()],
+      }]);
       orderModel.create.mockResolvedValue({
         ...mockOrder(), toObject: () => mockOrder(),
       });
@@ -152,9 +154,9 @@ describe('OrderService', () => {
     });
 
     it('throws when stock insufficient', async () => {
-      productService.findById.mockResolvedValue({
-        variants: [{ ...mockProductVariant(), stock: 1 }],
-      });
+      productService.findManyByIds.mockResolvedValue([{
+        _id: new Types.ObjectId(prodId), variants: [{ ...mockProductVariant(), stock: 1 }],
+      }]);
       await expect(
         service.createFromCart(userId, { addressId: addrId.toString() }),
       ).rejects.toThrow(BadRequestException);
@@ -178,9 +180,9 @@ describe('OrderService', () => {
     });
 
     it('throws when variant is inactive', async () => {
-      productService.findById.mockResolvedValue({
-        variants: [{ ...mockProductVariant(), isActive: false }],
-      });
+      productService.findManyByIds.mockResolvedValue([{
+        _id: new Types.ObjectId(prodId), variants: [{ ...mockProductVariant(), isActive: false }],
+      }]);
       await expect(
         service.createFromCart(userId, { addressId: addrId.toString() }),
       ).rejects.toThrow(BadRequestException);

@@ -3,9 +3,11 @@ import {
   Logger, UnauthorizedException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { HydratedDocument, Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { randomInt } from 'crypto';
+import * as bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
 import { SmsService } from './sms/sms.service.abstract';
@@ -49,7 +51,7 @@ export class AuthService {
 
     const length = this.configService.get<number>('otp.length')!;
     const ttl = this.configService.get<number>('otp.expiresIn')!;
-    const code = Array.from({ length }, () => Math.floor(Math.random() * 10)).join('');
+    const code = Array.from({ length }, () => randomInt(0, 10)).join('');
 
     await this.redis.setex(`otp:${phone}`, ttl, code);
     await this.smsService.sendOtp(phone, code);
@@ -59,8 +61,18 @@ export class AuthService {
   }
 
   async verifyOtp(dto: VerifyOtpDto, meta: { userAgent?: string; ip?: string }) {
-    const phone = this.normalizePhone(dto.phone);
-    const key = `otp:${phone}`;
+    const phone   = this.normalizePhone(dto.phone);
+    const key     = `otp:${phone}`;
+    const verifyKey = `otp:verify:${phone}`;
+
+    // Brute-force guard: max 5 attempts per OTP window (300 s)
+    const attempts = await this.redis.incr(verifyKey);
+    if (attempts === 1) await this.redis.expire(verifyKey, 300);
+    if (attempts > 5) {
+      this.logger.warn(`OTP verify rate-limit: ${this.maskPhone(phone)} (attempts=${attempts})`);
+      throw new BadRequestException('تعداد تلاش‌های اشتباه زیاد است. ۵ دقیقه دیگر تلاش کنید');
+    }
+
     const stored = await this.redis.get(key);
 
     if (!stored) {
@@ -72,7 +84,7 @@ export class AuthService {
       throw new UnauthorizedException('کد اشتباه است');
     }
 
-    await this.redis.del(key, `otp:rl:${phone}`);
+    await this.redis.del(key, `otp:rl:${phone}`, verifyKey);
 
     let user = await this.userModel.findOne({ phone });
     const isNewUser = !user;
@@ -92,10 +104,18 @@ export class AuthService {
 
   // ── Tokens ────────────────────────────────────────────────────
   async refreshTokens(userId: string, refreshToken: string, meta: { userAgent?: string; ip?: string }) {
-    const doc = await this.rtModel.findOne({
-      userId, token: refreshToken, isRevoked: false,
+    // Find a non-revoked, non-expired token record for this user
+    const candidates = await this.rtModel.find({
+      userId, isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
+    let doc: RefreshTokenDocument | null = null;
+    for (const candidate of candidates) {
+      if (await bcrypt.compare(refreshToken, candidate.token)) {
+        doc = candidate;
+        break;
+      }
+    }
     if (!doc) {
       this.logger.warn(`Refresh token invalid/expired: userId=${userId}`);
       throw new UnauthorizedException('توکن نامعتبر است');
@@ -112,7 +132,14 @@ export class AuthService {
   }
 
   async logout(userId: string, token: string) {
-    await this.rtModel.findOneAndUpdate({ userId, token }, { isRevoked: true });
+    // Must compare hash since tokens are stored hashed
+    const active = await this.rtModel.find({ userId, isRevoked: false });
+    for (const doc of active) {
+      if (await bcrypt.compare(token, doc.token)) {
+        await this.rtModel.findByIdAndUpdate(doc._id, { isRevoked: true });
+        break;
+      }
+    }
     return { message: 'خروج موفق' };
   }
 
@@ -122,17 +149,18 @@ export class AuthService {
   }
 
   // ── Helpers ───────────────────────────────────────────────────
-  private async issueTokens(user: UserDocument, meta: { userAgent?: string; ip?: string }) {
-    const payload: JwtPayload = { sub: (user._id as any).toString(), phone: user.phone };
+  private async issueTokens(user: HydratedDocument<User>, meta: { userAgent?: string; ip?: string }) {
+    const payload: JwtPayload = { sub: user._id.toString(), phone: user.phone };
 
-    const accessToken = this.jwtService.sign(payload);
+    const accessToken  = this.jwtService.sign(payload);
     const refreshToken = this.jwtService.sign(payload, {
-      secret: this.configService.get<string>('jwt.refreshSecret')!,
+      secret:    this.configService.get<string>('jwt.refreshSecret')!,
       expiresIn: this.configService.get('jwt.refreshExpiresIn') as any,
     });
 
-    const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
-    await this.rtModel.create({ userId: user._id, token: refreshToken, expiresAt, ...meta });
+    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    const expiresAt   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+    await this.rtModel.create({ userId: user._id, token: hashedToken, expiresAt, ...meta });
 
     return { accessToken, refreshToken };
   }

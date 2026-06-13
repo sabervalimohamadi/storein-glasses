@@ -13,6 +13,8 @@ import { PaymentGateway } from './gateway/payment-gateway.abstract';
 import { OrderService } from '../order/order.service';
 import { OrderStatus } from '../order/entities/order.schema';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
+import { ConfigService } from '@nestjs/config';
+import { User } from '../user/entities/user.schema';
 
 const mockLogger = {
   setContext: jest.fn().mockReturnThis(),
@@ -44,21 +46,24 @@ describe('PaymentService', () => {
   let orderService: jest.Mocked<OrderService>;
   let eventEmitter: jest.Mocked<any>;
 
-  const userDbChain = (phone = '09121234567') => ({
-    model: jest.fn().mockReturnValue({
-      findById: jest.fn().mockReturnValue({
-        select: jest.fn().mockReturnValue({
-          lean: jest.fn().mockResolvedValue({ phone }),
-        }),
-      }),
-    }),
-  });
+  const mockConfigService = {
+    get: jest.fn((k: string) => k === 'app.paymentCallbackUrl'
+      ? 'http://localhost:3000/api/v1/payments/verify'
+      : undefined),
+  };
+
+  let userModel: any;
 
   beforeEach(async () => {
     walletModel = {
       findOneAndUpdate: jest.fn(),
       findOne:          jest.fn(),
-      db:               userDbChain(),
+    };
+    userModel = {
+      findById: jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnThis(),
+        lean:   jest.fn().mockResolvedValue({ phone: '09121234567' }),
+      }),
     };
 
     txModel = {
@@ -89,9 +94,11 @@ describe('PaymentService', () => {
         PaymentService,
         { provide: getModelToken(Wallet.name),      useValue: walletModel },
         { provide: getModelToken(Transaction.name), useValue: txModel },
+        { provide: getModelToken(User.name),        useValue: userModel },
         { provide: PaymentGateway,                  useValue: gateway },
         { provide: OrderService,                    useValue: orderService },
         { provide: EventEmitter2,                   useValue: eventEmitter },
+        { provide: ConfigService,                   useValue: mockConfigService },
         { provide: AppLoggerService,                useValue: mockLogger },
       ],
     }).compile();

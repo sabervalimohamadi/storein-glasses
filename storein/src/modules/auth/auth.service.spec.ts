@@ -11,12 +11,21 @@ import { REDIS_CLIENT } from '../../redis/redis.module';
 
 const mockUser = { _id: 'uid1', phone: '09121234567', isActive: true };
 
+// Chainable query builder helper
+function chainable(resolvedValue: any) {
+  const q: any = { select: jest.fn(), lean: jest.fn(), find: jest.fn() };
+  q.select.mockReturnValue(q);
+  q.lean.mockResolvedValue(resolvedValue);
+  q.find.mockReturnValue(q);
+  return q;
+}
+
 describe('AuthService', () => {
   let service: AuthService;
   let redis: jest.Mocked<any>;
 
   const userModel = { findOne: jest.fn(), findById: jest.fn(), create: jest.fn() };
-  const rtModel = { create: jest.fn(), findOne: jest.fn(), findByIdAndUpdate: jest.fn(), findOneAndUpdate: jest.fn(), updateMany: jest.fn() };
+  const rtModel = { create: jest.fn(), findOne: jest.fn(), find: jest.fn(), findByIdAndUpdate: jest.fn(), findOneAndUpdate: jest.fn(), updateMany: jest.fn() };
   const jwtService = { sign: jest.fn().mockReturnValue('tok') };
   const configService = {
     get: jest.fn((k: string) => ({
@@ -48,12 +57,14 @@ describe('AuthService', () => {
   describe('sendOtp', () => {
     it('sends OTP successfully', async () => {
       redis.incr.mockResolvedValue(1);
+      userModel.findOne.mockReturnValue(chainable(null));
       const res = await service.sendOtp({ phone: '09121234567' });
       expect(res.expiresIn).toBe(120);
       expect(smsService.sendOtp).toHaveBeenCalledWith('09121234567', expect.any(String));
     });
 
     it('throws on rate limit exceeded', async () => {
+      userModel.findOne.mockReturnValue(chainable(null));
       redis.incr.mockResolvedValue(4);
       await expect(service.sendOtp({ phone: '09121234567' }))
         .rejects.toThrow(BadRequestException);
@@ -62,18 +73,21 @@ describe('AuthService', () => {
 
   describe('verifyOtp', () => {
     it('throws if OTP expired', async () => {
+      redis.incr.mockResolvedValue(1);
       redis.get.mockResolvedValue(null);
       await expect(service.verifyOtp({ phone: '09121234567', code: '123456' }, {}))
         .rejects.toThrow(UnauthorizedException);
     });
 
     it('throws if OTP wrong', async () => {
+      redis.incr.mockResolvedValue(1);
       redis.get.mockResolvedValue('999999');
       await expect(service.verifyOtp({ phone: '09121234567', code: '123456' }, {}))
         .rejects.toThrow(UnauthorizedException);
     });
 
     it('registers new user and returns tokens', async () => {
+      redis.incr.mockResolvedValue(1);
       redis.get.mockResolvedValue('123456');
       userModel.findOne.mockResolvedValue(null);
       userModel.create.mockResolvedValue(mockUser);
@@ -85,6 +99,7 @@ describe('AuthService', () => {
     });
 
     it('logs in existing user', async () => {
+      redis.incr.mockResolvedValue(1);
       redis.get.mockResolvedValue('123456');
       userModel.findOne.mockResolvedValue(mockUser);
       rtModel.create.mockResolvedValue({});

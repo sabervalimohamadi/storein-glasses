@@ -7,12 +7,14 @@
   }
 })()
 
-import { createApp }   from 'vue'
-import { createPinia } from 'pinia'
+import { createApp }        from 'vue'
+import { createPinia }       from 'pinia'
 import '@/plugins/chartjs'
-import App    from './App.vue'
-import router from './router'
-import { logger } from '@/utils/logger'
+import App                   from './App.vue'
+import router                from './router'
+import { logger }            from '@/utils/logger'
+import { setTokenProvider }  from '@/services/http.service'
+import { useAuthStore }      from '@/stores/auth.store'
 import '@/assets/styles/main.css'
 
 const app = createApp(App)
@@ -66,8 +68,13 @@ router.onError((error) => {
   }, 'Router')
 })
 
-app.use(createPinia())
+const pinia = createPinia()
+app.use(pinia)
 app.use(router)
+
+// Wire access token from Pinia store into axios (memory-only, never localStorage)
+setTokenProvider(() => useAuthStore().token)
+
 app.mount('#app')
 
 logger.info('storein-admin started', {

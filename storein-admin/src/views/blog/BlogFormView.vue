@@ -105,7 +105,7 @@
           <div
             v-else
             class="prose prose-sm max-w-none min-h-[360px] p-3 bg-surface rounded-xl border border-border overflow-auto text-text-primary"
-            v-html="form.content || '<p class=\'text-text-disabled text-sm\'>محتوایی برای پیش‌نمایش وجود ندارد</p>'"
+            v-html="DOMPurify.sanitize(form.content || '<p class=\'text-text-disabled text-sm\'>محتوایی برای پیش‌نمایش وجود ندارد</p>')"
           />
 
           <p class="text-xs text-text-disabled mt-2">
@@ -222,6 +222,7 @@
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import DOMPurify from 'dompurify'
 import { blogService }   from '@/services/blog.service'
 import { uploadService } from '@/services/upload.service'
 import { useUiStore }    from '@/stores/ui.store'

@@ -3,6 +3,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { ValidationPipe }        from '@nestjs/common';
 import { ConfigService }         from '@nestjs/config';
 import * as path                 from 'path';
+import helmet                    from 'helmet';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule }             from './app.module';
 import { AllExceptionsFilter }   from './common/filters/http-exception.filter';
 import { ResponseInterceptor }   from './common/interceptors/response.interceptor';
@@ -20,9 +22,10 @@ async function bootstrap() {
   // Use Winston as NestJS built-in logger (replaces console.log in framework output)
   app.useLogger(app.get(WINSTON_MODULE_NEST_PROVIDER));
 
-  const configService = app.get(ConfigService);
-  const port          = configService.get<number>('app.port') ?? 3000;
-  const uploadDest    = configService.get<string>('upload.dest') ?? './uploads';
+  const configService    = app.get(ConfigService);
+  const port             = configService.get<number>('app.port') ?? 3000;
+  const uploadDest       = configService.get<string>('upload.dest') ?? './uploads';
+  const allowedOrigins   = configService.get<string[]>('app.allowedOrigins') ?? [];
 
   app.useStaticAssets(path.resolve(uploadDest), { prefix: '/uploads' });
   app.setGlobalPrefix('api/v1');
@@ -43,7 +46,24 @@ async function bootstrap() {
     new ResponseInterceptor(),
   );
 
-  app.enableCors();
+  // Swagger — only expose in non-production environments
+  if (configService.get('app.nodeEnv') !== 'production') {
+    const swaggerConfig = new DocumentBuilder()
+      .setTitle('Storein API')
+      .setDescription('Storein e-commerce REST API')
+      .setVersion('1.0')
+      .addBearerAuth()
+      .build();
+    const document = SwaggerModule.createDocument(app, swaggerConfig);
+    SwaggerModule.setup('api/docs', app, document);
+  }
+
+  app.use(helmet());
+  app.enableCors({
+    origin:      allowedOrigins,
+    credentials: true,
+    methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  });
 
   await app.listen(port);
   winstonLogger.info(`🚀 Storein API running on http://localhost:${port}/api/v1`, {

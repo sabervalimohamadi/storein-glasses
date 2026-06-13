@@ -51,15 +51,16 @@ export class ProductService {
   }
 
   private async uniqueSlug(base: string, excludeId?: string): Promise<string> {
+    const MAX_ATTEMPTS = 20;
     let slug = base;
-    let i = 1;
-    while (true) {
+    for (let i = 1; i <= MAX_ATTEMPTS; i++) {
       const exists = await this.productModel
         .findOne({ slug, ...(excludeId && { _id: { $ne: excludeId } }) })
         .lean();
       if (!exists) return slug;
-      slug = `${base}-${i++}`;
+      slug = `${base}-${i}`;
     }
+    throw new BadRequestException(`تولید slug منحصربه‌فرد پس از ${MAX_ATTEMPTS} تلاش ناموفق بود`);
   }
 
   private calcDenormalized(variants: any[]): {
@@ -248,6 +249,14 @@ export class ProductService {
       .lean<ProductDocument>();
     if (!product) throw new NotFoundException('محصول یافت نشد');
     return product;
+  }
+
+  async findManyByIds(ids: string[]): Promise<ProductDocument[]> {
+    const validIds = ids.filter(id => Types.ObjectId.isValid(id)).map(id => new Types.ObjectId(id));
+    return this.productModel
+      .find({ _id: { $in: validIds } })
+      .select('-__v')
+      .lean<ProductDocument[]>();
   }
 
   async create(dto: CreateProductDto): Promise<ProductDocument> {

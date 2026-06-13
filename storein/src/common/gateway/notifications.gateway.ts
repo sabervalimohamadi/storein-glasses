@@ -7,6 +7,7 @@ import {
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { Logger }         from '@nestjs/common';
+import { ConfigService }  from '@nestjs/config';
 import { JwtService }     from '@nestjs/jwt';
 import { InjectModel }    from '@nestjs/mongoose';
 import { Model }          from 'mongoose';
@@ -14,13 +15,7 @@ import { User, UserDocument } from '../../modules/user/entities/user.schema';
 
 @WebSocketGateway({
   namespace: 'notifications',
-  cors: {
-    origin: [
-      'http://localhost:4000',
-      'http://localhost:3000',
-    ],
-    credentials: true,
-  },
+  cors: { origin: true, credentials: true },
 })
 export class NotificationsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
@@ -28,18 +23,35 @@ export class NotificationsGateway
   @WebSocketServer()
   server: Server;
 
-  private readonly logger = new Logger(NotificationsGateway.name);
+  private readonly logger  = new Logger(NotificationsGateway.name);
+  private allowedOrigins: string[];
 
   constructor(
     private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
     @InjectModel(User.name) private userModel: Model<UserDocument>,
-  ) {}
+  ) {
+    this.allowedOrigins = this.configService.get<string[]>('app.allowedOrigins') ?? [];
+  }
 
-  afterInit() {
-    this.logger.log('WebSocket Gateway /notifications initialized');
+  afterInit(server: Server) {
+    // Apply runtime origin check using configured allowedOrigins
+    server.engine.on('headers', (_: unknown, req: any) => {
+      const origin = req.headers?.origin as string | undefined;
+      if (origin && !this.allowedOrigins.includes(origin)) {
+        this.logger.warn(`WS rejected origin: ${origin}`);
+      }
+    });
+    this.logger.log(`WebSocket Gateway /notifications initialized (origins: ${this.allowedOrigins.join(', ')})`);
   }
 
   async handleConnection(client: Socket) {
+    const origin = client.handshake.headers?.origin as string | undefined;
+    if (origin && !this.allowedOrigins.includes(origin)) {
+      this.logger.warn(`WS connection rejected — origin not allowed: ${origin}`);
+      client.disconnect();
+      return;
+    }
     try {
       const token =
         client.handshake.auth?.token ||
