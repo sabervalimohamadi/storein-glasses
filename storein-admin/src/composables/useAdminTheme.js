@@ -1,4 +1,5 @@
 import { ref } from 'vue'
+import { useAuthStore } from '@/stores/auth.store'
 import http from '@/services/http.service'
 
 const sidebarBg     = ref('')
@@ -13,7 +14,8 @@ function apply(theme) {
 
 async function init() {
   if (fetched) return
-  if (!localStorage.getItem('admin_token')) return
+  const auth = useAuthStore()
+  if (!auth.token) return
   fetched = true
   try {
     const { data } = await http.get('/settings', { skipErrorLog: true })

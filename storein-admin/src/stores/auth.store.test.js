@@ -5,6 +5,7 @@ vi.mock('@/services/auth.service', () => ({
   authService: {
     sendOtp:    vi.fn(),
     verifyOtp:  vi.fn(),
+    refresh:    vi.fn(),
     getProfile: vi.fn(),
   },
 }))
@@ -67,9 +68,9 @@ describe('useAuthStore', () => {
   })
 
   describe('verifyOtp', () => {
-    it('stores token and sets user on success (admin)', async () => {
+    it('stores accessToken in memory (not localStorage) on success', async () => {
       authService.verifyOtp.mockResolvedValue({
-        data: { accessToken: 'tok123', refreshToken: 'ref456' },
+        data: { accessToken: 'tok123', isNewUser: false },
       })
       authService.getProfile.mockResolvedValue({ data: adminProfile })
 
@@ -77,7 +78,8 @@ describe('useAuthStore', () => {
       await store.verifyOtp('09123456789', '1234')
 
       expect(store.token).toBe('tok123')
-      expect(localStorage.getItem('admin_token')).toBe('tok123')
+      // Refresh token is HttpOnly cookie — no localStorage entry
+      expect(localStorage.getItem('admin_refresh_token')).toBeNull()
       expect(store.user).toEqual(adminProfile)
       expect(store.isAdmin).toBe(true)
       expect(store.isLoggedIn).toBe(true)
@@ -118,6 +120,35 @@ describe('useAuthStore', () => {
     })
   })
 
+  describe('initAuth', () => {
+    it('restores session via cookie (no localStorage needed)', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'restored' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(authService.refresh).toHaveBeenCalled()
+      expect(store.token).toBe('restored')
+      expect(store.user).toEqual(adminProfile)
+    })
+
+    it('logs out when refresh fails', async () => {
+      authService.refresh.mockRejectedValue(new Error('expired'))
+
+      const store = useAuthStore()
+      store.token = 'old'
+      await store.initAuth()
+
+      expect(store.token).toBeNull()
+      expect(logger.warn).toHaveBeenCalledWith(
+        'admin-auth: initAuth failed, clearing session',
+        expect.any(Object),
+        'AuthStore',
+      )
+    })
+  })
+
   describe('fetchProfile', () => {
     it('skips when no token', async () => {
       const store = useAuthStore()
@@ -150,7 +181,6 @@ describe('useAuthStore', () => {
 
   describe('hasPermission', () => {
     it('admin always returns true', () => {
-      authService.getProfile.mockResolvedValue({ data: adminProfile })
       const store = useAuthStore()
       store.user = adminProfile
       expect(store.hasPermission('anything')).toBe(true)
@@ -165,15 +195,15 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('clears user, token, and localStorage', async () => {
+    it('clears user and token from memory — no localStorage involved', async () => {
       const store = useAuthStore()
       store.user  = adminProfile
       store.token = 'tok'
-      localStorage.setItem('admin_token', 'tok')
       await store.logout()
       expect(store.user).toBeNull()
       expect(store.token).toBeNull()
-      expect(localStorage.getItem('admin_token')).toBeNull()
+      // Cookie is cleared server-side; no localStorage entry should exist
+      expect(localStorage.getItem('admin_refresh_token')).toBeNull()
     })
   })
 })

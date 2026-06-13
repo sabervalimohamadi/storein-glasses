@@ -49,3 +49,7 @@ storein-admin/dist/
 # Cloudflared tunnel binaries and config
 cloudflared*.exe
 config.yml
+
+# Local docs and progress notes
+docs/
+PROGRESSNEW.md

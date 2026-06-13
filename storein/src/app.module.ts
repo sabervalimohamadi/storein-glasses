@@ -34,6 +34,7 @@ import { BlogModule }     from './modules/blog/blog.module';
 import { PageModule }           from './modules/page/page.module';
 import { FrameAttributeModule } from './modules/frame-attribute/frame-attribute.module';
 import { PopupModule }          from './modules/popup/popup.module';
+import { HealthModule }         from './modules/health/health.module';
 import { LoggerModule }          from './common/logger/logger.module';
 import { GatewayModule }        from './common/gateway/gateway.module';
 import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
@@ -105,6 +106,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     PageModule,
     FrameAttributeModule,
     PopupModule,
+    HealthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
