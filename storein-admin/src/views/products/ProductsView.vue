@@ -472,9 +472,9 @@ function openDiscountModal(row) {
 const discountModalBase = computed(() => {
   const p = discountModal.value.product
   if (!p) return 0
-  return (p.maxComparePrice > 0 ? p.maxComparePrice : null)
-    ?? Math.max(0, ...(p.variants ?? []).filter(v => v.comparePrice > 0).map(v => v.comparePrice))
-    || p.minPrice
+  if (p.maxComparePrice > 0) return p.maxComparePrice
+  const variantMax = Math.max(0, ...(p.variants ?? []).filter(v => v.comparePrice > 0).map(v => v.comparePrice))
+  return variantMax > 0 ? variantMax : p.minPrice
 })
 
 function buildVariantsWithDiscount(variants, pct) {
