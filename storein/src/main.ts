@@ -67,6 +67,8 @@ async function bootstrap() {
     methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
   });
 
+  app.enableShutdownHooks();
+
   await app.listen(port);
   winstonLogger.info(`🚀 Storein API running on http://localhost:${port}/api/v1`, {
     context: 'Bootstrap',

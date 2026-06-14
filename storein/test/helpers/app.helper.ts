@@ -2,6 +2,8 @@ import { Test }                  from '@nestjs/testing';
 import { INestApplication,
          ValidationPipe }        from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
+import { getConnectionToken }     from '@nestjs/mongoose';
+import { Connection }             from 'mongoose';
 import cookieParser               from 'cookie-parser';
 import helmet                     from 'helmet';
 import RedisMock                  from 'ioredis-mock';
@@ -38,4 +40,15 @@ export async function createTestApp(): Promise<INestApplication> {
 
   await app.init();
   return app;
+}
+
+export async function closeTestApp(app: INestApplication): Promise<void> {
+  try {
+    const connection = app.get<Connection>(getConnectionToken());
+    await connection.dropDatabase();
+    await connection.close();
+  } catch {
+    // Connection may already be closed
+  }
+  await app.close();
 }

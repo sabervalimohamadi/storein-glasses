@@ -1,17 +1,23 @@
-import { defineStore } from 'pinia'
-import { ref, computed } from 'vue'
-import { authService } from '@/services/auth.service'
-import { logger } from '@/utils/logger'
+import { defineStore }    from 'pinia'
+import { ref, computed }  from 'vue'
+import { authService }    from '@/services/auth.service'
+import { setTokenProvider } from '@/services/http.service'
+import { logger }         from '@/utils/logger'
 
 export const useAuthStore = defineStore('auth', () => {
+  // ── State ─────────────────────────────────────────────────────
   const user         = ref(null)
-  const token        = ref(localStorage.getItem('access_token') || null)
+  const token        = ref(null)   // access token lives in memory ONLY — never localStorage
   const loading      = ref(false)
-  const pendingPhone = ref('')    // carried from LoginView → OtpView
+  const pendingPhone = ref('')
 
+  // Register token provider so http.service can read it without circular import
+  setTokenProvider(() => token.value)
+
+  // ── Computed ──────────────────────────────────────────────────
   const isLoggedIn = computed(() => !!token.value)
 
-  // ── Send OTP ─────────────────────────────────────────────────
+  // ── Send OTP ──────────────────────────────────────────────────
   async function sendOtp(phone) {
     loading.value = true
     try {
@@ -25,16 +31,15 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // ── Verify OTP ───────────────────────────────────────────────
+  // ── Verify OTP ────────────────────────────────────────────────
   async function verifyOtp(phone, code) {
     loading.value = true
     try {
       const { data } = await authService.verifyOtp(phone, code)
+
       token.value = data.accessToken
-      localStorage.setItem('access_token', data.accessToken)
-      if (data.refreshToken) {
-        localStorage.setItem('refresh_token', data.refreshToken)
-      }
+      // refresh_token is an HttpOnly cookie set by the server — never touch it here
+
       await fetchProfile()
       pendingPhone.value = ''
       await _postLoginSync()
@@ -47,7 +52,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  // ── Post-login: sync cart + wishlist in background ───────────
+  // ── Post-login background sync ────────────────────────────────
   async function _postLoginSync() {
     const { useCartStore }     = await import('@/stores/cart.store')
     const { useWishlistStore } = await import('@/stores/wishlist.store')
@@ -57,54 +62,48 @@ export const useAuthStore = defineStore('auth', () => {
     ])
   }
 
-  // ── Fetch profile ────────────────────────────────────────────
+  // ── Fetch profile ─────────────────────────────────────────────
   async function fetchProfile() {
     if (!token.value) return
     try {
       const { data } = await authService.getProfile()
       user.value = data
     } catch {
-      // Token expired — http interceptor handles redirect
+      // Token expired — 401 interceptor in http.service handles refresh
     }
   }
 
-  // ── Logout ───────────────────────────────────────────────────
+  // ── Logout ────────────────────────────────────────────────────
   async function logout() {
-    try { await authService.logout() } catch { /* silent */ }
+    try {
+      // Server clears the HttpOnly cookie via Set-Cookie: refresh_token=; Max-Age=0
+      await authService.logout()
+    } catch { /* silent */ }
+
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
-    localStorage.removeItem('access_token')
-    localStorage.removeItem('refresh_token')
+    // No localStorage to clean — tokens were never stored there
+
     const { useCartStore }     = await import('@/stores/cart.store')
     const { useWishlistStore } = await import('@/stores/wishlist.store')
     useCartStore().items           = []
     useWishlistStore().wishlistIds = new Set()
   }
 
-  // ── Init (called once on app startup) ────────────────────────
+  // ── Init (called once on app startup) ─────────────────────────
   async function initAuth() {
-    const refreshToken = localStorage.getItem('refresh_token')
-    if (!token.value && !refreshToken) return
-
-    // No access token but we have a refresh token — silently obtain a new one
-    if (!token.value && refreshToken) {
-      try {
-        const { data } = await authService.refresh()
-        token.value = data.accessToken
-        localStorage.setItem('access_token', data.accessToken)
-        if (data.refreshToken) localStorage.setItem('refresh_token', data.refreshToken)
-      } catch {
-        localStorage.removeItem('refresh_token')
-        return
-      }
+    // withCredentials:true means the browser sends the HttpOnly cookie automatically.
+    // If the cookie is valid, the server returns a new access token.
+    try {
+      const { data } = await authService.refresh()
+      token.value = data.accessToken
+      await fetchProfile()
+      if (user.value) _postLoginSync()
+    } catch {
+      token.value = null
+      user.value  = null
     }
-
-    // Fetch profile — if access token is expired the http interceptor handles refresh
-    await fetchProfile()
-
-    // Load cart + wishlist in background once we know the user
-    if (user.value) _postLoginSync()
   }
 
   return {

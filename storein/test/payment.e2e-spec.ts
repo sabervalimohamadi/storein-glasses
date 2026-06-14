@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { getModelToken }    from '@nestjs/mongoose';
 import { Model }            from 'mongoose';
 import request              from 'supertest';
-import { createTestApp }    from './helpers/app.helper';
+import { createTestApp, closeTestApp } from './helpers/app.helper';
 import {
   createTestCategory,
   createTestProduct,
@@ -45,7 +45,7 @@ describe('Payment flow (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await closeTestApp(app);
   });
 
   beforeEach(async () => {

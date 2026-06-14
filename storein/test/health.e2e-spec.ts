@@ -1,6 +1,6 @@
 import { INestApplication } from '@nestjs/common';
 import request              from 'supertest';
-import { createTestApp }    from './helpers/app.helper';
+import { createTestApp, closeTestApp } from './helpers/app.helper';
 
 describe('Health (e2e)', () => {
   let app: INestApplication;
@@ -10,7 +10,7 @@ describe('Health (e2e)', () => {
   });
 
   afterAll(async () => {
-    await app.close();
+    await closeTestApp(app);
   });
 
   it('GET /api/v1/health → 200 with mongodb up', async () => {
