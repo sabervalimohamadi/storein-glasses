@@ -50,6 +50,5 @@ storein-admin/dist/
 cloudflared*.exe
 config.yml
 
-# Local docs and progress notes
+# Local docs (photos/fonts downloaded separately)
 docs/
-PROGRESSNEW.md
