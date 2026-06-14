@@ -106,7 +106,7 @@
               <h4 class="footer-heading">دسترسی سریع</h4>
               <ul class="space-y-3 mt-4">
                 <li v-for="link in quickLinks" :key="link.name">
-                  <RouterLink :to="{ name: link.name }" class="footer-link">
+                  <RouterLink :to="{ name: link.name, params: link.params }" class="footer-link">
                     <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                       <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
                     </svg>
@@ -198,10 +198,10 @@ const footerCategories = [
 ]
 
 const quickLinks = [
-  { label: 'درباره ما',         name: 'about' },
-  { label: 'تماس با ما',        name: 'contact' },
-  { label: 'قوانین و مقررات',   name: 'terms' },
-  { label: 'سیاست حریم خصوصی', name: 'privacy' },
+  { label: 'درباره ما',         name: 'page', params: { slug: 'about' } },
+  { label: 'تماس با ما',        name: 'page', params: { slug: 'contact' } },
+  { label: 'قوانین و مقررات',   name: 'page', params: { slug: 'terms' } },
+  { label: 'سیاست حریم خصوصی', name: 'page', params: { slug: 'privacy' } },
 ]
 
 const trustBadges = [
