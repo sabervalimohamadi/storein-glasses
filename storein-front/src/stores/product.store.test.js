@@ -90,7 +90,7 @@ describe('useProductStore', () => {
   describe('setFilter', () => {
     it('updates filter and resets page to 1', () => {
       const store = useProductStore()
-      store.page.value = 3
+      store.setPage(3)
       store.setFilter('category', 'frames')
       expect(store.filters.category).toBe('frames')
       expect(store.page).toBe(1)
@@ -138,9 +138,10 @@ describe('useProductStore', () => {
   })
 
   describe('totalPages', () => {
-    it('calculates totalPages from total and limit', () => {
+    it('calculates totalPages from total and limit', async () => {
+      productService.getAll.mockResolvedValue({ data: { products: [], total: 50 } })
       const store = useProductStore()
-      store.total = 50
+      await store.fetchProducts()
       expect(store.totalPages).toBe(Math.ceil(50 / 24))
     })
   })

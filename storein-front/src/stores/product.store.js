@@ -1,5 +1,5 @@
 import { defineStore } from 'pinia'
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { productService } from '@/services/product.service'
 import { logger } from '@/utils/logger'
 
@@ -121,11 +121,13 @@ export const useProductStore = defineStore('product', () => {
     page.value             = query.page          ? Number(query.page)             : 1
   }
 
+  const totalPages = computed(() => Math.ceil(total.value / limit.value))
+
   return {
     products, currentProduct, loading, total, page, limit, filters,
     fetchProducts, fetchProductBySlug,
     setFilter, resetFilters, setPage,
     toQueryParams, fromQueryParams,
-    get totalPages() { return Math.ceil(total.value / limit.value) },
+    totalPages,
   }
 })

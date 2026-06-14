@@ -5,9 +5,10 @@ export const useUiStore = defineStore('ui', () => {
   const toasts       = ref([])
   const isMenuOpen   = ref(false)
   const isSearchOpen = ref(false)
+  let   _nextId      = 1
 
   function addToast(message, type = 'info', duration = 3000) {
-    const id = Date.now()
+    const id = _nextId++
     toasts.value.push({ id, message, type })
     setTimeout(() => removeToast(id), duration)
   }

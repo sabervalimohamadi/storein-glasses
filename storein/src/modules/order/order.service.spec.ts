@@ -85,7 +85,7 @@ describe('OrderService', () => {
       }),
     };
     cartService      = { getRawCart: jest.fn(), clearCart: jest.fn() };
-    productService   = { findById: jest.fn(), findManyByIds: jest.fn(), adjustStock: jest.fn().mockResolvedValue({}) };
+    productService   = { findById: jest.fn(), findManyByIds: jest.fn(), adjustStock: jest.fn().mockResolvedValue({}), bulkAdjustStock: jest.fn().mockResolvedValue(undefined) };
     discountService  = { validate: jest.fn(), recordUsage: jest.fn().mockResolvedValue(undefined) };
     eventEmitter     = { emit: jest.fn() };
 
@@ -131,7 +131,9 @@ describe('OrderService', () => {
       expect(orderModel.create).toHaveBeenCalledWith(
         expect.objectContaining({ total: 20_000_000 }),
       );
-      expect(productService.adjustStock).toHaveBeenCalledWith(prodId, varId, -2);
+      expect(productService.bulkAdjustStock).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ productId: prodId, variantId: varId, delta: -2 })]),
+      );
       expect(cartService.clearCart).toHaveBeenCalledWith(userId);
     });
 
@@ -219,7 +221,9 @@ describe('OrderService', () => {
       await service.cancelMyOrder(userId, orderId);
 
       expect(order.status).toBe(OrderStatus.CANCELLED);
-      expect(productService.adjustStock).toHaveBeenCalledWith(prodId, varId, 2);
+      expect(productService.bulkAdjustStock).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ productId: prodId, variantId: varId, delta: 2 })]),
+      );
       expect(order.save).toHaveBeenCalled();
     });
 
@@ -265,7 +269,9 @@ describe('OrderService', () => {
         cancelReason: 'موجود نیست',
       });
 
-      expect(productService.adjustStock).toHaveBeenCalledWith(prodId, varId, 2);
+      expect(productService.bulkAdjustStock).toHaveBeenCalledWith(
+        expect.arrayContaining([expect.objectContaining({ productId: prodId, variantId: varId, delta: 2 })]),
+      );
       expect(order.cancelReason).toBe('موجود نیست');
     });
   });
