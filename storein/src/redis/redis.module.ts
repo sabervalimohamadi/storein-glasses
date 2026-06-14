@@ -12,8 +12,9 @@ export const REDIS_CLIENT = 'REDIS_CLIENT';
       provide: REDIS_CLIENT,
       useFactory: (configService: ConfigService): Redis => {
         const client = new Redis({
-          host: configService.get<string>('redis.host'),
-          port: configService.get<number>('redis.port'),
+          host:      configService.get<string>('redis.host'),
+          port:      configService.get<number>('redis.port'),
+          password:  configService.get<string>('redis.password') || undefined,
           lazyConnect: true,
         });
 

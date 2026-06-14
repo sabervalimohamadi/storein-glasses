@@ -54,6 +54,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
         MONGODB_URI: Joi.string().required(),
         REDIS_HOST: Joi.string().required(),
         REDIS_PORT: Joi.number().default(6379),
+        REDIS_PASSWORD: Joi.string().optional().allow(''),
         JWT_SECRET: Joi.string().required(),
         JWT_EXPIRES_IN: Joi.string().required(),
         JWT_REFRESH_SECRET: Joi.string().required(),
