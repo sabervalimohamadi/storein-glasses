@@ -42,29 +42,31 @@ import { AppLoggerService } from './app-logger.service';
           }),
         );
 
-        transports.push(
-          new (winston.transports as any).DailyRotateFile({
-            filename:      'logs/error-%DATE%.log',
-            datePattern:   'YYYY-MM-DD',
-            level:         'error',
-            format:        logFormat,
-            maxSize:       '20m',
-            maxFiles:      '30d',
-            zippedArchive: true,
-          }),
-        );
+        if (isDev) {
+          transports.push(
+            new (winston.transports as any).DailyRotateFile({
+              filename:      'logs/error-%DATE%.log',
+              datePattern:   'YYYY-MM-DD',
+              level:         'error',
+              format:        logFormat,
+              maxSize:       '20m',
+              maxFiles:      '30d',
+              zippedArchive: true,
+            }),
+          );
 
-        transports.push(
-          new (winston.transports as any).DailyRotateFile({
-            filename:      'logs/combined-%DATE%.log',
-            datePattern:   'YYYY-MM-DD',
-            level:         isDev ? 'debug' : 'info',
-            format:        logFormat,
-            maxSize:       '50m',
-            maxFiles:      '14d',
-            zippedArchive: true,
-          }),
-        );
+          transports.push(
+            new (winston.transports as any).DailyRotateFile({
+              filename:      'logs/combined-%DATE%.log',
+              datePattern:   'YYYY-MM-DD',
+              level:         'debug',
+              format:        logFormat,
+              maxSize:       '50m',
+              maxFiles:      '14d',
+              zippedArchive: true,
+            }),
+          );
+        }
 
         return { transports };
       },
