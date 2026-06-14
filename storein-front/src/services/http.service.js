@@ -80,8 +80,14 @@ http.interceptors.response.use(
     if (status === 401) {
       const originalRequest = error.config
 
-      // Already retried or this IS the refresh request — hard logout
-      if (originalRequest._retry || url.includes('/auth/refresh')) {
+      // The refresh endpoint itself returned 401 — no valid cookie/session.
+      // Do NOT redirect here: initAuth()'s catch block handles this gracefully.
+      if (url.includes('/auth/refresh')) {
+        return Promise.reject(error)
+      }
+
+      // Already retried once and still 401 — session is dead, hard logout
+      if (originalRequest._retry) {
         _getToken = () => null
         window.location.href = '/auth/login'
         return Promise.reject(error)
@@ -102,7 +108,7 @@ http.interceptors.response.use(
 
       try {
         // withCredentials:true sends the HttpOnly cookie — no Authorization header needed
-        const { data } = await http.post('/auth/refresh', {})
+        const { data } = await http.post('/auth/refresh', {}, { skipErrorLog: true })
         const newToken = data.accessToken
 
         const { useAuthStore } = await import('@/stores/auth.store')
