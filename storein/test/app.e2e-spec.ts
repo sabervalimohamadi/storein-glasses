@@ -1,29 +1,7 @@
-import { Test, TestingModule } from '@nestjs/testing';
-import { INestApplication } from '@nestjs/common';
-import request from 'supertest';
-import { App } from 'supertest/types';
-import { AppModule } from './../src/app.module';
+// Replaced by focused spec files.
+// See: health.e2e-spec.ts, auth.e2e-spec.ts, products.e2e-spec.ts,
+//      cart-order.e2e-spec.ts, payment.e2e-spec.ts
 
-describe('AppController (e2e)', () => {
-  let app: INestApplication<App>;
-
-  beforeEach(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    await app.init();
-  });
-
-  it('/ (GET)', () => {
-    return request(app.getHttpServer())
-      .get('/')
-      .expect(200)
-      .expect('Hello World!');
-  });
-
-  afterEach(async () => {
-    await app.close();
-  });
+describe('App bootstrap (placeholder)', () => {
+  it.todo('covered by health.e2e-spec.ts');
 });

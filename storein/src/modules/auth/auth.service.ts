@@ -6,7 +6,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { HydratedDocument, Model } from 'mongoose';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
-import { randomInt } from 'crypto';
+import { randomInt, randomUUID } from 'crypto';
 import * as bcrypt from 'bcryptjs';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
@@ -109,9 +109,10 @@ export class AuthService {
       userId, isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
+    const sig = refreshToken.split('.')[2];
     let doc: RefreshTokenDocument | null = null;
     for (const candidate of candidates) {
-      if (await bcrypt.compare(refreshToken, candidate.token)) {
+      if (await bcrypt.compare(sig, candidate.token)) {
         doc = candidate;
         break;
       }
@@ -132,10 +133,10 @@ export class AuthService {
   }
 
   async logout(userId: string, token: string) {
-    // Must compare hash since tokens are stored hashed
+    const sig    = token.split('.')[2] || token;
     const active = await this.rtModel.find({ userId, isRevoked: false });
     for (const doc of active) {
-      if (await bcrypt.compare(token, doc.token)) {
+      if (await bcrypt.compare(sig, doc.token)) {
         await this.rtModel.findByIdAndUpdate(doc._id, { isRevoked: true });
         break;
       }
@@ -153,12 +154,15 @@ export class AuthService {
     const payload: JwtPayload = { sub: user._id.toString(), phone: user.phone };
 
     const accessToken  = this.jwtService.sign(payload);
-    const refreshToken = this.jwtService.sign(payload, {
+    const refreshToken = this.jwtService.sign({ ...payload, jti: randomUUID() }, {
       secret:    this.configService.get<string>('jwt.refreshSecret')!,
       expiresIn: this.configService.get('jwt.refreshExpiresIn') as any,
     });
 
-    const hashedToken = await bcrypt.hash(refreshToken, 10);
+    // Hash only the JWT signature (last segment) to stay within bcrypt's 72-byte limit.
+    // Full JWTs for the same user share a long common prefix, making the full-JWT hash collide.
+    const sig         = refreshToken.split('.')[2];
+    const hashedToken = await bcrypt.hash(sig, 10);
     const expiresAt   = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
     await this.rtModel.create({ userId: user._id, token: hashedToken, expiresAt, ...meta });
 

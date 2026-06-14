@@ -1,6 +1,6 @@
 import {
   Body, Controller, Delete, Get,
-  Param, Patch, Post, UseGuards,
+  HttpCode, HttpStatus, Param, Patch, Post, UseGuards,
 } from '@nestjs/common';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
@@ -21,6 +21,7 @@ export class CartController {
     return this.cartService.getCart(uid(user));
   }
 
+  @HttpCode(HttpStatus.OK)
   @Post('items')
   addItem(@CurrentUser() user: UserDocument, @Body() dto: AddToCartDto) {
     return this.cartService.addItem(uid(user), dto);

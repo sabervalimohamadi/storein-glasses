@@ -1,5 +1,5 @@
 import {
-  Body, Controller, Get, Post,
+  Body, Controller, Get, HttpCode, HttpStatus, Post,
   Query, UseGuards,
 } from '@nestjs/common';
 import { PaymentService } from './payment.service';
@@ -34,12 +34,14 @@ export class PaymentController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @Post('wallet/topup')
   topupWallet(@CurrentUser() user: UserDocument, @Body() dto: TopupWalletDto) {
     return this.paymentService.topupWallet(uid(user), dto);
   }
 
   @UseGuards(JwtAuthGuard)
+  @HttpCode(HttpStatus.OK)
   @Post('pay')
   payOrder(@CurrentUser() user: UserDocument, @Body() dto: PayOrderDto) {
     return this.paymentService.payOrder(uid(user), dto);
