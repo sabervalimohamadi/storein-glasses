@@ -4,11 +4,13 @@ import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
 
 const mockService = {
-  sendOtp: jest.fn(),
-  verifyOtp: jest.fn(),
-  refreshTokens: jest.fn(),
-  logout: jest.fn(),
-  logoutAll: jest.fn(),
+  sendOtp:          jest.fn(),
+  verifyOtp:        jest.fn(),
+  adminLogin:       jest.fn(),
+  setAdminPassword: jest.fn(),
+  refreshTokens:    jest.fn(),
+  logout:           jest.fn(),
+  logoutAll:        jest.fn(),
 };
 
 const makeReq = (overrides = {}) => ({
@@ -91,5 +93,58 @@ describe('AuthController', () => {
     const user = { _id: 'uid1' } as any;
     await controller.logoutAll(user);
     expect(mockService.logoutAll).toHaveBeenCalledWith('uid1');
+  });
+
+  describe('adminLogin', () => {
+    it('returns accessToken and sets refresh cookie', async () => {
+      mockService.adminLogin.mockResolvedValue({ accessToken: 'at', refreshToken: 'rt' });
+      const req = makeReq() as any;
+      const res = makeRes() as any;
+      const result = await controller.adminLogin(
+        { phone: '09121234567', password: 'secret123' },
+        req,
+        res,
+      );
+      expect(result).toEqual({ accessToken: 'at' });
+      expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt', expect.any(Object));
+      expect(mockService.adminLogin).toHaveBeenCalledWith(
+        { phone: '09121234567', password: 'secret123' },
+        { userAgent: 'jest', ip: '127.0.0.1' },
+      );
+    });
+
+    it('propagates UnauthorizedException on wrong credentials', async () => {
+      mockService.adminLogin.mockRejectedValue(new UnauthorizedException());
+      await expect(
+        controller.adminLogin(
+          { phone: '09121234567', password: 'wrong' },
+          makeReq() as any,
+          makeRes() as any,
+        ),
+      ).rejects.toThrow(UnauthorizedException);
+    });
+  });
+
+  describe('adminSetup', () => {
+    const originalEnv = process.env.SEED_SECRET;
+
+    beforeEach(() => { process.env.SEED_SECRET = 'test-secret'; });
+    afterEach(() =>  { process.env.SEED_SECRET = originalEnv; });
+
+    it('sets admin password when secret matches', async () => {
+      mockService.setAdminPassword.mockResolvedValue(undefined);
+      const result = await controller.adminSetup({
+        phone: '09121234567', password: 'newpass1', secret: 'test-secret',
+      });
+      expect(result).toEqual({ message: 'رمز عبور مدیر با موفقیت تنظیم شد' });
+      expect(mockService.setAdminPassword).toHaveBeenCalledWith('09121234567', 'newpass1');
+    });
+
+    it('throws when secret is wrong', async () => {
+      await expect(
+        controller.adminSetup({ phone: '09121234567', password: 'p', secret: 'bad-secret' }),
+      ).rejects.toThrow();
+      expect(mockService.setAdminPassword).not.toHaveBeenCalled();
+    });
   });
 });

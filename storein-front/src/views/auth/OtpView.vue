@@ -28,7 +28,7 @@
           کد تأیید را وارد کنید
         </h1>
         <p class="text-text-secondary text-sm leading-6">
-          کد ۵ رقمی به شماره
+          کد ۶ رقمی به شماره
           <span class="font-bold text-text-primary" dir="ltr">{{ maskedPhone }}</span>
           پیامک شد
         </p>
@@ -39,7 +39,7 @@
         <OtpInput
           ref="otpInputRef"
           v-model="otpCode"
-          :length="5"
+          :length="6"
           :error="!!otpError"
           :disabled="authStore.loading"
           @complete="handleComplete"
@@ -63,7 +63,7 @@
       <!-- Verify button -->
       <button
         @click="verify"
-        :disabled="otpCode.length < 5 || authStore.loading"
+        :disabled="otpCode.length < 6 || authStore.loading"
         class="w-full bg-brand text-white font-bold py-3.5 rounded-xl
                hover:bg-brand-dark active:scale-[0.98]
                transition-all duration-150 text-base mb-4
@@ -192,7 +192,7 @@ onUnmounted(() => {
 
 // ── Verify ───────────────────────────────────────────────────
 async function verify() {
-  if (otpCode.value.length < 5 || authStore.loading) return
+  if (otpCode.value.length < 6 || authStore.loading) return
   otpError.value = ''
 
   try {

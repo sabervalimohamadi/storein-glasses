@@ -6,6 +6,6 @@ export class VerifyOtpDto {
   phone: string;
 
   @IsString()
-  @Length(5, 5, { message: 'کد تایید باید ۵ رقم باشد' })
+  @Length(6, 6, { message: 'کد تایید باید ۶ رقم باشد' })
   code: string;
 }
