@@ -3,7 +3,7 @@
     <div class="bg-card rounded-2xl shadow-modal p-8">
 
       <!-- Logo -->
-      <div class="text-center mb-6">
+      <div class="text-center mb-8">
         <div class="w-16 h-16 bg-primary rounded-2xl flex items-center justify-center mx-auto mb-3 shadow-md">
           <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/>
@@ -14,27 +14,13 @@
         <p class="text-text-secondary text-sm mt-1">پنل مدیریت</p>
       </div>
 
-      <!-- Mode toggle -->
-      <div class="flex rounded-xl overflow-hidden border border-border mb-6">
-        <button
-          :class="['flex-1 py-2 text-sm font-medium transition-colors',
-                   mode === 'password' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary hover:text-text-primary']"
-          @click="switchMode('password')"
-        >رمز عبور</button>
-        <button
-          :class="['flex-1 py-2 text-sm font-medium transition-colors',
-                   mode === 'otp' ? 'bg-primary text-white' : 'bg-transparent text-text-secondary hover:text-text-primary']"
-          @click="switchMode('otp')"
-        >کد OTP</button>
-      </div>
-
       <!-- Error banner -->
       <div v-if="errorMsg" class="bg-red-50 border border-red-200 rounded-xl p-3 mb-4">
         <p class="text-error text-sm text-center">{{ errorMsg }}</p>
       </div>
 
-      <!-- ── PASSWORD MODE ─────────────────────────────────────── -->
-      <div v-if="mode === 'password'" class="space-y-4">
+      <!-- Login form -->
+      <div class="space-y-4">
         <AdminInput
           v-model="phone"
           label="شماره موبایل"
@@ -42,9 +28,10 @@
           type="tel"
           dir="ltr"
           :error="phoneError"
-          @enter="handlePasswordLogin"
+          @enter="handleLogin"
         />
-        <div>
+
+        <div class="relative">
           <AdminInput
             v-model="password"
             label="رمز عبور"
@@ -52,66 +39,30 @@
             :type="showPassword ? 'text' : 'password'"
             dir="ltr"
             :error="passwordError"
-            @enter="handlePasswordLogin"
+            @enter="handleLogin"
           />
-          <button type="button"
-                  class="text-xs text-text-secondary hover:text-primary mt-1 float-left transition-colors"
-                  @click="showPassword = !showPassword">
-            {{ showPassword ? 'پنهان کردن' : 'نمایش رمز' }}
+          <button
+            type="button"
+            class="absolute left-3 top-8 text-text-secondary hover:text-primary transition-colors"
+            tabindex="-1"
+            @click="showPassword = !showPassword"
+          >
+            <svg v-if="showPassword" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/>
+            </svg>
+            <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
           </button>
-          <div class="clear-both" />
         </div>
-        <AdminButton block :loading="auth.loading" @click="handlePasswordLogin">
+
+        <AdminButton block :loading="auth.loading" @click="handleLogin">
           ورود به پنل مدیریت
         </AdminButton>
-      </div>
-
-      <!-- ── OTP MODE: STEP 1 ────────────────────────────────── -->
-      <div v-else-if="step === 'phone'" class="space-y-4">
-        <AdminInput
-          v-model="phone"
-          label="شماره موبایل"
-          placeholder="09xxxxxxxxx"
-          type="tel"
-          dir="ltr"
-          :error="phoneError"
-          @enter="handleSendOtp"
-        />
-        <AdminButton block :loading="auth.loading" @click="handleSendOtp">
-          دریافت کد تأیید
-        </AdminButton>
-      </div>
-
-      <!-- ── OTP MODE: STEP 2 ────────────────────────────────── -->
-      <div v-else class="space-y-4">
-        <p class="text-text-secondary text-sm text-center">
-          کد ۵ رقمی ارسال شده به
-          <span class="font-bold text-text-primary font-fanum dir-ltr inline-block">{{ phone }}</span>
-          را وارد کنید
-        </p>
-        <AdminInput
-          v-model="otp"
-          label="کد تأیید"
-          placeholder="- - - - -"
-          type="text"
-          dir="ltr"
-          :error="otpError"
-          @enter="handleVerify"
-        />
-        <div class="text-center text-sm text-text-secondary">
-          <span v-if="countdown > 0" class="font-fanum">ارسال مجدد تا {{ countdown }} ثانیه</span>
-          <button v-else @click="handleSendOtp" class="text-primary hover:underline">ارسال مجدد کد</button>
-        </div>
-        <AdminButton block :loading="auth.loading" @click="handleVerify">
-          ورود به پنل مدیریت
-        </AdminButton>
-        <button @click="step = 'phone'; otp = ''; otpError = ''"
-                class="w-full text-center text-text-secondary text-sm hover:text-text-primary transition-colors">
-          تغییر شماره
-        </button>
-        <div v-if="isDev" class="bg-blue-50 border border-blue-200 rounded-lg p-2 text-center text-xs text-blue-600">
-          کد OTP را در کنسول NestJS ببینید
-        </div>
       </div>
 
     </div>
@@ -119,7 +70,7 @@
 </template>
 
 <script setup>
-import { ref, onUnmounted } from 'vue'
+import { ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useAuthStore } from '@/stores/auth.store'
 import AdminInput  from '@/components/common/AdminInput.vue'
@@ -129,90 +80,42 @@ const router = useRouter()
 const route  = useRoute()
 const auth   = useAuthStore()
 
-// ui state
-const mode         = ref('password')   // 'password' | 'otp'
-const step         = ref('phone')      // for OTP mode: 'phone' | 'otp'
-const phone        = ref('')
-const password     = ref('')
-const otp          = ref('')
-const showPassword = ref(false)
-const phoneError   = ref('')
+const phone         = ref('')
+const password      = ref('')
+const showPassword  = ref(false)
+const phoneError    = ref('')
 const passwordError = ref('')
-const otpError     = ref('')
-const errorMsg     = ref(route.query.error === 'forbidden' ? 'دسترسی غیرمجاز' : '')
-const countdown    = ref(0)
-const isDev        = import.meta.env.DEV
+const errorMsg      = ref(route.query.error === 'forbidden' ? 'دسترسی غیرمجاز' : '')
 
-let timer = null
-
-function switchMode(m) {
-  mode.value      = m
-  step.value      = 'phone'
-  errorMsg.value  = ''
-  phoneError.value = ''
-  passwordError.value = ''
-  otpError.value  = ''
-  clearInterval(timer)
-  countdown.value = 0
+function validatePhone(p) {
+  return /^09\d{9}$/.test(p)
 }
 
-function startCountdown() {
-  countdown.value = 120
-  timer = setInterval(() => { if (countdown.value > 0) countdown.value--; else clearInterval(timer) }, 1000)
-}
-
-function validatePhone(p) { return /^09\d{9}$/.test(p) }
-
-// ── Password login ─────────────────────────────────────────────
-async function handlePasswordLogin() {
+async function handleLogin() {
   phoneError.value    = ''
   passwordError.value = ''
   errorMsg.value      = ''
+
   const p = phone.value.trim()
-  if (!validatePhone(p)) { phoneError.value = 'شماره موبایل معتبر نیست (مثال: 09123456789)'; return }
-  if (!password.value || password.value.length < 6) { passwordError.value = 'رمز عبور حداقل ۶ کاراکتر است'; return }
+  if (!validatePhone(p)) {
+    phoneError.value = 'شماره موبایل معتبر نیست (مثال: 09123456789)'
+    return
+  }
+  if (!password.value || password.value.length < 6) {
+    passwordError.value = 'رمز عبور حداقل ۶ کاراکتر است'
+    return
+  }
+
   try {
     await auth.adminLogin(p, password.value)
     router.push(route.query.redirect ?? '/dashboard')
   } catch (e) {
-    if (e.isAdminError) { errorMsg.value = e.message; return }
+    if (e.isAdminError) {
+      errorMsg.value = e.message
+      return
+    }
     const msg = e.response?.data?.message
     errorMsg.value = Array.isArray(msg) ? msg[0] : (msg ?? 'شماره یا رمز عبور اشتباه است')
   }
 }
-
-// ── OTP login ──────────────────────────────────────────────────
-async function handleSendOtp() {
-  phoneError.value = ''
-  errorMsg.value   = ''
-  const p = phone.value.trim()
-  if (!validatePhone(p)) { phoneError.value = 'شماره موبایل معتبر نیست (مثال: 09123456789)'; return }
-  try {
-    await auth.sendOtp(p)
-    step.value = 'otp'
-    startCountdown()
-  } catch (e) {
-    phoneError.value = e.response?.data?.message ?? 'خطا در ارسال کد'
-  }
-}
-
-async function handleVerify() {
-  otpError.value = ''
-  errorMsg.value = ''
-  const code = otp.value.trim()
-  if (!code || code.length < 4) { otpError.value = 'کد تأیید را وارد کنید'; return }
-  try {
-    await auth.verifyOtp(phone.value.trim(), code)
-    router.push(route.query.redirect ?? '/dashboard')
-  } catch (e) {
-    if (e.isAdminError) { errorMsg.value = e.message; step.value = 'phone'; otp.value = '' }
-    else { otpError.value = e.response?.data?.message ?? 'کد اشتباه است' }
-  }
-}
-
-onUnmounted(() => clearInterval(timer))
 </script>
-
-<style scoped>
-.dir-ltr { direction: ltr; }
-</style>
