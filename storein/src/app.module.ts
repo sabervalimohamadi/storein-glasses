@@ -39,7 +39,6 @@ import { LoggerModule }          from './common/logger/logger.module';
 import { GatewayModule }        from './common/gateway/gateway.module';
 import { RequestIdMiddleware }   from './common/middleware/request-id.middleware';
 import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middleware';
-import { SeedModule }           from './seed/seed.module';
 
 @Module({
   imports: [
@@ -109,7 +108,6 @@ import { SeedModule }           from './seed/seed.module';
     FrameAttributeModule,
     PopupModule,
     HealthModule,
-    SeedModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
