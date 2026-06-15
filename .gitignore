@@ -37,9 +37,6 @@ storein/dist/
 # Vite / frontend
 storein-front/dist/
 
-# Font files (download separately — see storein-front/src/assets/styles/fonts.css)
-storein-front/src/assets/fonts/
-
 # Uploaded media (local dev only — use CDN/S3 in production)
 storein/uploads/
 
