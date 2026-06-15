@@ -6,6 +6,8 @@ import type { Response } from 'express';
 import { AuthService } from './auth.service';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { AdminLoginDto } from './dto/admin-login.dto';
+import { AdminSetupDto } from './dto/admin-setup.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from '../../common/decorators/public.decorator';
@@ -46,6 +48,33 @@ export class AuthController {
     });
     this.setRefreshCookie(res, result.refreshToken);
     return { accessToken: result.accessToken, isNewUser: result.isNewUser };
+  }
+
+  @Public() @Post('admin-login') @HttpCode(HttpStatus.OK)
+  async adminLogin(
+    @Body() dto: AdminLoginDto,
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ) {
+    const result = await this.authService.adminLogin(dto, {
+      userAgent: req.headers['user-agent'], ip: req.ip,
+    });
+    this.setRefreshCookie(res, result.refreshToken);
+    return { accessToken: result.accessToken };
+  }
+
+  /**
+   * One-time bootstrap endpoint — sets admin password for a given phone.
+   * Requires SEED_SECRET env var; disabled if env var is absent.
+   */
+  @Public() @Post('admin-setup') @HttpCode(HttpStatus.OK)
+  async adminSetup(@Body() dto: AdminSetupDto) {
+    const expected = process.env.SEED_SECRET;
+    if (!expected || dto.secret !== expected) {
+      throw new Error('Forbidden');
+    }
+    await this.authService.setAdminPassword(dto.phone, dto.password);
+    return { message: 'رمز عبور مدیر با موفقیت تنظیم شد' };
   }
 
   @UseGuards(JwtRefreshGuard) @Post('refresh') @HttpCode(HttpStatus.OK)

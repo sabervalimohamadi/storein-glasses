@@ -13,7 +13,8 @@ import { REDIS_CLIENT } from '../../redis/redis.module';
 import { SmsService } from './sms/sms.service.abstract';
 import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
-import { User, UserDocument } from '../user/entities/user.schema';
+import { User, UserDocument, UserRole } from '../user/entities/user.schema';
+import { AdminLoginDto } from './dto/admin-login.dto';
 import { RefreshToken, RefreshTokenDocument } from './entities/refresh-token.schema';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -100,6 +101,63 @@ export class AuthService {
     const tokens = await this.issueTokens(user, meta);
     this.logger.log(`OTP verified — user logged in: ${this.maskPhone(phone)}`);
     return { ...tokens, isNewUser };
+  }
+
+  // ── Admin Password Login ───────────────────────────────────────
+  async adminLogin(dto: AdminLoginDto, meta: { userAgent?: string; ip?: string }) {
+    const phone = this.normalizePhone(dto.phone);
+
+    // Brute-force guard: 10 attempts / 10 min
+    const rlKey   = `admin:login:rl:${phone}`;
+    const attempts = await this.redis.incr(rlKey);
+    if (attempts === 1) await this.redis.expire(rlKey, 600);
+    if (attempts > 10) {
+      this.logger.warn(`Admin login rate-limit: ${this.maskPhone(phone)}`);
+      throw new BadRequestException('تعداد تلاش زیاد. ۱۰ دقیقه دیگر امتحان کنید');
+    }
+
+    const user = await this.userModel.findOne({ phone }).select('+password');
+
+    // Use same error message for "not found" and "wrong password" to avoid user enumeration
+    if (!user || !user.password) {
+      this.logger.warn(`Admin login — no password set: ${this.maskPhone(phone)}`);
+      throw new UnauthorizedException('شماره یا رمز عبور اشتباه است');
+    }
+
+    if (!user.isActive) {
+      this.logger.warn(`Admin login blocked — inactive: ${this.maskPhone(phone)}`);
+      throw new UnauthorizedException('حساب کاربری غیرفعال است');
+    }
+
+    const adminRoles: string[] = [UserRole.ADMIN, UserRole.MANAGER];
+    if (!user.isAdmin && !adminRoles.includes(user.role)) {
+      this.logger.warn(`Admin login denied — insufficient role: ${this.maskPhone(phone)}`);
+      throw new ForbiddenException('دسترسی به پنل مدیریت ندارید');
+    }
+
+    const valid = await bcrypt.compare(dto.password, user.password);
+    if (!valid) {
+      this.logger.warn(`Admin login — wrong password: ${this.maskPhone(phone)}`);
+      throw new UnauthorizedException('شماره یا رمز عبور اشتباه است');
+    }
+
+    await this.redis.del(rlKey); // clear rate-limit on success
+    const tokens = await this.issueTokens(user, meta);
+    this.logger.log(`Admin password login: ${this.maskPhone(phone)}`);
+    return tokens;
+  }
+
+  /** One-time bootstrap: hash and store password, mark user as admin. */
+  async setAdminPassword(phone: string, plainPassword: string): Promise<void> {
+    const normalized = this.normalizePhone(phone);
+    const hashed = await bcrypt.hash(plainPassword, 12);
+    const user = await this.userModel.findOneAndUpdate(
+      { phone: normalized },
+      { password: hashed, isAdmin: true, role: UserRole.ADMIN },
+      { new: true },
+    );
+    if (!user) throw new Error(`User not found: ${normalized}`);
+    this.logger.log(`Admin password set for: ${this.maskPhone(normalized)}`);
   }
 
   // ── Tokens ────────────────────────────────────────────────────

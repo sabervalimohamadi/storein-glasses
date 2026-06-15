@@ -24,6 +24,10 @@ export class User {
   @Prop() avatar?: string;
   @Prop({ default: false }) isAdmin: boolean;
 
+  // select:false — never returned by default; use .select('+password') explicitly
+  @Prop({ select: false })
+  password?: string;
+
   @Prop({ enum: Object.values(UserRole), default: UserRole.USER })
   role: string;
 

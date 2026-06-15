@@ -35,6 +35,25 @@ export const useAuthStore = defineStore('auth', () => {
     } finally { loading.value = false }
   }
 
+  async function adminLogin(phone, password) {
+    loading.value = true
+    try {
+      const { data } = await authService.adminLogin(phone, password)
+      token.value = data.accessToken
+      const { data: profile } = await authService.getProfile()
+      if (!hasAdminAccess(profile)) {
+        logout()
+        throw { isAdminError: true, message: 'شما دسترسی به پنل مدیریت ندارید' }
+      }
+      user.value = profile
+      logger.log('admin-auth: password login success', {}, 'AuthStore')
+      return data
+    } catch (error) {
+      logger.error('admin-auth: adminLogin failed', error, {}, 'AuthStore')
+      throw error
+    } finally { loading.value = false }
+  }
+
   async function verifyOtp(phone, code) {
     loading.value = true
     try {
@@ -93,5 +112,5 @@ export const useAuthStore = defineStore('auth', () => {
     socketService.disconnect()
   }
 
-  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, verifyOtp, fetchProfile, initAuth, logout }
+  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
 })
