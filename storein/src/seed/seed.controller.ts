@@ -19,7 +19,7 @@ export class SeedController {
     // Parse Extended JSON to proper BSON types
     const parsed = EJSON.parse(JSON.stringify(body.docs)) as any[];
 
-    const coll = this.connection.db.collection(collection);
+    const coll = this.connection.db!.collection(collection);
     await coll.drop().catch(() => {});
 
     if (parsed.length > 0) {
