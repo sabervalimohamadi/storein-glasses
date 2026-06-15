@@ -37,6 +37,7 @@ export const useAuthStore = defineStore('auth', () => {
 
   async function adminLogin(phone, password) {
     loading.value = true
+    const masked = phone.slice(0, -4) + '****'
     try {
       const { data } = await authService.adminLogin(phone, password)
       token.value = data.accessToken
@@ -46,10 +47,10 @@ export const useAuthStore = defineStore('auth', () => {
         throw { isAdminError: true, message: 'شما دسترسی به پنل مدیریت ندارید' }
       }
       user.value = profile
-      logger.log('admin-auth: password login success', {}, 'AuthStore')
+      logger.info('admin-auth: password login success', { phone: masked }, 'AuthStore')
       return data
     } catch (error) {
-      logger.error('admin-auth: adminLogin failed', error, {}, 'AuthStore')
+      logger.error('admin-auth: adminLogin failed', error, { phone: masked }, 'AuthStore')
       throw error
     } finally { loading.value = false }
   }

@@ -5,6 +5,7 @@ vi.mock('@/services/auth.service', () => ({
   authService: {
     sendOtp:    vi.fn(),
     verifyOtp:  vi.fn(),
+    adminLogin: vi.fn(),
     refresh:    vi.fn(),
     getProfile: vi.fn(),
   },
@@ -202,8 +203,82 @@ describe('useAuthStore', () => {
       await store.logout()
       expect(store.user).toBeNull()
       expect(store.token).toBeNull()
-      // Cookie is cleared server-side; no localStorage entry should exist
       expect(localStorage.getItem('admin_refresh_token')).toBeNull()
+    })
+  })
+
+  describe('adminLogin', () => {
+    it('stores token in memory and sets user on success', async () => {
+      authService.adminLogin.mockResolvedValue({ data: { accessToken: 'pw-tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.adminLogin('09123456789', 'secret123')
+
+      expect(authService.adminLogin).toHaveBeenCalledWith('09123456789', 'secret123')
+      expect(store.token).toBe('pw-tok')
+      expect(store.user).toEqual(adminProfile)
+      expect(store.isLoggedIn).toBe(true)
+      expect(store.loading).toBe(false)
+    })
+
+    it('accepts manager role', async () => {
+      authService.adminLogin.mockResolvedValue({ data: { accessToken: 'mgr-tok' } })
+      authService.getProfile.mockResolvedValue({ data: managerProfile })
+
+      const store = useAuthStore()
+      await store.adminLogin('09123456789', 'secret123')
+
+      expect(store.isManager).toBe(true)
+      expect(store.isLoggedIn).toBe(true)
+    })
+
+    it('throws isAdminError when profile has no admin access', async () => {
+      authService.adminLogin.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: userProfile })
+
+      const store = useAuthStore()
+      const err = await store.adminLogin('09123456789', 'secret123').catch(e => e)
+
+      expect(err.isAdminError).toBe(true)
+      expect(store.token).toBeNull()
+    })
+
+    it('logs info with masked phone on success', async () => {
+      authService.adminLogin.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.adminLogin('09123456789', 'secret123')
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'admin-auth: password login success',
+        expect.objectContaining({ phone: '0912345****' }),
+        'AuthStore',
+      )
+    })
+
+    it('logs error with masked phone and re-throws on API failure', async () => {
+      const err = new Error('401 Unauthorized')
+      authService.adminLogin.mockRejectedValue(err)
+
+      const store = useAuthStore()
+      await expect(store.adminLogin('09123456789', 'wrongpass')).rejects.toThrow('401')
+
+      expect(logger.error).toHaveBeenCalledWith(
+        'admin-auth: adminLogin failed',
+        err,
+        expect.objectContaining({ phone: '0912345****' }),
+        'AuthStore',
+      )
+      expect(store.loading).toBe(false)
+    })
+
+    it('resets loading to false even when error thrown', async () => {
+      authService.adminLogin.mockRejectedValue(new Error('network'))
+      const store = useAuthStore()
+      await store.adminLogin('09123456789', 'pass').catch(() => {})
+      expect(store.loading).toBe(false)
     })
   })
 })

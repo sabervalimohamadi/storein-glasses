@@ -23,6 +23,7 @@
         :placeholder="placeholder"
         :disabled="disabled"
         :dir="dir"
+        :autocomplete="autocomplete"
         class="flex-1 px-3 py-2.5 text-sm text-text-primary bg-transparent outline-none placeholder:text-text-disabled"
         @focus="focused = true"
         @blur="focused = false"
@@ -50,9 +51,10 @@ const props = defineProps({
   hint:        String,
   disabled:    Boolean,
   required:    Boolean,
-  dir:         { default: 'rtl' },
-  prepend:     String,
-  append:      String,
+  dir:          { default: 'rtl' },
+  prepend:      String,
+  append:       String,
+  autocomplete: { default: 'off' },
 })
 const emit = defineEmits(['update:modelValue', 'enter'])
 
