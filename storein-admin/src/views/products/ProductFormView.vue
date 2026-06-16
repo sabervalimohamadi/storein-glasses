@@ -214,25 +214,94 @@
       </div>
     </div>
 
-    <!-- Sticky action bar -->
-    <div class="sticky bottom-0 z-40 mt-6 -mx-6 px-6 py-3 bg-card/80 backdrop-blur border-t border-border flex items-center justify-between gap-3">
-      <p class="text-text-disabled text-xs hidden sm:block">
-        {{ isEdit ? 'ویرایش: ' + form.name : 'محصول جدید' }}
-      </p>
-      <div class="flex items-center gap-2 mr-auto">
-        <AdminButton variant="secondary" @click="saveDraft" :loading="savingDraft">
-          💾 ذخیره پیش‌نویس
-        </AdminButton>
-        <AdminButton @click="publish" :loading="savingPublish">
-          🚀 {{ isEdit ? 'ذخیره تغییرات' : 'انتشار محصول' }}
-        </AdminButton>
+    <!-- ── Sticky action bar ──────────────────────────────────── -->
+    <div class="sticky bottom-0 z-40 mt-8 -mx-6">
+      <div class="px-6 py-3 border-t border-border flex items-center gap-4"
+           style="background-color: var(--color-card); backdrop-filter: blur(8px); box-shadow: 0 -4px 24px rgba(0,0,0,0.07);">
+
+        <!-- Context (right side in RTL) -->
+        <div class="flex items-center gap-3 min-w-0">
+
+          <!-- Back button -->
+          <button type="button"
+            class="flex-shrink-0 inline-flex items-center gap-1.5 text-sm text-text-secondary hover:text-primary transition-colors"
+            @click="$router.back()">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
+            </svg>
+            <span class="hidden md:inline">بازگشت</span>
+          </button>
+
+          <span class="text-border select-none hidden md:block text-lg leading-none">|</span>
+
+          <!-- Title -->
+          <p class="text-sm text-text-primary font-medium truncate max-w-[140px] md:max-w-[240px] hidden sm:block">
+            {{ isEdit ? (form.name || 'ویرایش محصول') : 'محصول جدید' }}
+          </p>
+
+          <!-- Status pill -->
+          <Transition name="pill-fade" mode="out-in">
+            <span v-if="savedRecently && !isDirty" key="saved"
+              class="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 border border-success/20 text-success text-xs font-medium whitespace-nowrap">
+              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+              </svg>
+              ذخیره شد
+            </span>
+            <span v-else-if="isDirty" key="dirty"
+              class="flex-shrink-0 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-500/10 border border-amber-500/20 text-amber-600 dark:text-amber-400 text-xs font-medium whitespace-nowrap">
+              <span class="w-1.5 h-1.5 rounded-full bg-current flex-shrink-0 animate-pulse" />
+              ذخیره نشده
+            </span>
+          </Transition>
+        </div>
+
+        <!-- Spacer -->
+        <div class="flex-1" />
+
+        <!-- Action buttons (left side in RTL) -->
+        <div class="flex items-center gap-2 flex-shrink-0">
+
+          <!-- Draft -->
+          <button type="button"
+            :disabled="savingDraft || savingPublish"
+            data-testid="btn-save-draft"
+            class="inline-flex items-center gap-2 px-4 py-2 rounded-xl border border-border text-sm font-medium text-text-secondary hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+            @click="saveDraft">
+            <svg v-if="savingDraft" class="w-3.5 h-3.5 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            <svg v-else class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4"/>
+            </svg>
+            <span class="hidden sm:inline">ذخیره پیش‌نویس</span>
+            <span class="sm:hidden">پیش‌نویس</span>
+          </button>
+
+          <!-- Publish / Save (primary CTA) -->
+          <button type="button"
+            :disabled="savingPublish || savingDraft"
+            data-testid="btn-publish"
+            class="inline-flex items-center gap-2 px-5 py-2 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark shadow-sm shadow-primary/25 transition-all disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.98]"
+            @click="publish">
+            <svg v-if="savingPublish" class="w-3.5 h-3.5 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+            </svg>
+            {{ isEdit ? 'ذخیره تغییرات' : 'انتشار محصول' }}
+            <svg v-if="!savingPublish" class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+            </svg>
+          </button>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, computed, watch, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted, nextTick } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { productService }  from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
@@ -240,6 +309,9 @@ import { brandService }    from '@/services/brand.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { formatNumber, formatPrice } from '@/utils/formatters'
 import { frameAttributeService } from '@/services/frame-attribute.service'
+import { logger } from '@/utils/logger'
+
+const CTX = 'ProductFormView'
 
 import ImageUploader from './components/ImageUploader.vue'
 import VariantEditor from './components/VariantEditor.vue'
@@ -290,6 +362,20 @@ watch(() => form.discountPct, (pct) => {
 
 const errors        = reactive({})
 const variantErrors = ref({})
+
+// ── Dirty / saved state ───────────────────────────────────────
+const isDirty       = ref(false)
+const savedRecently = ref(false)
+let   _savedTimer   = null
+
+watch(form, () => { isDirty.value = true }, { deep: true })
+
+function markSaved() {
+  isDirty.value = false
+  savedRecently.value = true
+  clearTimeout(_savedTimer)
+  _savedTimer = setTimeout(() => { savedRecently.value = false }, 3000)
+}
 
 const categoryOptions = computed(() =>
   categories.value.map(c => ({ value: c._id, label: c.name }))
@@ -384,13 +470,17 @@ async function saveDraft() {
     const dto = buildDto('draft')
     if (isEdit.value) {
       await productService.update(route.params.id, dto)
+      logger.info('Product draft updated', { id: route.params.id }, CTX)
       ui.addToast('پیش‌نویس ذخیره شد', 'success')
     } else {
       const { data } = await productService.create(dto)
+      logger.info('Product created as draft', { id: data._id }, CTX)
       ui.addToast('محصول به صورت پیش‌نویس ذخیره شد', 'success')
       router.replace({ name: 'product-edit', params: { id: data._id } })
     }
+    markSaved()
   } catch (err) {
+    logger.error('Failed to save draft', err, { isEdit: isEdit.value }, CTX)
     ui.addToast(err.response?.data?.message ?? 'خطا در ذخیره', 'error')
   } finally {
     savingDraft.value = false
@@ -404,14 +494,17 @@ async function publish() {
     const dto = buildDto('active')
     if (isEdit.value) {
       await productService.update(route.params.id, dto)
+      logger.info('Product updated and published', { id: route.params.id }, CTX)
       ui.addToast('محصول با موفقیت ذخیره شد ✓', 'success')
     } else {
-      await productService.create(dto)
+      const { data } = await productService.create(dto)
+      logger.info('Product created and published', { id: data?._id }, CTX)
       ui.addToast('محصول با موفقیت منتشر شد ✓', 'success')
       router.push({ name: 'products' })
     }
+    markSaved()
   } catch (err) {
-    console.error('SAVE ERROR:', JSON.stringify(err.response?.data, null, 2))
+    logger.error('Failed to publish product', err, { isEdit: isEdit.value }, CTX)
     const msg = err.response?.data?.message
     if (Array.isArray(msg)) msg.forEach(m => ui.addToast(m, 'error'))
     else ui.addToast(msg ?? 'خطا در ذخیره محصول', 'error')
@@ -454,6 +547,9 @@ function fillForm(p) {
           : (v.attributes ?? {}),
       }))
     : [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }]
+
+  // Reset dirty tracking after watchers have fired (nextTick ensures watcher runs first)
+  nextTick(() => { isDirty.value = false; savedRecently.value = false })
 }
 
 // ── Lifecycle ─────────────────────────────────────
@@ -490,3 +586,10 @@ onMounted(async () => {
   }
 })
 </script>
+
+<style scoped>
+.pill-fade-enter-active,
+.pill-fade-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.pill-fade-enter-from,
+.pill-fade-leave-to     { opacity: 0; transform: translateY(4px); }
+</style>
