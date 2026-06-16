@@ -215,4 +215,70 @@ describe('NotificationService', () => {
       );
     });
   });
+
+  // ── adminSendSms ──────────────────────────────────────────────
+  describe('adminSendSms', () => {
+    it('sends SMS to a single phone number', async () => {
+      const res = await service.adminSendSms({ phone: '09121234567', message: 'پیام آزمایشی' });
+      expect(smsChannel.send).toHaveBeenCalledWith('09121234567', 'پیام آزمایشی');
+      expect(res).toEqual({ sent: 1, failed: 0 });
+    });
+
+    it('normalizes +98 prefix before sending', async () => {
+      await service.adminSendSms({ phone: '+989121234567', message: 'test' });
+      expect(smsChannel.send).toHaveBeenCalledWith('09121234567', 'test');
+    });
+
+    it('broadcasts to all active users when no phone given', async () => {
+      const users = [
+        { _id: new Types.ObjectId(), phone: '09120000001' },
+        { _id: new Types.ObjectId(), phone: '09120000002' },
+        { _id: new Types.ObjectId(), phone: '09120000003' },
+      ];
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain(users)),
+        }),
+      });
+
+      const res = await service.adminSendSms({ message: 'پیام انبوه' });
+      expect(smsChannel.send).toHaveBeenCalledTimes(3);
+      expect(res).toEqual({ sent: 3, failed: 0 });
+    });
+
+    it('counts failed sends in broadcast without throwing', async () => {
+      const users = [
+        { phone: '09120000001' },
+        { phone: '09120000002' },
+      ];
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain(users)),
+        }),
+      });
+      smsChannel.send
+        .mockResolvedValueOnce(undefined)
+        .mockRejectedValueOnce(new Error('provider error'));
+
+      const res = await service.adminSendSms({ message: 'پیام' });
+      expect(res).toEqual({ sent: 1, failed: 1 });
+    });
+
+    it('skips users with no phone in broadcast', async () => {
+      const users = [
+        { phone: '09120000001' },
+        { phone: null },
+        { phone: '09120000003' },
+      ];
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain(users)),
+        }),
+      });
+
+      const res = await service.adminSendSms({ message: 'پیام' });
+      expect(smsChannel.send).toHaveBeenCalledTimes(2);
+      expect(res.sent).toBe(2);
+    });
+  });
 });

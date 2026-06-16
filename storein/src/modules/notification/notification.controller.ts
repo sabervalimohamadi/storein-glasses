@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import { NotificationService } from './notification.service';
 import { AdminBroadcastDto } from './dto/admin-broadcast.dto';
+import { AdminSmsDto }       from './dto/admin-sms.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../../common/guards/admin.guard';
@@ -47,6 +48,12 @@ export class NotificationController {
   @Post('admin/broadcast')
   broadcast(@Body() dto: AdminBroadcastDto) {
     return this.notifService.adminBroadcast(dto);
+  }
+
+  @UseGuards(AdminGuard)
+  @Post('admin/sms')
+  sendSms(@Body() dto: AdminSmsDto) {
+    return this.notifService.adminSendSms(dto);
   }
 
   @UseGuards(AdminGuard)

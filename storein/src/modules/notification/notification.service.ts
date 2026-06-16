@@ -12,6 +12,7 @@ import {
   SmsNotificationChannel,
 } from './channels/notification-channel.abstract';
 import { AdminBroadcastDto } from './dto/admin-broadcast.dto';
+import { AdminSmsDto }       from './dto/admin-sms.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 
 export interface CreateNotificationPayload {
@@ -178,6 +179,42 @@ export class NotificationService {
 
     this.logger.log(`Broadcast sent to ${docs.length} users`);
     return { sent: docs.length };
+  }
+
+  // ── Admin: Send SMS (targeted or broadcast) ──────────────────
+  async adminSendSms(dto: AdminSmsDto): Promise<{ sent: number; failed: number }> {
+    const normalizePhone = (p: string) =>
+      p.startsWith('+98') ? '0' + p.slice(3) : p;
+
+    if (dto.phone) {
+      const phone = normalizePhone(dto.phone);
+      await this.smsChannel.send(phone, dto.message);
+      this.logger.log(`Admin SMS sent to single target: ${phone.slice(0, -4)}****`);
+      return { sent: 1, failed: 0 };
+    }
+
+    const UserModel = this.notifModel.db.model('User');
+    const users: any[] = await UserModel
+      .find({ isActive: true })
+      .select('phone')
+      .lean();
+
+    let sent   = 0;
+    let failed = 0;
+
+    for (const user of users) {
+      if (!user.phone) continue;
+      try {
+        await this.smsChannel.send(user.phone, dto.message);
+        sent++;
+      } catch (err: any) {
+        failed++;
+        this.logger.error(`Admin SMS broadcast failed for ${user.phone.slice(0, -4)}****: ${err?.message}`);
+      }
+    }
+
+    this.logger.log(`Admin SMS broadcast complete — sent: ${sent}, failed: ${failed}`);
+    return { sent, failed };
   }
 
   // ── Admin: Delete notification ────────────────────────────────

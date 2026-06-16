@@ -153,6 +153,12 @@ const routes = [
     component: () => import('@/views/settings/ChangePasswordView.vue'),
     meta: { layout: 'admin', title: 'تغییر رمز عبور', adminOnly: true },
   },
+  {
+    path: '/notifications-send',
+    name: 'notifications-send',
+    component: () => import('@/views/notifications/NotificationsSendView.vue'),
+    meta: { layout: 'admin', title: 'ارسال پیام', adminOnly: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 
