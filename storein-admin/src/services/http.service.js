@@ -56,10 +56,13 @@ http.interceptors.response.use(
       }
     }
 
-    if (status === 401) {
+    // Skip redirect for requests that handle their own auth errors (e.g. /auth/refresh)
+    if (status === 401 && !error.config?.skipAuthRedirect) {
+      logger.warn('HTTP: 401 unauthorized — redirecting to login', { url }, 'HTTP')
       window.location.href = '/login'
     }
     if (status === 403) {
+      logger.warn('HTTP: 403 forbidden — redirecting to login', { url }, 'HTTP')
       window.location.href = '/login?error=forbidden'
     }
 

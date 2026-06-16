@@ -10,6 +10,7 @@ export const useAuthStore = defineStore('auth', () => {
   const loading      = ref(false)
   const pendingPhone = ref('')
   const initialized  = ref(false)
+  const initializing = ref(false)
 
   const isAdmin     = computed(() => user.value?.isAdmin === true)
   const isManager   = computed(() => user.value?.role === 'manager')
@@ -80,19 +81,28 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function initAuth() {
-    if (initialized.value) return
+    // Guard against both: already done and in-flight (prevents concurrent refresh calls)
+    if (initialized.value || initializing.value) return
+    initializing.value = true
     try {
       const { data } = await authService.refresh()
       token.value = data.accessToken
       const { data: profile } = await authService.getProfile()
-      if (!hasAdminAccess(profile)) { logout(); return }
+      if (!hasAdminAccess(profile)) { await logout(); return }
       user.value = profile
       logger.info('admin-auth: session restored from refresh token', {}, 'AuthStore')
     } catch (error) {
-      logger.warn('admin-auth: initAuth failed, clearing session', { error: error?.message }, 'AuthStore')
-      logout()
+      const status = error.response?.status
+      if (status === 429) {
+        // Rate-limited — can't determine session validity, don't clear credentials
+        logger.warn('admin-auth: initAuth rate-limited — not clearing session', { status }, 'AuthStore')
+      } else {
+        logger.warn('admin-auth: initAuth failed, clearing session', { status, error: error?.message }, 'AuthStore')
+        await logout()
+      }
     } finally {
-      initialized.value = true
+      initialized.value  = true
+      initializing.value = false
     }
   }
 
@@ -117,5 +127,5 @@ export const useAuthStore = defineStore('auth', () => {
     socketService.disconnect()
   }
 
-  return { user, token, loading, pendingPhone, initialized, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
+  return { user, token, loading, pendingPhone, initialized, initializing, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
 })

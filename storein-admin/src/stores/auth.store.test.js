@@ -23,6 +23,7 @@ vi.mock('@/services/socket.service', () => ({
 import { useAuthStore } from './auth.store'
 import { authService } from '@/services/auth.service'
 import { logger } from '@/utils/logger'
+import { socketService } from '@/services/socket.service'
 
 const adminProfile   = { _id: 'u1', isAdmin: true,  role: 'admin',   name: 'Admin' }
 const managerProfile = { _id: 'u2', isAdmin: false, role: 'manager', name: 'Mgr'   }
@@ -208,6 +209,75 @@ describe('useAuthStore', () => {
       await store.initAuth()
 
       expect(authService.refresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('two concurrent calls result in only one refresh request (initializing lock)', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      // Fire both without awaiting — second sees initializing=true and returns early
+      await Promise.all([store.initAuth(), store.initAuth()])
+
+      expect(authService.refresh).toHaveBeenCalledTimes(1)
+    })
+
+    it('does NOT call logout on 429 rate-limit error', async () => {
+      const err = Object.assign(new Error('Too Many Requests'), { response: { status: 429 } })
+      authService.refresh.mockRejectedValue(err)
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(socketService.disconnect).not.toHaveBeenCalled()
+      expect(store.initialized).toBe(true)
+    })
+
+    it('logs warn with status 429 when rate-limited', async () => {
+      const err = Object.assign(new Error('Too Many Requests'), { response: { status: 429 } })
+      authService.refresh.mockRejectedValue(err)
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        'admin-auth: initAuth rate-limited — not clearing session',
+        expect.objectContaining({ status: 429 }),
+        'AuthStore',
+      )
+    })
+
+    it('includes HTTP status code in warn log for non-429 failures', async () => {
+      const err = Object.assign(new Error('no refresh token'), { response: { status: 401 } })
+      authService.refresh.mockRejectedValue(err)
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(logger.warn).toHaveBeenCalledWith(
+        'admin-auth: initAuth failed, clearing session',
+        expect.objectContaining({ status: 401 }),
+        'AuthStore',
+      )
+    })
+
+    it('resets initializing flag after success', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(store.initializing).toBe(false)
+    })
+
+    it('resets initializing flag after failure', async () => {
+      authService.refresh.mockRejectedValue(new Error('fail'))
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(store.initializing).toBe(false)
     })
   })
 

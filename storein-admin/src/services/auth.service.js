@@ -4,6 +4,6 @@ export const authService = {
   verifyOtp:      (phone, code)                     => http.post('/auth/verify-otp',        { phone, code }),
   adminLogin:     (phone, password)                 => http.post('/auth/admin-login',       { phone, password }),
   changePassword: (currentPassword, newPassword)    => http.post('/auth/change-password',   { currentPassword, newPassword }),
-  refresh:        ()                                => http.post('/auth/refresh', {}, { skipErrorLog: true }),
+  refresh:        ()                                => http.post('/auth/refresh', {}, { skipErrorLog: true, skipAuthRedirect: true }),
   getProfile:     ()                                => http.get('/users/me'),
 }
