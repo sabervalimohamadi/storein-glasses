@@ -1,13 +1,15 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { UnauthorizedException, BadRequestException } from '@nestjs/common';
+import { UnauthorizedException, BadRequestException, ForbiddenException } from '@nestjs/common';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { UserRole } from '../user/entities/user.schema';
 
 const mockService = {
   sendOtp:          jest.fn(),
   verifyOtp:        jest.fn(),
   adminLogin:       jest.fn(),
   setAdminPassword: jest.fn(),
+  changePassword:   jest.fn(),
   refreshTokens:    jest.fn(),
   logout:           jest.fn(),
   logoutAll:        jest.fn(),
@@ -145,6 +147,44 @@ describe('AuthController', () => {
         controller.adminSetup({ phone: '09121234567', password: 'p', secret: 'bad-secret' }),
       ).rejects.toThrow();
       expect(mockService.setAdminPassword).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('changePassword', () => {
+    const dto = { currentPassword: 'OldPass#1', newPassword: 'NewPass#2' };
+    const adminUser  = { _id: 'uid1', isAdmin: true,  role: UserRole.ADMIN   } as any;
+    const managerUser = { _id: 'uid2', isAdmin: false, role: UserRole.MANAGER } as any;
+    const regularUser = { _id: 'uid3', isAdmin: false, role: UserRole.USER   } as any;
+
+    it('returns success message when admin changes password', async () => {
+      mockService.changePassword.mockResolvedValue(undefined);
+      const result = await controller.changePassword(adminUser, dto);
+      expect(result).toEqual({ message: 'رمز عبور با موفقیت تغییر یافت' });
+      expect(mockService.changePassword).toHaveBeenCalledWith('uid1', dto);
+    });
+
+    it('throws ForbiddenException when manager tries to change password', async () => {
+      await expect(controller.changePassword(managerUser, dto))
+        .rejects.toThrow(ForbiddenException);
+      expect(mockService.changePassword).not.toHaveBeenCalled();
+    });
+
+    it('throws ForbiddenException when regular user tries to change password', async () => {
+      await expect(controller.changePassword(regularUser, dto))
+        .rejects.toThrow(ForbiddenException);
+      expect(mockService.changePassword).not.toHaveBeenCalled();
+    });
+
+    it('propagates UnauthorizedException from service on wrong current password', async () => {
+      mockService.changePassword.mockRejectedValue(new UnauthorizedException());
+      await expect(controller.changePassword(adminUser, dto))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('propagates BadRequestException from service on same password', async () => {
+      mockService.changePassword.mockRejectedValue(new BadRequestException());
+      await expect(controller.changePassword(adminUser, dto))
+        .rejects.toThrow(BadRequestException);
     });
   });
 });

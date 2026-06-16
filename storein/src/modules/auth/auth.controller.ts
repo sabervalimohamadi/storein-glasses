@@ -1,5 +1,5 @@
 import {
-  Body, Controller, HttpCode, HttpStatus, Post, Req, Res, UseGuards,
+  Body, Controller, ForbiddenException, HttpCode, HttpStatus, Post, Req, Res, UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type { Response } from 'express';
@@ -8,12 +8,14 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { AdminLoginDto } from './dto/admin-login.dto';
 import { AdminSetupDto } from './dto/admin-setup.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { Public } from '../../common/decorators/public.decorator';
 import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { JwtRefreshPayload } from './interfaces/jwt-payload.interface';
 import type { UserDocument } from '../user/entities/user.schema';
+import { UserRole } from '../user/entities/user.schema';
 
 const COOKIE_NAME = 'refresh_token';
 const COOKIE_PATH = '/api/v1/auth';
@@ -89,6 +91,18 @@ export class AuthController {
     );
     this.setRefreshCookie(res, result.refreshToken);
     return { accessToken: result.accessToken };
+  }
+
+  @UseGuards(JwtAuthGuard) @Post('change-password') @HttpCode(HttpStatus.OK)
+  async changePassword(
+    @CurrentUser() user: UserDocument,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    if (!user.isAdmin && user.role !== UserRole.ADMIN) {
+      throw new ForbiddenException('فقط مدیران ارشد می‌توانند رمز عبور را تغییر دهند');
+    }
+    await this.authService.changePassword((user._id as any).toString(), dto);
+    return { message: 'رمز عبور با موفقیت تغییر یافت' };
   }
 
   @UseGuards(JwtAuthGuard) @Post('logout') @HttpCode(HttpStatus.OK)

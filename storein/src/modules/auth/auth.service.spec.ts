@@ -48,10 +48,11 @@ describe('AuthService', () => {
   let redis: jest.Mocked<any>;
 
   const userModel = {
-    findOne:          jest.fn(),
-    findById:         jest.fn(),
-    create:           jest.fn(),
-    findOneAndUpdate: jest.fn(),
+    findOne:           jest.fn(),
+    findById:          jest.fn(),
+    findByIdAndUpdate: jest.fn(),
+    create:            jest.fn(),
+    findOneAndUpdate:  jest.fn(),
   };
   const rtModel = {
     create:            jest.fn(),
@@ -236,6 +237,52 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       await service.adminLogin({ phone: '+989121234567', password: 'secret123' }, {});
       expect(userModel.findOne).toHaveBeenCalledWith({ phone: '09121234567' });
+    });
+  });
+
+  // ── changePassword ────────────────────────────────────────────
+  describe('changePassword', () => {
+    const dto = { currentPassword: 'OldPass#1', newPassword: 'NewPass#2' };
+
+    beforeEach(() => {
+      userModel.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ ...mockAdmin }) });
+      userModel.findByIdAndUpdate.mockResolvedValue(mockAdmin);
+      rtModel.updateMany.mockResolvedValue({ modifiedCount: 1 });
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      (bcrypt.hash as jest.Mock).mockResolvedValue('$2a$12$newHashed');
+    });
+
+    it('changes password successfully and revokes all refresh tokens', async () => {
+      await service.changePassword('uid1', dto);
+      expect(bcrypt.hash).toHaveBeenCalledWith('NewPass#2', 12);
+      expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith('uid1', { password: '$2a$12$newHashed' });
+      expect(rtModel.updateMany).toHaveBeenCalledWith({ userId: 'uid1' }, { isRevoked: true });
+    });
+
+    it('throws UnauthorizedException when current password is wrong', async () => {
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(service.changePassword('uid1', dto))
+        .rejects.toThrow(UnauthorizedException);
+      expect(userModel.findByIdAndUpdate).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException when user has no password set', async () => {
+      userModel.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ ...mockAdmin, password: undefined }) });
+      await expect(service.changePassword('uid1', dto))
+        .rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when user not found', async () => {
+      userModel.findById.mockReturnValue({ select: jest.fn().mockResolvedValue(null) });
+      await expect(service.changePassword('uid1', dto))
+        .rejects.toThrow(BadRequestException);
+    });
+
+    it('throws BadRequestException when new password equals current', async () => {
+      const sameDto = { currentPassword: 'SamePass#1', newPassword: 'SamePass#1' };
+      await expect(service.changePassword('uid1', sameDto))
+        .rejects.toThrow(BadRequestException);
+      expect(userModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
   });
 });

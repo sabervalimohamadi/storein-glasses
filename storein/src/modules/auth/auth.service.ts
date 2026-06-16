@@ -15,6 +15,7 @@ import { SendOtpDto } from './dto/send-otp.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { User, UserDocument, UserRole } from '../user/entities/user.schema';
 import { AdminLoginDto } from './dto/admin-login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 import { RefreshToken, RefreshTokenDocument } from './entities/refresh-token.schema';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 
@@ -158,6 +159,31 @@ export class AuthService {
     );
     if (!user) throw new Error(`User not found: ${normalized}`);
     this.logger.log(`Admin password set for: ${this.maskPhone(normalized)}`);
+  }
+
+  async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
+    const user = await this.userModel.findById(userId).select('+password');
+    if (!user || !user.password) {
+      throw new BadRequestException('رمز عبور برای این حساب تنظیم نشده است');
+    }
+
+    const valid = await bcrypt.compare(dto.currentPassword, user.password);
+    if (!valid) {
+      this.logger.warn(`changePassword failed — wrong current password: userId=${userId}`);
+      throw new UnauthorizedException('رمز عبور فعلی اشتباه است');
+    }
+
+    if (dto.currentPassword === dto.newPassword) {
+      throw new BadRequestException('رمز عبور جدید نباید با رمز فعلی یکسان باشد');
+    }
+
+    const hashed = await bcrypt.hash(dto.newPassword, 12);
+    await this.userModel.findByIdAndUpdate(userId, { password: hashed });
+
+    // Revoke all existing refresh tokens — force re-login on other devices
+    await this.rtModel.updateMany({ userId }, { isRevoked: true });
+
+    this.logger.log(`Admin password changed successfully: userId=${userId}`);
   }
 
   // ── Tokens ────────────────────────────────────────────────────

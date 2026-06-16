@@ -147,6 +147,12 @@ const routes = [
     component: () => import('@/views/settings/ThemeView.vue'),
     meta: { layout: 'admin', title: 'تم سایت', adminOnly: true },
   },
+  {
+    path: '/change-password',
+    name: 'change-password',
+    component: () => import('@/views/settings/ChangePasswordView.vue'),
+    meta: { layout: 'admin', title: 'تغییر رمز عبور', adminOnly: true },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 

@@ -186,9 +186,10 @@ const navGroups = computed(() => {
         { name: 'users',    perm: 'users',    icon: '👥', label: 'کاربران' },
         { name: 'reviews',  perm: 'reviews',  icon: '⭐', label: 'نظرات' },
         ...(auth.isAdmin ? [
-          { name: 'popups',   perm: null, icon: '🎯', label: 'پاپ‌آپ سایت' },
-          { name: 'settings', perm: null, icon: '⚙️', label: 'تنظیمات سایت' },
-          { name: 'theme',    perm: null, icon: '🎨', label: 'تم سایت' },
+          { name: 'popups',          perm: null, icon: '🎯', label: 'پاپ‌آپ سایت' },
+          { name: 'settings',        perm: null, icon: '⚙️', label: 'تنظیمات سایت' },
+          { name: 'theme',           perm: null, icon: '🎨', label: 'تم سایت' },
+          { name: 'change-password', perm: null, icon: '🔑', label: 'تغییر رمز عبور' },
         ] : []),
       ],
     },
