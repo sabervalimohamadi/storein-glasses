@@ -14,6 +14,12 @@
 
     <template v-else>
 
+      <!-- Info: no password set yet -->
+      <div v-if="noPasswordSet" class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-5 flex items-start gap-3">
+        <span class="text-amber-500 text-lg mt-0.5">⚠️</span>
+        <p class="text-amber-700 text-sm leading-6">رمز عبور برای این حساب هنوز تنظیم نشده است. رمز جدید را وارد کنید.</p>
+      </div>
+
       <!-- Success banner -->
       <div v-if="successMsg" class="bg-green-50 border border-green-200 rounded-xl p-4 mb-5 flex items-center gap-3">
         <span class="text-green-600 text-xl">✓</span>
@@ -26,10 +32,10 @@
       </div>
 
       <div class="admin-card p-6 space-y-5">
-        <h3 class="section-title">رمز عبور جدید</h3>
+        <h3 class="section-title">{{ noPasswordSet ? 'تنظیم رمز عبور' : 'تغییر رمز عبور' }}</h3>
 
-        <!-- Current password -->
-        <div class="relative">
+        <!-- Current password — only show when password already exists -->
+        <div v-if="!noPasswordSet" class="relative">
           <AdminInput
             v-model="form.currentPassword"
             label="رمز عبور فعلی"
@@ -101,7 +107,7 @@
 
         <div class="flex items-center gap-3 pt-1">
           <AdminButton :loading="loading" @click="handleSubmit">
-            تغییر رمز عبور
+            {{ noPasswordSet ? 'تنظیم رمز عبور' : 'تغییر رمز عبور' }}
           </AdminButton>
           <button
             type="button"
@@ -125,23 +131,24 @@ import { logger } from '@/utils/logger'
 import AdminInput  from '@/components/common/AdminInput.vue'
 import AdminButton from '@/components/common/AdminButton.vue'
 
-const auth    = useAuthStore()
-const loading = ref(false)
+const auth         = useAuthStore()
+const loading      = ref(false)
+const noPasswordSet = ref(false)
 
-const form = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
-const show = reactive({ current: false, new: false })
+const form   = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
+const show   = reactive({ current: false, new: false })
 const errors = reactive({ currentPassword: '', newPassword: '', confirmPassword: '' })
-const errorMsg  = ref('')
+const errorMsg   = ref('')
 const successMsg = ref('')
 
 function resetForm() {
-  form.currentPassword  = ''
-  form.newPassword      = ''
-  form.confirmPassword  = ''
+  form.currentPassword   = ''
+  form.newPassword       = ''
+  form.confirmPassword   = ''
   errors.currentPassword = ''
   errors.newPassword     = ''
   errors.confirmPassword = ''
-  errorMsg.value  = ''
+  errorMsg.value   = ''
   successMsg.value = ''
 }
 
@@ -151,15 +158,17 @@ function validate() {
   errors.newPassword     = ''
   errors.confirmPassword = ''
 
-  if (!form.currentPassword || form.currentPassword.length < 6) {
-    errors.currentPassword = 'رمز عبور فعلی حداقل ۶ کاراکتر است'
-    ok = false
+  if (!noPasswordSet.value) {
+    if (!form.currentPassword || form.currentPassword.length < 6) {
+      errors.currentPassword = 'رمز عبور فعلی حداقل ۶ کاراکتر است'
+      ok = false
+    }
   }
   if (!form.newPassword || form.newPassword.length < 8) {
     errors.newPassword = 'رمز عبور جدید حداقل ۸ کاراکتر است'
     ok = false
   }
-  if (form.newPassword && form.newPassword === form.currentPassword) {
+  if (!noPasswordSet.value && form.newPassword && form.newPassword === form.currentPassword) {
     errors.newPassword = 'رمز عبور جدید نباید با رمز فعلی یکسان باشد'
     ok = false
   }
@@ -171,21 +180,30 @@ function validate() {
 }
 
 async function handleSubmit() {
-  errorMsg.value  = ''
+  errorMsg.value   = ''
   successMsg.value = ''
 
   if (!validate()) return
 
   loading.value = true
   try {
-    await authService.changePassword(form.currentPassword, form.newPassword)
-    logger.info('Admin password changed successfully', {}, 'ChangePasswordView')
+    const currentPw = noPasswordSet.value ? undefined : form.currentPassword
+    await authService.changePassword(currentPw, form.newPassword)
+    logger.info('Admin password set/changed successfully', { initial: noPasswordSet.value }, 'ChangePasswordView')
+    noPasswordSet.value = false
     resetForm()
-    successMsg.value = 'رمز عبور با موفقیت تغییر یافت. برای امنیت بیشتر از سایر دستگاه‌ها خارج شدید.'
+    successMsg.value = 'رمز عبور با موفقیت تنظیم شد. برای امنیت بیشتر از سایر دستگاه‌ها خارج شدید.'
   } catch (e) {
     logger.error('Admin change password failed', e, {}, 'ChangePasswordView')
     const msg = e.response?.data?.message
-    errorMsg.value = Array.isArray(msg) ? msg[0] : (msg ?? 'خطا در تغییر رمز عبور')
+    const text = Array.isArray(msg) ? msg[0] : (msg ?? 'خطا در تغییر رمز عبور')
+    // Detect "no password set" state from backend error
+    if (text.includes('تنظیم نشده') || text.includes('الزامی')) {
+      noPasswordSet.value = true
+      errorMsg.value = ''
+    } else {
+      errorMsg.value = text
+    }
   } finally {
     loading.value = false
   }

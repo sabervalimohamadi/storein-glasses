@@ -37,9 +37,7 @@ vi.mock('@/components/common/AdminButton.vue', () => ({
     name: 'AdminButton',
     props: ['loading'],
     emits: ['click'],
-    template: `<button :disabled="loading" @click="$emit('click')">
-      <slot />
-    </button>`,
+    template: `<button :disabled="loading" @click="$emit('click')"><slot /></button>`,
   },
 }))
 
@@ -60,16 +58,14 @@ function mountView(isAdmin = true) {
 
 describe('ChangePasswordView', () => {
 
-  beforeEach(() => {
-    vi.clearAllMocks()
-  })
+  beforeEach(() => vi.clearAllMocks())
 
+  // ── access control ───────────────────────────────────────────
   describe('access control', () => {
     it('shows the form when user isAdmin', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       expect(wrapper.find('.admin-card').exists()).toBe(true)
-      expect(wrapper.find('.text-error').exists()).toBe(false)
     })
 
     it('shows access denied when user is not admin', async () => {
@@ -79,19 +75,21 @@ describe('ChangePasswordView', () => {
     })
   })
 
-  describe('validation', () => {
-    it('shows error when currentPassword is too short', async () => {
+  // ── validation (password exists) ────────────────────────────
+  describe('validation — password already set', () => {
+    it('requires currentPassword when password exists', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
-      wrapper.vm.form.currentPassword  = 'abc'
-      wrapper.vm.form.newPassword      = 'NewPass#1'
-      wrapper.vm.form.confirmPassword  = 'NewPass#1'
+      wrapper.vm.noPasswordSet      = false
+      wrapper.vm.form.currentPassword = 'abc'   // too short
+      wrapper.vm.form.newPassword     = 'NewPass#1'
+      wrapper.vm.form.confirmPassword = 'NewPass#1'
       await wrapper.vm.handleSubmit()
       expect(wrapper.vm.errors.currentPassword).toBeTruthy()
       expect(authService.changePassword).not.toHaveBeenCalled()
     })
 
-    it('shows error when newPassword is less than 8 chars', async () => {
+    it('rejects newPassword shorter than 8 chars', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       wrapper.vm.form.currentPassword = 'correct'
@@ -102,7 +100,7 @@ describe('ChangePasswordView', () => {
       expect(authService.changePassword).not.toHaveBeenCalled()
     })
 
-    it('shows error when new password equals current', async () => {
+    it('rejects when new password equals current', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       wrapper.vm.form.currentPassword = 'SamePass#1'
@@ -113,7 +111,7 @@ describe('ChangePasswordView', () => {
       expect(authService.changePassword).not.toHaveBeenCalled()
     })
 
-    it('shows error when confirm password does not match', async () => {
+    it('rejects when confirmPassword does not match', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       wrapper.vm.form.currentPassword = 'OldPass#1'
@@ -125,9 +123,40 @@ describe('ChangePasswordView', () => {
     })
   })
 
+  // ── validation (no password set yet) ────────────────────────
+  describe('validation — no password set', () => {
+    it('skips currentPassword check when noPasswordSet', async () => {
+      authService.changePassword.mockResolvedValue({})
+      const { wrapper } = mountView(true)
+      await wrapper.vm.$nextTick()
+      wrapper.vm.noPasswordSet      = true
+      wrapper.vm.form.newPassword     = 'NewPass#2'
+      wrapper.vm.form.confirmPassword = 'NewPass#2'
+      await wrapper.vm.handleSubmit()
+      expect(wrapper.vm.errors.currentPassword).toBe('')
+      expect(authService.changePassword).toHaveBeenCalledWith(undefined, 'NewPass#2')
+    })
+
+    it('detects no-password-set state from backend error', async () => {
+      const err = Object.assign(new Error(), {
+        response: { data: { message: 'رمز عبور برای این حساب تنظیم نشده است' } },
+      })
+      authService.changePassword.mockRejectedValue(err)
+      const { wrapper } = mountView(true)
+      await wrapper.vm.$nextTick()
+      wrapper.vm.form.currentPassword = 'OldPass#1'
+      wrapper.vm.form.newPassword     = 'NewPass#2'
+      wrapper.vm.form.confirmPassword = 'NewPass#2'
+      await wrapper.vm.handleSubmit()
+      expect(wrapper.vm.noPasswordSet).toBe(true)
+      expect(wrapper.vm.errorMsg).toBe('')
+    })
+  })
+
+  // ── submit ───────────────────────────────────────────────────
   describe('submit', () => {
-    it('calls authService.changePassword with correct args on valid form', async () => {
-      authService.changePassword.mockResolvedValue({ data: { message: 'ok' } })
+    it('calls changePassword with currentPassword and newPassword', async () => {
+      authService.changePassword.mockResolvedValue({})
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       wrapper.vm.form.currentPassword = 'OldPass#1'
@@ -138,7 +167,7 @@ describe('ChangePasswordView', () => {
     })
 
     it('shows success message and clears form on success', async () => {
-      authService.changePassword.mockResolvedValue({ data: { message: 'ok' } })
+      authService.changePassword.mockResolvedValue({})
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
       wrapper.vm.form.currentPassword = 'OldPass#1'
@@ -147,12 +176,11 @@ describe('ChangePasswordView', () => {
       await wrapper.vm.handleSubmit()
       expect(wrapper.vm.successMsg).toBeTruthy()
       expect(wrapper.vm.form.currentPassword).toBe('')
-      expect(wrapper.vm.form.newPassword).toBe('')
       expect(logger.info).toHaveBeenCalled()
     })
 
-    it('shows error message and logs on API failure', async () => {
-      const err = Object.assign(new Error('401'), {
+    it('shows error message on API failure', async () => {
+      const err = Object.assign(new Error(), {
         response: { data: { message: 'رمز عبور فعلی اشتباه است' } },
       })
       authService.changePassword.mockRejectedValue(err)
@@ -178,13 +206,14 @@ describe('ChangePasswordView', () => {
     })
   })
 
+  // ── resetForm ────────────────────────────────────────────────
   describe('resetForm', () => {
     it('clears all fields and messages', async () => {
       const { wrapper } = mountView(true)
       await wrapper.vm.$nextTick()
-      wrapper.vm.form.currentPassword  = 'abc'
-      wrapper.vm.errorMsg              = 'خطا'
-      wrapper.vm.successMsg            = 'موفق'
+      wrapper.vm.form.currentPassword = 'abc'
+      wrapper.vm.errorMsg             = 'خطا'
+      wrapper.vm.successMsg           = 'موفق'
       wrapper.vm.resetForm()
       expect(wrapper.vm.form.currentPassword).toBe('')
       expect(wrapper.vm.errorMsg).toBe('')

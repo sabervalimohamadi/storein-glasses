@@ -163,18 +163,25 @@ export class AuthService {
 
   async changePassword(userId: string, dto: ChangePasswordDto): Promise<void> {
     const user = await this.userModel.findById(userId).select('+password');
-    if (!user || !user.password) {
-      throw new BadRequestException('رمز عبور برای این حساب تنظیم نشده است');
-    }
+    if (!user) throw new BadRequestException('کاربر یافت نشد');
 
-    const valid = await bcrypt.compare(dto.currentPassword, user.password);
-    if (!valid) {
-      this.logger.warn(`changePassword failed — wrong current password: userId=${userId}`);
-      throw new UnauthorizedException('رمز عبور فعلی اشتباه است');
-    }
-
-    if (dto.currentPassword === dto.newPassword) {
-      throw new BadRequestException('رمز عبور جدید نباید با رمز فعلی یکسان باشد');
+    if (user.password) {
+      // Password already set — must verify current password
+      if (!dto.currentPassword) {
+        throw new BadRequestException('رمز عبور فعلی الزامی است');
+      }
+      const valid = await bcrypt.compare(dto.currentPassword, user.password);
+      if (!valid) {
+        this.logger.warn(`changePassword failed — wrong current password: userId=${userId}`);
+        throw new UnauthorizedException('رمز عبور فعلی اشتباه است');
+      }
+      if (dto.currentPassword === dto.newPassword) {
+        throw new BadRequestException('رمز عبور جدید نباید با رمز فعلی یکسان باشد');
+      }
+      this.logger.log(`Admin password changed: userId=${userId}`);
+    } else {
+      // No password set yet — initial setup via authenticated admin session
+      this.logger.log(`Admin initial password set: userId=${userId}`);
     }
 
     const hashed = await bcrypt.hash(dto.newPassword, 12);
@@ -182,8 +189,6 @@ export class AuthService {
 
     // Revoke all existing refresh tokens — force re-login on other devices
     await this.rtModel.updateMany({ userId }, { isRevoked: true });
-
-    this.logger.log(`Admin password changed successfully: userId=${userId}`);
   }
 
   // ── Tokens ────────────────────────────────────────────────────

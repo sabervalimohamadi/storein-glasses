@@ -266,10 +266,12 @@ describe('AuthService', () => {
       expect(userModel.findByIdAndUpdate).not.toHaveBeenCalled();
     });
 
-    it('throws BadRequestException when user has no password set', async () => {
+    it('allows initial password set when no password exists (no currentPassword required)', async () => {
       userModel.findById.mockReturnValue({ select: jest.fn().mockResolvedValue({ ...mockAdmin, password: undefined }) });
-      await expect(service.changePassword('uid1', dto))
-        .rejects.toThrow(BadRequestException);
+      await service.changePassword('uid1', { newPassword: 'NewPass#2' });
+      expect(bcrypt.hash).toHaveBeenCalledWith('NewPass#2', 12);
+      expect(userModel.findByIdAndUpdate).toHaveBeenCalledWith('uid1', { password: '$2a$12$newHashed' });
+      expect(rtModel.updateMany).toHaveBeenCalledWith({ userId: 'uid1' }, { isRevoked: true });
     });
 
     it('throws BadRequestException when user not found', async () => {
