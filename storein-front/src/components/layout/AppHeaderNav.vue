@@ -62,9 +62,11 @@
             @mouseenter="onEnter(cat._id)"
             @mouseleave="onLeave"
           >
-            <div class="rounded-2xl shadow-2xl overflow-hidden"
+            <!-- NOTE: no overflow-hidden — it would clip absolutely-positioned sub-panels.
+                 rounded-t-2xl on the header preserves corner rounding without clipping. -->
+            <div class="rounded-2xl shadow-2xl"
                  style="border: 1px solid var(--color-border); background-color: var(--color-card);">
-              <div class="px-4 py-3 flex items-center gap-2 bg-brand">
+              <div class="px-4 py-3 flex items-center gap-2 bg-brand rounded-t-2xl">
                 <span v-if="cat.icon" class="text-base leading-none">{{ cat.icon }}</span>
                 <span class="text-xs font-bold text-white tracking-wide">{{ cat.name }}</span>
               </div>

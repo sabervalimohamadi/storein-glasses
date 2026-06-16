@@ -78,6 +78,19 @@ describe('AppHeaderNav', () => {
     vi.useRealTimers()
   })
 
+  // ── Sub-panel clipping regression ────────────────────────────────────────
+
+  describe('sub-panel clipping regression', () => {
+    it('dropdown panel does not use overflow-hidden (would clip sub-category panels)', async () => {
+      const w = makeWrapper()
+      await w.find('[data-testid="cat-item-c1"]').trigger('mouseenter')
+      await nextTick()
+      const dropInner = w.find('[data-testid="dropdown-c1"] > div')
+      // overflow-hidden on the panel clips absolute sub-panels from NavDropdownItem
+      expect(dropInner.classes()).not.toContain('overflow-hidden')
+    })
+  })
+
   // ── Dropdown visibility ───────────────────────────────────────────────────
 
   describe('dropdown visibility', () => {
