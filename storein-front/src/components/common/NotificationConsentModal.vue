@@ -45,6 +45,9 @@
 <script setup>
 import { ref, watch, onUnmounted } from 'vue'
 import { useNotificationPermission } from '@/composables/useNotificationPermission'
+import { logger } from '@/utils/logger'
+
+const CTX = 'NotificationConsentModal'
 
 const props  = defineProps({ modelValue: { type: Boolean, default: false } })
 const emit   = defineEmits(['update:modelValue'])
@@ -58,10 +61,14 @@ let secondsLeft     = 15
 function startTimer() {
   secondsLeft     = 15
   timerProgress.value = 1
+  logger.info('notification consent modal shown — starting 15s auto-dismiss', {}, CTX)
   timerInterval = setInterval(() => {
     secondsLeft--
     timerProgress.value = secondsLeft / 15
-    if (secondsLeft <= 0) close()
+    if (secondsLeft <= 0) {
+      logger.debug('notification consent auto-dismissed after 15s', {}, CTX)
+      close()
+    }
   }, 1000)
 }
 
@@ -75,12 +82,14 @@ function close() {
 }
 
 async function handleYes() {
+  logger.info('user accepted notification consent', {}, CTX)
   clearTimer()
   await requestPermission()
   close()
 }
 
 function handleDismiss() {
+  logger.debug('user dismissed notification consent', {}, CTX)
   dismiss()
   close()
 }

@@ -2,14 +2,14 @@
   <div class="container-main py-16 flex items-center justify-center min-h-[60vh]">
     <div class="w-full max-w-md text-center">
 
+      <!-- Notification consent (teleported to body — must be outside the v-if chain) -->
+      <NotificationConsentModal v-model="showConsentModal" />
+
       <!-- Loading -->
       <div v-if="verifying" class="space-y-4">
         <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" />
         <p class="text-text-secondary">در حال تأیید پرداخت...</p>
       </div>
-
-      <!-- Notification consent (shown 3s after success) -->
-      <NotificationConsentModal v-model="showConsentModal" />
 
       <!-- Success -->
       <div v-else-if="result === 'success'" class="space-y-6">
