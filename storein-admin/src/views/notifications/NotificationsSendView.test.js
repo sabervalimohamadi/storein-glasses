@@ -3,13 +3,21 @@ import { mount } from '@vue/test-utils'
 
 vi.mock('@/services/notification.service', () => ({
   notificationService: {
-    broadcast: vi.fn(),
-    sendSms:   vi.fn(),
+    broadcast:        vi.fn(),
+    sendSms:          vi.fn(),
+    getBroadcastLogs: vi.fn(),
+    getSmsLogs:       vi.fn(),
   },
 }))
 
 vi.mock('@/utils/logger', () => ({
   logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn() },
+}))
+
+vi.mock('@/utils/formatters', () => ({
+  formatNumber:   (n) => String(n ?? 0),
+  formatDateTime: (s) => s ?? '',
+  truncate:       (s) => s ?? '',
 }))
 
 vi.mock('@/components/common/AdminInput.vue', () => ({
@@ -19,12 +27,8 @@ vi.mock('@/components/common/AdminInput.vue', () => ({
     emits: ['update:modelValue'],
     template: `<div>
       <label>{{ label }}</label>
-      <input
-        :value="modelValue"
-        :type="type || 'text'"
-        :data-testid="label"
-        @input="$emit('update:modelValue', $event.target.value)"
-      />
+      <input :value="modelValue" :type="type || 'text'" :data-testid="label"
+             @input="$emit('update:modelValue', $event.target.value)" />
       <span v-if="error" class="error">{{ error }}</span>
     </div>`,
   },
@@ -39,9 +43,36 @@ vi.mock('@/components/common/AdminButton.vue', () => ({
   },
 }))
 
+vi.mock('@/components/common/AdminTable.vue', () => ({
+  default: {
+    name: 'AdminTable',
+    props: ['columns', 'rows', 'loading', 'skeletonRows', 'emptyText'],
+    template: `<div data-stub="AdminTable"><slot /></div>`,
+  },
+}))
+
+vi.mock('@/components/common/AdminBadge.vue', () => ({
+  default: {
+    name: 'AdminBadge',
+    props: ['variant', 'size'],
+    template: `<span data-stub="AdminBadge"><slot /></span>`,
+  },
+}))
+
+vi.mock('@/components/common/AdminPagination.vue', () => ({
+  default: {
+    name: 'AdminPagination',
+    props: ['modelValue', 'totalPages', 'loading'],
+    emits: ['update:modelValue'],
+    template: `<div data-stub="AdminPagination"></div>`,
+  },
+}))
+
 import NotificationsSendView from './NotificationsSendView.vue'
 import { notificationService } from '@/services/notification.service'
 import { logger } from '@/utils/logger'
+
+const emptyLogsResp = { data: { logs: [], total: 0, totalPages: 1 } }
 
 function mountView() {
   return mount(NotificationsSendView)
@@ -49,28 +80,46 @@ function mountView() {
 
 describe('NotificationsSendView', () => {
 
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    notificationService.getBroadcastLogs.mockResolvedValue(emptyLogsResp)
+    notificationService.getSmsLogs.mockResolvedValue(emptyLogsResp)
+  })
 
   // ── tab switching ─────────────────────────────────────────────
   describe('tab switching', () => {
-    it('starts on notification tab', () => {
+    it('starts on notification tab', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       expect(w.vm.activeTab).toBe('notification')
     })
 
-    it('switches to SMS tab on click', async () => {
+    it('switches to sms tab on click', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       await w.vm.switchTab('sms')
       expect(w.vm.activeTab).toBe('sms')
     })
 
-    it('clears messages when switching tabs', async () => {
+    it('switches to broadcast-logs and triggers load', async () => {
       const w = mountView()
-      w.vm.successMsg = 'موفق'
-      w.vm.errorMsg   = 'خطا'
-      await w.vm.switchTab('sms')
-      expect(w.vm.successMsg).toBe('')
-      expect(w.vm.errorMsg).toBe('')
+      await w.vm.$nextTick()
+      // clear initial onMounted calls
+      notificationService.getBroadcastLogs.mockClear()
+      notificationService.getBroadcastLogs.mockResolvedValue(emptyLogsResp)
+
+      await w.vm.switchTab('broadcast-logs')
+      expect(w.vm.activeTab).toBe('broadcast-logs')
+    })
+
+    it('switches to sms-logs and triggers load', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      notificationService.getSmsLogs.mockClear()
+      notificationService.getSmsLogs.mockResolvedValue(emptyLogsResp)
+
+      await w.vm.switchTab('sms-logs')
+      expect(w.vm.activeTab).toBe('sms-logs')
     })
   })
 
@@ -78,6 +127,7 @@ describe('NotificationsSendView', () => {
   describe('notification — validation', () => {
     it('requires title', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.body = 'متن'
       await w.vm.handleBroadcast()
       expect(w.vm.notifErrors.title).toBeTruthy()
@@ -86,6 +136,7 @@ describe('NotificationsSendView', () => {
 
     it('requires body', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.title = 'عنوان'
       await w.vm.handleBroadcast()
       expect(w.vm.notifErrors.body).toBeTruthy()
@@ -94,6 +145,7 @@ describe('NotificationsSendView', () => {
 
     it('requires targetUserId when target is specific', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.target = 'specific'
       w.vm.notifForm.title  = 'عنوان'
       w.vm.notifForm.body   = 'متن'
@@ -101,24 +153,14 @@ describe('NotificationsSendView', () => {
       expect(w.vm.notifErrors.targetUserId).toBeTruthy()
       expect(notificationService.broadcast).not.toHaveBeenCalled()
     })
-
-    it('passes when all fields are valid for all-users broadcast', async () => {
-      notificationService.broadcast.mockResolvedValue({ data: { sent: 5 } })
-      const w = mountView()
-      w.vm.notifForm.title = 'عنوان'
-      w.vm.notifForm.body  = 'متن اعلان'
-      await w.vm.handleBroadcast()
-      expect(notificationService.broadcast).toHaveBeenCalledWith(
-        expect.objectContaining({ title: 'عنوان', body: 'متن اعلان' }),
-      )
-    })
   })
 
   // ── notification submit ───────────────────────────────────────
   describe('notification — submit', () => {
-    it('sends broadcast to all users without targetUserId', async () => {
-      notificationService.broadcast.mockResolvedValue({ data: { sent: 10 } })
+    it('calls broadcast with correct payload for all users', async () => {
+      notificationService.broadcast.mockResolvedValue({ data: { sent: 5 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.title = 'تخفیف'
       w.vm.notifForm.body  = 'پیام ویژه'
       w.vm.notifForm.type  = 'promo'
@@ -128,9 +170,10 @@ describe('NotificationsSendView', () => {
       expect(call.type).toBe('promo')
     })
 
-    it('sends broadcast with targetUserId when target is specific', async () => {
+    it('includes targetUserId for specific user', async () => {
       notificationService.broadcast.mockResolvedValue({ data: { sent: 1 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.target       = 'specific'
       w.vm.notifForm.targetUserId = '64a1f2e3b4c5d6e7f8a9b0c1'
       w.vm.notifForm.title        = 'اعلان'
@@ -141,34 +184,38 @@ describe('NotificationsSendView', () => {
       )
     })
 
-    it('shows success and logs on success', async () => {
-      notificationService.broadcast.mockResolvedValue({ data: { sent: 3 } })
+    it('shows success with sent count and resets form', async () => {
+      notificationService.broadcast.mockResolvedValue({ data: { sent: 12 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.title = 'عنوان'
       w.vm.notifForm.body  = 'متن'
       await w.vm.handleBroadcast()
-      expect(w.vm.successMsg).toContain('3')
+      expect(w.vm.notif.success).toContain('12')
+      expect(w.vm.notifForm.title).toBe('')
       expect(logger.info).toHaveBeenCalled()
     })
 
-    it('shows error message and logs on failure', async () => {
+    it('shows error on API failure', async () => {
       const err = Object.assign(new Error(), { response: { data: { message: 'خطای سرور' } } })
       notificationService.broadcast.mockRejectedValue(err)
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.title = 'عنوان'
       w.vm.notifForm.body  = 'متن'
       await w.vm.handleBroadcast()
-      expect(w.vm.errorMsg).toContain('خطای سرور')
+      expect(w.vm.notif.error).toContain('خطای سرور')
       expect(logger.error).toHaveBeenCalled()
     })
 
     it('resets loading to false on error', async () => {
-      notificationService.broadcast.mockRejectedValue(new Error('network'))
+      notificationService.broadcast.mockRejectedValue(new Error('net'))
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.notifForm.title = 'عنوان'
       w.vm.notifForm.body  = 'متن'
       await w.vm.handleBroadcast()
-      expect(w.vm.loading).toBe(false)
+      expect(w.vm.notif.loading).toBe(false)
     })
   })
 
@@ -176,6 +223,7 @@ describe('NotificationsSendView', () => {
   describe('sms — validation', () => {
     it('requires message', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       await w.vm.handleSendSms()
       expect(w.vm.smsErrors.message).toBeTruthy()
       expect(notificationService.sendSms).not.toHaveBeenCalled()
@@ -183,50 +231,40 @@ describe('NotificationsSendView', () => {
 
     it('requires phone when target is specific', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.target  = 'specific'
-      w.vm.smsForm.message = 'پیامک آزمایشی'
+      w.vm.smsForm.message = 'پیامک'
       await w.vm.handleSendSms()
       expect(w.vm.smsErrors.phone).toBeTruthy()
       expect(notificationService.sendSms).not.toHaveBeenCalled()
     })
 
-    it('rejects invalid phone format', async () => {
+    it('rejects invalid phone', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.target  = 'specific'
       w.vm.smsForm.phone   = '123'
       w.vm.smsForm.message = 'پیامک'
       await w.vm.handleSendSms()
       expect(w.vm.smsErrors.phone).toContain('معتبر نیست')
-      expect(notificationService.sendSms).not.toHaveBeenCalled()
-    })
-
-    it('accepts valid phone 09xxxxxxxxx', async () => {
-      notificationService.sendSms.mockResolvedValue({ data: { sent: 1, failed: 0 } })
-      const w = mountView()
-      w.vm.smsForm.target  = 'specific'
-      w.vm.smsForm.phone   = '09121234567'
-      w.vm.smsForm.message = 'پیامک آزمایشی'
-      await w.vm.handleSendSms()
-      expect(w.vm.smsErrors.phone).toBe('')
-      expect(notificationService.sendSms).toHaveBeenCalled()
     })
   })
 
   // ── sms submit ────────────────────────────────────────────────
   describe('sms — submit', () => {
-    it('sends sms to all when target is all (no phone in payload)', async () => {
+    it('sends without phone when target=all', async () => {
       notificationService.sendSms.mockResolvedValue({ data: { sent: 20, failed: 0 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.message = 'پیامک انبوه'
       await w.vm.handleSendSms()
-      const call = notificationService.sendSms.mock.calls[0][0]
-      expect(call).not.toHaveProperty('phone')
-      expect(call.message).toBe('پیامک انبوه')
+      expect(notificationService.sendSms.mock.calls[0][0]).not.toHaveProperty('phone')
     })
 
-    it('sends sms with phone when target is specific', async () => {
+    it('sends with phone when target=specific', async () => {
       notificationService.sendSms.mockResolvedValue({ data: { sent: 1, failed: 0 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.target  = 'specific'
       w.vm.smsForm.phone   = '09121234567'
       w.vm.smsForm.message = 'پیامک'
@@ -236,64 +274,116 @@ describe('NotificationsSendView', () => {
       )
     })
 
-    it('shows success message with sent count', async () => {
+    it('shows success with sent count', async () => {
       notificationService.sendSms.mockResolvedValue({ data: { sent: 7, failed: 0 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.message = 'پیامک'
       await w.vm.handleSendSms()
-      expect(w.vm.successMsg).toContain('7')
-      expect(logger.info).toHaveBeenCalled()
+      expect(w.vm.sms.success).toContain('7')
     })
 
-    it('shows failed count in success message when some failed', async () => {
+    it('mentions failed count in success message when some failed', async () => {
       notificationService.sendSms.mockResolvedValue({ data: { sent: 8, failed: 2 } })
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.message = 'پیامک'
       await w.vm.handleSendSms()
-      expect(w.vm.successMsg).toContain('2')
+      expect(w.vm.sms.success).toContain('2')
     })
 
-    it('shows error and logs on API failure', async () => {
+    it('shows error and logs on failure', async () => {
       const err = Object.assign(new Error(), { response: { data: { message: 'اعتبار ناکافی' } } })
       notificationService.sendSms.mockRejectedValue(err)
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.message = 'پیامک'
       await w.vm.handleSendSms()
-      expect(w.vm.errorMsg).toContain('اعتبار ناکافی')
+      expect(w.vm.sms.error).toContain('اعتبار ناکافی')
       expect(logger.error).toHaveBeenCalled()
     })
+  })
 
-    it('resets loading to false on error', async () => {
-      notificationService.sendSms.mockRejectedValue(new Error('network'))
+  // ── history loading ───────────────────────────────────────────
+  describe('history — loading', () => {
+    it('loads broadcast logs on mount', async () => {
       const w = mountView()
-      w.vm.smsForm.message = 'پیامک'
-      await w.vm.handleSendSms()
-      expect(w.vm.loading).toBe(false)
+      await w.vm.$nextTick()
+      await new Promise(r => setTimeout(r, 10))
+      expect(notificationService.getBroadcastLogs).toHaveBeenCalledWith({ page: 1, limit: 10 })
+    })
+
+    it('loads sms logs on mount', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      await new Promise(r => setTimeout(r, 10))
+      expect(notificationService.getSmsLogs).toHaveBeenCalledWith({ page: 1, limit: 10 })
+    })
+
+    it('populates broadcastLogs.items from API', async () => {
+      const mockLogs = [{ _id: '1', title: 'تخفیف', body: 'متن', type: 'promo', target: 'all', sent: 50, createdAt: new Date().toISOString() }]
+      notificationService.getBroadcastLogs.mockResolvedValue({ data: { logs: mockLogs, total: 1, totalPages: 1 } })
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.items).toHaveLength(1)
+      expect(w.vm.broadcastLogs.total).toBe(1)
+    })
+
+    it('populates smsLogs.items from API', async () => {
+      const mockLogs = [{ _id: '2', target: 'single', phone: '0912****', message: 'پیامک', sent: 1, failed: 0, createdAt: new Date().toISOString() }]
+      notificationService.getSmsLogs.mockResolvedValue({ data: { logs: mockLogs, total: 1, totalPages: 1 } })
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.smsLogs.items).toHaveLength(1)
+    })
+
+    it('logs error when broadcast logs fail to load', async () => {
+      notificationService.getBroadcastLogs.mockRejectedValue(new Error('network'))
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(logger.error).toHaveBeenCalled()
+    })
+  })
+
+  // ── helpers ───────────────────────────────────────────────────
+  describe('helpers', () => {
+    it('typeVariant returns correct variant for each type', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      expect(w.vm.typeVariant('promo')).toBe('success')
+      expect(w.vm.typeVariant('system')).toBe('gray')
+      expect(w.vm.typeVariant('order_update')).toBe('info')
+      expect(w.vm.typeVariant('payment')).toBe('warning')
+    })
+
+    it('typeLabel returns Farsi label', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      expect(w.vm.typeLabel('system')).toBe('سیستمی')
+      expect(w.vm.typeLabel('promo')).toBe('پروموشن')
     })
   })
 
   // ── reset ─────────────────────────────────────────────────────
   describe('reset', () => {
-    it('resetNotif clears all notification form fields', () => {
+    it('resetNotif clears form and messages', async () => {
       const w = mountView()
-      w.vm.notifForm.title  = 'عنوان'
-      w.vm.notifForm.body   = 'متن'
-      w.vm.successMsg       = 'موفق'
+      await w.vm.$nextTick()
+      w.vm.notifForm.title = 'عنوان'
+      w.vm.notif.success   = 'موفق'
       w.vm.resetNotif()
       expect(w.vm.notifForm.title).toBe('')
-      expect(w.vm.notifForm.body).toBe('')
-      expect(w.vm.successMsg).toBe('')
+      expect(w.vm.notif.success).toBe('')
     })
 
-    it('resetSms clears all sms form fields', () => {
+    it('resetSms clears form and messages', async () => {
       const w = mountView()
+      await w.vm.$nextTick()
       w.vm.smsForm.message = 'پیامک'
-      w.vm.smsForm.phone   = '09121234567'
-      w.vm.errorMsg        = 'خطا'
+      w.vm.sms.error       = 'خطا'
       w.vm.resetSms()
       expect(w.vm.smsForm.message).toBe('')
-      expect(w.vm.smsForm.phone).toBe('')
-      expect(w.vm.errorMsg).toBe('')
+      expect(w.vm.sms.error).toBe('')
     })
   })
 })

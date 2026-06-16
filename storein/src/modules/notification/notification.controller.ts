@@ -57,6 +57,18 @@ export class NotificationController {
   }
 
   @UseGuards(AdminGuard)
+  @Get('admin/broadcast-logs')
+  getBroadcastLogs(@Query() query: NotificationQueryDto) {
+    return this.notifService.adminListBroadcastLogs(query);
+  }
+
+  @UseGuards(AdminGuard)
+  @Get('admin/sms-logs')
+  getSmsLogs(@Query() query: NotificationQueryDto) {
+    return this.notifService.adminListSmsLogs(query);
+  }
+
+  @UseGuards(AdminGuard)
   @Delete('admin/:id')
   remove(@Param('id') id: string) {
     return this.notifService.adminDelete(id);

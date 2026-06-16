@@ -4,6 +4,8 @@ import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationListener } from './notification.listener';
 import { Notification, NotificationSchema } from './entities/notification.schema';
+import { BroadcastLog, BroadcastLogSchema } from './entities/broadcast-log.schema';
+import { SmsLog, SmsLogSchema }             from './entities/sms-log.schema';
 import {
   PushNotificationChannel,
   SmsNotificationChannel,
@@ -18,6 +20,8 @@ import { SettingsModule }      from '../settings/settings.module';
   imports: [
     MongooseModule.forFeature([
       { name: Notification.name, schema: NotificationSchema },
+      { name: BroadcastLog.name, schema: BroadcastLogSchema },
+      { name: SmsLog.name,       schema: SmsLogSchema },
     ]),
     SettingsModule,
   ],

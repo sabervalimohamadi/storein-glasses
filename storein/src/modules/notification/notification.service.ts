@@ -6,13 +6,15 @@ import {
   NotificationDocument,
   NotificationType,
 } from './entities/notification.schema';
+import { BroadcastLog, BroadcastLogDocument } from './entities/broadcast-log.schema';
+import { SmsLog, SmsLogDocument }             from './entities/sms-log.schema';
 import {
   ChannelPayload,
   PushNotificationChannel,
   SmsNotificationChannel,
 } from './channels/notification-channel.abstract';
-import { AdminBroadcastDto } from './dto/admin-broadcast.dto';
-import { AdminSmsDto }       from './dto/admin-sms.dto';
+import { AdminBroadcastDto }   from './dto/admin-broadcast.dto';
+import { AdminSmsDto }         from './dto/admin-sms.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
 
 export interface CreateNotificationPayload {
@@ -32,6 +34,10 @@ export class NotificationService {
   constructor(
     @InjectModel(Notification.name)
     private notifModel: Model<NotificationDocument>,
+    @InjectModel(BroadcastLog.name)
+    private broadcastLogModel: Model<BroadcastLogDocument>,
+    @InjectModel(SmsLog.name)
+    private smsLogModel: Model<SmsLogDocument>,
     private smsChannel:  SmsNotificationChannel,
     private pushChannel: PushNotificationChannel,
   ) {}
@@ -146,6 +152,8 @@ export class NotificationService {
 
   // ── Admin: Broadcast or targeted send ────────────────────────
   async adminBroadcast(dto: AdminBroadcastDto): Promise<{ sent: number }> {
+    let sent = 0;
+
     if (dto.targetUserId) {
       await this.create({
         userId: dto.targetUserId,
@@ -154,31 +162,41 @@ export class NotificationService {
         body:   dto.body,
         data:   dto.data,
       });
-      return { sent: 1 };
+      sent = 1;
+    } else {
+      const UserModel = this.notifModel.db.model('User');
+      const users: any[] = await UserModel
+        .find({ isActive: true })
+        .select('_id')
+        .lean();
+
+      const docs = users.map((u) => ({
+        userId: u._id,
+        type:   dto.type,
+        title:  dto.title,
+        body:   dto.body,
+        data:   dto.data ?? null,
+        isRead: false,
+        readAt: null,
+      }));
+
+      if (docs.length > 0) {
+        await this.notifModel.insertMany(docs, { ordered: false });
+      }
+      sent = docs.length;
     }
 
-    const UserModel = this.notifModel.db.model('User');
-    const users: any[] = await UserModel
-      .find({ isActive: true })
-      .select('_id')
-      .lean();
+    await this.broadcastLogModel.create({
+      type:         dto.type,
+      title:        dto.title,
+      body:         dto.body,
+      target:       dto.targetUserId ? 'single' : 'all',
+      targetUserId: dto.targetUserId ?? null,
+      sent,
+    });
 
-    const docs = users.map((u) => ({
-      userId: u._id,
-      type:   dto.type,
-      title:  dto.title,
-      body:   dto.body,
-      data:   dto.data ?? null,
-      isRead: false,
-      readAt: null,
-    }));
-
-    if (docs.length > 0) {
-      await this.notifModel.insertMany(docs, { ordered: false });
-    }
-
-    this.logger.log(`Broadcast sent to ${docs.length} users`);
-    return { sent: docs.length };
+    this.logger.log(`Broadcast sent to ${sent} users`);
+    return { sent };
   }
 
   // ── Admin: Send SMS (targeted or broadcast) ──────────────────
@@ -186,35 +204,88 @@ export class NotificationService {
     const normalizePhone = (p: string) =>
       p.startsWith('+98') ? '0' + p.slice(3) : p;
 
-    if (dto.phone) {
-      const phone = normalizePhone(dto.phone);
-      await this.smsChannel.send(phone, dto.message);
-      this.logger.log(`Admin SMS sent to single target: ${phone.slice(0, -4)}****`);
-      return { sent: 1, failed: 0 };
-    }
-
-    const UserModel = this.notifModel.db.model('User');
-    const users: any[] = await UserModel
-      .find({ isActive: true })
-      .select('phone')
-      .lean();
-
     let sent   = 0;
     let failed = 0;
+    let phone: string | null = null;
 
-    for (const user of users) {
-      if (!user.phone) continue;
-      try {
-        await this.smsChannel.send(user.phone, dto.message);
-        sent++;
-      } catch (err: any) {
-        failed++;
-        this.logger.error(`Admin SMS broadcast failed for ${user.phone.slice(0, -4)}****: ${err?.message}`);
+    if (dto.phone) {
+      phone = normalizePhone(dto.phone);
+      await this.smsChannel.send(phone, dto.message);
+      sent = 1;
+      this.logger.log(`Admin SMS sent to single target: ${phone.slice(0, -4)}****`);
+    } else {
+      const UserModel = this.notifModel.db.model('User');
+      const users: any[] = await UserModel
+        .find({ isActive: true })
+        .select('phone')
+        .lean();
+
+      for (const user of users) {
+        if (!user.phone) continue;
+        try {
+          await this.smsChannel.send(user.phone, dto.message);
+          sent++;
+        } catch (err: any) {
+          failed++;
+          this.logger.error(`Admin SMS broadcast failed for ${user.phone.slice(0, -4)}****: ${err?.message}`);
+        }
       }
     }
 
-    this.logger.log(`Admin SMS broadcast complete — sent: ${sent}, failed: ${failed}`);
+    await this.smsLogModel.create({
+      target:  dto.phone ? 'single' : 'all',
+      phone:   phone ? `${phone.slice(0, 5)}****` : null,
+      message: dto.message,
+      sent,
+      failed,
+    });
+
+    this.logger.log(`Admin SMS complete — sent: ${sent}, failed: ${failed}`);
     return { sent, failed };
+  }
+
+  // ── Admin: List broadcast logs ────────────────────────────────
+  async adminListBroadcastLogs(query: NotificationQueryDto): Promise<{
+    logs: BroadcastLogDocument[];
+    total: number;
+    totalPages: number;
+  }> {
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      this.broadcastLogModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<BroadcastLogDocument[]>(),
+      this.broadcastLogModel.countDocuments(),
+    ]);
+
+    return { logs, total, totalPages: Math.ceil(total / limit) };
+  }
+
+  // ── Admin: List SMS logs ──────────────────────────────────────
+  async adminListSmsLogs(query: NotificationQueryDto): Promise<{
+    logs: SmsLogDocument[];
+    total: number;
+    totalPages: number;
+  }> {
+    const { page = 1, limit = 20 } = query;
+    const skip = (page - 1) * limit;
+
+    const [logs, total] = await Promise.all([
+      this.smsLogModel
+        .find()
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<SmsLogDocument[]>(),
+      this.smsLogModel.countDocuments(),
+    ]);
+
+    return { logs, total, totalPages: Math.ceil(total / limit) };
   }
 
   // ── Admin: Delete notification ────────────────────────────────

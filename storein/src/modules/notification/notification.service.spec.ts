@@ -4,6 +4,8 @@ import { NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { NotificationService } from './notification.service';
 import { Notification, NotificationType } from './entities/notification.schema';
+import { BroadcastLog } from './entities/broadcast-log.schema';
+import { SmsLog }       from './entities/sms-log.schema';
 import {
   PushNotificationChannel,
   SmsNotificationChannel,
@@ -27,6 +29,8 @@ const mockNotif = (overrides: any = {}) => ({
 describe('NotificationService', () => {
   let service: NotificationService;
   let notifModel: any;
+  let broadcastLogModel: any;
+  let smsLogModel: any;
   let smsChannel: jest.Mocked<SmsNotificationChannel>;
   let pushChannel: jest.Mocked<PushNotificationChannel>;
 
@@ -38,6 +42,14 @@ describe('NotificationService', () => {
         skip: jest.fn().mockReturnValue({
           limit: jest.fn().mockReturnValue(leanChain(val)),
         }),
+      }),
+    }),
+  });
+
+  const logListChain = (val: any) => ({
+    sort: jest.fn().mockReturnValue({
+      skip: jest.fn().mockReturnValue({
+        limit: jest.fn().mockReturnValue(leanChain(val)),
       }),
     }),
   });
@@ -60,15 +72,29 @@ describe('NotificationService', () => {
       },
     };
 
+    broadcastLogModel = {
+      create:         jest.fn().mockResolvedValue({}),
+      find:           jest.fn().mockReturnValue(logListChain([])),
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+
+    smsLogModel = {
+      create:         jest.fn().mockResolvedValue({}),
+      find:           jest.fn().mockReturnValue(logListChain([])),
+      countDocuments: jest.fn().mockResolvedValue(0),
+    };
+
     smsChannel  = { send: jest.fn().mockResolvedValue(undefined) } as any;
     pushChannel = { send: jest.fn().mockResolvedValue(undefined) } as any;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         NotificationService,
-        { provide: getModelToken(Notification.name), useValue: notifModel },
-        { provide: SmsNotificationChannel,           useValue: smsChannel },
-        { provide: PushNotificationChannel,          useValue: pushChannel },
+        { provide: getModelToken(Notification.name),  useValue: notifModel },
+        { provide: getModelToken(BroadcastLog.name),  useValue: broadcastLogModel },
+        { provide: getModelToken(SmsLog.name),        useValue: smsLogModel },
+        { provide: SmsNotificationChannel,            useValue: smsChannel },
+        { provide: PushNotificationChannel,           useValue: pushChannel },
       ],
     }).compile();
 
@@ -214,6 +240,37 @@ describe('NotificationService', () => {
         { ordered: false },
       );
     });
+
+    it('saves a BroadcastLog entry after send', async () => {
+      notifModel.create.mockResolvedValue({
+        ...mockNotif(), toObject: () => mockNotif(),
+      });
+
+      await service.adminBroadcast({
+        type: NotificationType.PROMO, title: 'تخفیف', body: 'متن',
+        targetUserId: userId,
+      });
+
+      expect(broadcastLogModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ target: 'single', sent: 1 }),
+      );
+    });
+
+    it('saves target=all in BroadcastLog for broadcast', async () => {
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain([{ _id: new Types.ObjectId() }])),
+        }),
+      });
+
+      await service.adminBroadcast({
+        type: NotificationType.SYSTEM, title: 'عنوان', body: 'متن',
+      });
+
+      expect(broadcastLogModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ target: 'all', sent: 1 }),
+      );
+    });
   });
 
   // ── adminSendSms ──────────────────────────────────────────────
@@ -279,6 +336,73 @@ describe('NotificationService', () => {
       const res = await service.adminSendSms({ message: 'پیام' });
       expect(smsChannel.send).toHaveBeenCalledTimes(2);
       expect(res.sent).toBe(2);
+    });
+
+    it('saves a SmsLog entry after send', async () => {
+      await service.adminSendSms({ phone: '09121234567', message: 'تست' });
+      expect(smsLogModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ target: 'single', sent: 1, failed: 0 }),
+      );
+    });
+
+    it('saves target=all in SmsLog for broadcast', async () => {
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain([{ phone: '09120000001' }])),
+        }),
+      });
+
+      await service.adminSendSms({ message: 'پیامک انبوه' });
+      expect(smsLogModel.create).toHaveBeenCalledWith(
+        expect.objectContaining({ target: 'all', phone: null }),
+      );
+    });
+  });
+
+  // ── adminListBroadcastLogs ────────────────────────────────────
+  describe('adminListBroadcastLogs', () => {
+    it('returns paginated broadcast logs', async () => {
+      const mockLog = {
+        _id: new Types.ObjectId(), type: NotificationType.PROMO,
+        title: 'تخفیف', body: 'متن', target: 'all', sent: 10,
+      };
+      broadcastLogModel.find.mockReturnValue(logListChain([mockLog]));
+      broadcastLogModel.countDocuments.mockResolvedValue(1);
+
+      const res = await service.adminListBroadcastLogs({ page: 1, limit: 20 });
+      expect(res.logs).toHaveLength(1);
+      expect(res.total).toBe(1);
+      expect(res.totalPages).toBe(1);
+    });
+
+    it('calculates totalPages correctly', async () => {
+      broadcastLogModel.find.mockReturnValue(logListChain([]));
+      broadcastLogModel.countDocuments.mockResolvedValue(45);
+
+      const res = await service.adminListBroadcastLogs({ page: 1, limit: 20 });
+      expect(res.totalPages).toBe(3);
+    });
+  });
+
+  // ── adminListSmsLogs ──────────────────────────────────────────
+  describe('adminListSmsLogs', () => {
+    it('returns paginated sms logs', async () => {
+      const mockLog = {
+        _id: new Types.ObjectId(), target: 'single',
+        phone: '0912****', message: 'پیام', sent: 1, failed: 0,
+      };
+      smsLogModel.find.mockReturnValue(logListChain([mockLog]));
+      smsLogModel.countDocuments.mockResolvedValue(1);
+
+      const res = await service.adminListSmsLogs({ page: 1, limit: 20 });
+      expect(res.logs).toHaveLength(1);
+      expect(res.total).toBe(1);
+    });
+
+    it('returns empty list when no logs exist', async () => {
+      const res = await service.adminListSmsLogs({});
+      expect(res.logs).toHaveLength(0);
+      expect(res.total).toBe(0);
     });
   });
 });
