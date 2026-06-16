@@ -10,6 +10,8 @@ export const useAuthStore = defineStore('auth', () => {
   const token        = ref(null)   // access token lives in memory ONLY — never localStorage
   const loading      = ref(false)
   const pendingPhone = ref('')
+  const initialized  = ref(false)
+  const initializing = ref(false)
 
   // Register token provider so http.service can read it without circular import
   setTokenProvider(() => token.value)
@@ -93,21 +95,32 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ── Init (called once on app startup) ─────────────────────────
   async function initAuth() {
-    // withCredentials:true means the browser sends the HttpOnly cookie automatically.
-    // If the cookie is valid, the server returns a new access token.
+    // Guard against: already done and in-flight concurrent calls
+    if (initialized.value || initializing.value) return
+    initializing.value = true
     try {
       const { data } = await authService.refresh()
       token.value = data.accessToken
       await fetchProfile()
+      logger.info('auth: session restored from refresh token', {}, 'AuthStore')
       if (user.value) _postLoginSync()
-    } catch {
-      token.value = null
-      user.value  = null
+    } catch (error) {
+      const status = error?.response?.status
+      if (status === 429) {
+        logger.warn('auth: initAuth rate-limited — not clearing session', { status }, 'AuthStore')
+      } else {
+        logger.warn('auth: initAuth failed — no active session', { status }, 'AuthStore')
+        token.value = null
+        user.value  = null
+      }
+    } finally {
+      initialized.value  = true
+      initializing.value = false
     }
   }
 
   return {
-    user, token, loading, pendingPhone,
+    user, token, loading, pendingPhone, initialized, initializing,
     isLoggedIn,
     sendOtp, verifyOtp, fetchProfile, logout, initAuth,
   }

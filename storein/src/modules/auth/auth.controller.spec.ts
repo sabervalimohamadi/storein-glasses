@@ -90,6 +90,50 @@ describe('AuthController', () => {
     expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', expect.any(Object));
   });
 
+  describe('cookie SameSite attributes (Railway cross-origin fix)', () => {
+    const originalEnv = process.env.NODE_ENV;
+    afterEach(() => { process.env.NODE_ENV = originalEnv; });
+
+    it('sets sameSite=none and secure=true in production (cross-origin Railway deployment)', async () => {
+      process.env.NODE_ENV = 'production';
+      mockService.verifyOtp.mockResolvedValue({
+        accessToken: 'at', refreshToken: 'rt', isNewUser: false,
+      });
+      const res = makeRes() as any;
+      await controller.verifyOtp({ phone: '09121234567', code: '123456' }, makeReq() as any, res);
+      expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt', expect.objectContaining({
+        sameSite: 'none',
+        secure:   true,
+        httpOnly: true,
+      }));
+    });
+
+    it('sets sameSite=lax and secure=false in development (same-origin local setup)', async () => {
+      process.env.NODE_ENV = 'development';
+      mockService.verifyOtp.mockResolvedValue({
+        accessToken: 'at', refreshToken: 'rt', isNewUser: false,
+      });
+      const res = makeRes() as any;
+      await controller.verifyOtp({ phone: '09121234567', code: '123456' }, makeReq() as any, res);
+      expect(res.cookie).toHaveBeenCalledWith('refresh_token', 'rt', expect.objectContaining({
+        sameSite: 'lax',
+        secure:   false,
+        httpOnly: true,
+      }));
+    });
+
+    it('clearCookie uses matching sameSite/secure attributes', async () => {
+      process.env.NODE_ENV = 'production';
+      mockService.logout.mockResolvedValue({ message: 'ok' });
+      const res = makeRes() as any;
+      await controller.logout({ _id: 'uid1' } as any, makeReq() as any, res);
+      expect(res.clearCookie).toHaveBeenCalledWith('refresh_token', expect.objectContaining({
+        sameSite: 'none',
+        secure:   true,
+      }));
+    });
+  });
+
   it('logoutAll delegates userId', async () => {
     mockService.logoutAll.mockResolvedValue({ message: 'ok' });
     const user = { _id: 'uid1' } as any;

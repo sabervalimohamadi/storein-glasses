@@ -25,12 +25,26 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   private setRefreshCookie(res: Response, token: string): void {
+    // In production the frontend and backend are on different Railway subdomains
+    // (cross-site). SameSite=Strict blocks the cookie on cross-site requests, so
+    // the refresh call never receives the cookie → user is logged out on every reload.
+    // SameSite=None (requires Secure=true) allows the cookie in cross-origin fetches.
+    const isProd = process.env.NODE_ENV === 'production';
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 30 * 24 * 60 * 60 * 1000,
-      path: COOKIE_PATH,
+      secure:   isProd,
+      sameSite: isProd ? 'none' : 'lax',
+      maxAge:   30 * 24 * 60 * 60 * 1000,
+      path:     COOKIE_PATH,
+    });
+  }
+
+  private clearRefreshCookie(res: Response): void {
+    const isProd = process.env.NODE_ENV === 'production';
+    res.clearCookie(COOKIE_NAME, {
+      path:     COOKIE_PATH,
+      secure:   isProd,
+      sameSite: isProd ? 'none' : 'lax',
     });
   }
 
@@ -112,7 +126,7 @@ export class AuthController {
     @Res({ passthrough: true }) res: Response,
   ) {
     const refreshToken = (req as any).cookies?.[COOKIE_NAME] ?? '';
-    res.clearCookie(COOKIE_NAME, { path: COOKIE_PATH });
+    this.clearRefreshCookie(res);
     return this.authService.logout((user._id as any).toString(), refreshToken);
   }
 
