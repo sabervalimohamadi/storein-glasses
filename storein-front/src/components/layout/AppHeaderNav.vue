@@ -7,6 +7,7 @@
         v-for="link in quickLinks"
         :key="link.label"
         :to="link.to"
+        :data-testid="`quick-${link.name}`"
         :class="[
           'flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all duration-200',
           isLinkActive(link)
@@ -20,12 +21,15 @@
       <!-- Divider -->
       <div class="mx-1.5 h-4 w-px rounded-full flex-shrink-0" style="background-color: var(--color-border);" />
 
-      <!-- Dynamic categories -->
-      <div class="flex items-center gap-0.5 flex-1 overflow-x-auto scrollbar-none">
+      <!-- Dynamic categories
+           NOTE: no overflow-x-auto here — it would create a scroll container that clips
+           the absolutely-positioned dropdown panels -->
+      <div class="flex items-center gap-0.5 flex-1">
         <div
           v-for="cat in categories"
           :key="cat._id"
           class="relative flex-shrink-0"
+          :data-testid="`cat-item-${cat._id}`"
           @mouseenter="onEnter(cat._id)"
           @mouseleave="onLeave"
         >
@@ -54,12 +58,12 @@
           <div
             v-show="hoveredId === cat._id && cat.children?.length"
             class="nav-drop absolute top-full right-0 z-[300] min-w-[11rem] pt-1.5"
+            :data-testid="`dropdown-${cat._id}`"
             @mouseenter="onEnter(cat._id)"
             @mouseleave="onLeave"
           >
             <div class="rounded-2xl shadow-2xl overflow-hidden"
                  style="border: 1px solid var(--color-border); background-color: var(--color-card);">
-              <!-- Gradient header -->
               <div class="px-4 py-3 flex items-center gap-2 bg-brand">
                 <span v-if="cat.icon" class="text-base leading-none">{{ cat.icon }}</span>
                 <span class="text-xs font-bold text-white tracking-wide">{{ cat.name }}</span>
@@ -87,6 +91,9 @@ import { useRoute } from 'vue-router'
 import { useCategoryStore } from '@/stores/category.store'
 import { storeToRefs } from 'pinia'
 import NavDropdownItem from '@/components/layout/NavDropdownItem.vue'
+import { logger } from '@/utils/logger'
+
+const CTX = 'AppHeaderNav'
 
 const route         = useRoute()
 const categoryStore = useCategoryStore()
@@ -96,21 +103,25 @@ const hoveredId = ref(null)
 let closeTimer  = null
 
 const quickLinks = [
-  { label: 'صفحه اصلی', to: { name: 'home' } },
-  { label: 'بلاگ',      to: { name: 'blog' } },
+  { name: 'home', label: 'صفحه اصلی', to: { name: 'home' } },
+  { name: 'blog', label: 'بلاگ',      to: { name: 'blog' } },
 ]
 
 function isLinkActive(link) {
-  if (link.to?.name === 'home') return route.name === 'home'
-  if (link.to?.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
-  if (link.to?.params?.slug)   return route.params?.slug === link.to.params.slug
+  if (link.name === 'home') return route.name === 'home'
+  if (link.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
+  if (link.to?.params?.slug) return route.params?.slug === link.to.params.slug
   return false
 }
 
 function onEnter(id) {
   clearTimeout(closeTimer)
+  if (hoveredId.value !== id) {
+    logger.debug('desktop nav: hovering category', { id }, CTX)
+  }
   hoveredId.value = id
 }
+
 function onLeave() {
   closeTimer = setTimeout(() => { hoveredId.value = null }, 150)
 }
@@ -124,6 +135,4 @@ function onLeave() {
   from { opacity: 0; transform: translateY(-6px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.scrollbar-none::-webkit-scrollbar { display: none; }
-.scrollbar-none { scrollbar-width: none; }
 </style>
