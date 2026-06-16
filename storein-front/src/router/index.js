@@ -133,8 +133,14 @@ const router = createRouter({
   },
 })
 
-router.beforeEach((to, from, next) => {
+router.beforeEach(async (to, from, next) => {
   const auth = useAuthStore()
+  // Restore session from HttpOnly refresh-token cookie on first navigation (page refresh).
+  // Must happen BEFORE checking isLoggedIn, otherwise the guard fires before the token
+  // is restored and bounces every logged-in user to the login page on reload.
+  if (!auth.initialized) {
+    await auth.initAuth()
+  }
   if (to.meta.requiresAuth && !auth.isLoggedIn)
     return next({ name: 'login', query: { redirect: to.fullPath } })
   if (to.meta.guestOnly && auth.isLoggedIn)

@@ -34,7 +34,7 @@ export class NotificationsGateway
   implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect
 {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   private readonly logger  = new Logger(NotificationsGateway.name);
   private allowedOrigins: string[];
@@ -72,20 +72,26 @@ export class NotificationsGateway
         .select('isAdmin role')
         .lean<UserDocument>();
 
-      if (!user || (!user.isAdmin && user.role !== 'manager')) {
-        client.disconnect();
-        return;
-      }
+      if (!user) { client.disconnect(); return; }
 
-      client.join('admins');
-      this.logger.log(`Admin connected: ${client.id}`);
+      if (user.isAdmin || user.role === 'manager') {
+        client.join('admins');
+        client.data.userId = payload.sub;
+        this.logger.log(`Admin WS connected: ${client.id}`);
+      } else {
+        // Regular users join a per-user room so they receive targeted notifications
+        const room = `user:${payload.sub}`;
+        client.join(room);
+        client.data.userId = payload.sub;
+        this.logger.log(`User WS connected: ${client.id} → room ${room}`);
+      }
     } catch {
       client.disconnect();
     }
   }
 
   handleDisconnect(client: Socket) {
-    this.logger.log(`Client disconnected: ${client.id}`);
+    this.logger.log(`Client WS disconnected: ${client.id}`);
   }
 
   emitNewOrder(payload: {
@@ -108,5 +114,18 @@ export class NotificationsGateway
   }) {
     this.server.to('admins').emit('new_review', payload);
     this.logger.log(`Emitted new_review for: ${payload.productName}`);
+  }
+
+  emitToUser(userId: string, payload: {
+    _id:       string;
+    type:      string;
+    title:     string;
+    body:      string;
+    data:      Record<string, any> | null;
+    isRead:    boolean;
+    createdAt: Date;
+  }) {
+    this.server.to(`user:${userId}`).emit('notification', payload);
+    this.logger.debug(`Emitted notification to user:${userId} — ${payload.title}`);
   }
 }

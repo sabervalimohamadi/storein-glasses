@@ -13,9 +13,10 @@ import {
   PushNotificationChannel,
   SmsNotificationChannel,
 } from './channels/notification-channel.abstract';
-import { AdminBroadcastDto }   from './dto/admin-broadcast.dto';
-import { AdminSmsDto }         from './dto/admin-sms.dto';
+import { AdminBroadcastDto }    from './dto/admin-broadcast.dto';
+import { AdminSmsDto }          from './dto/admin-sms.dto';
 import { NotificationQueryDto } from './dto/notification-query.dto';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 
 export interface CreateNotificationPayload {
   userId:    string;
@@ -40,6 +41,7 @@ export class NotificationService {
     private smsLogModel: Model<SmsLogDocument>,
     private smsChannel:  SmsNotificationChannel,
     private pushChannel: PushNotificationChannel,
+    private gateway:     NotificationsGateway,
   ) {}
 
   // ── Create (internal — called by listener or admin) ───────────
@@ -51,6 +53,21 @@ export class NotificationService {
       body:   payload.body,
       data:   payload.data ?? null,
     });
+
+    // Push real-time notification to user's WebSocket room (best-effort)
+    try {
+      this.gateway.emitToUser(payload.userId, {
+        _id:       (notif._id as any).toString(),
+        type:      notif.type,
+        title:     notif.title,
+        body:      notif.body,
+        data:      notif.data,
+        isRead:    notif.isRead,
+        createdAt: (notif as any).createdAt,
+      });
+    } catch (err: any) {
+      this.logger.warn(`Real-time emit failed for user ${payload.userId}: ${err?.message}`);
+    }
 
     if (payload.phone) {
       this.smsChannel

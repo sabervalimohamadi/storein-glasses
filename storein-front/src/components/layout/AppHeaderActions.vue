@@ -195,25 +195,27 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, h } from 'vue'
-import { useRouter } from 'vue-router'
-import { onClickOutside } from '@vueuse/core'
-import { useAuthStore } from '@/stores/auth.store'
-import { useCartStore } from '@/stores/cart.store'
-import { useTheme } from '@/composables/useTheme'
-import http from '@/services/http.service'
+import { ref, computed, h } from 'vue'
+import { useRouter }       from 'vue-router'
+import { storeToRefs }     from 'pinia'
+import { onClickOutside }  from '@vueuse/core'
+import { useAuthStore }          from '@/stores/auth.store'
+import { useCartStore }          from '@/stores/cart.store'
+import { useNotificationStore }  from '@/stores/notification.store'
+import { useTheme }              from '@/composables/useTheme'
 
-const authStore = useAuthStore()
-const cartStore = useCartStore()
-const router    = useRouter()
+const authStore  = useAuthStore()
+const cartStore  = useCartStore()
+const notifStore = useNotificationStore()
+const router     = useRouter()
 
-const userRef     = ref(null)
-const notifRef    = ref(null)
-const isOpen      = ref(false)
-const notifOpen   = ref(false)
-const unreadCount = ref(0)
-const notifications = ref([])
-const notifLoading  = ref(false)
+const userRef   = ref(null)
+const notifRef  = ref(null)
+const isOpen    = ref(false)
+const notifOpen = ref(false)
+
+// Notification state lives in the store so real-time pushes update the badge/list reactively
+const { unreadCount, notifications, loading: notifLoading } = storeToRefs(notifStore)
 
 const { isDark, toggle: toggleTheme, init: initTheme } = useTheme()
 onMounted(() => initTheme())
@@ -246,28 +248,12 @@ const userMenuItems = [
 
 async function toggleNotif() {
   notifOpen.value = !notifOpen.value
-  if (notifOpen.value && !notifications.value.length) await fetchNotifications()
-}
-
-async function fetchNotifications() {
-  notifLoading.value = true
-  try {
-    const { data } = await http.get('/notifications', { params: { limit: 10 } })
-    notifications.value = data?.notifications ?? []
-    unreadCount.value   = data?.unreadCount   ?? 0
-  } catch {} finally {
-    notifLoading.value = false
-  }
+  // Fetch the full list the first time the dropdown is opened
+  if (notifOpen.value && !notifStore.fetched) await notifStore.fetchNotifications()
 }
 
 async function handleNotifClick(n) {
-  if (!n.isRead) {
-    try {
-      await http.patch(`/notifications/${n._id}/read`)
-      n.isRead = true
-      unreadCount.value = Math.max(0, unreadCount.value - 1)
-    } catch {}
-  }
+  await notifStore.markRead(n._id)
   notifOpen.value = false
   const dest = resolveNotifRoute(n)
   if (dest) router.push(dest)
@@ -281,11 +267,7 @@ function resolveNotifRoute(n) {
 }
 
 async function markAllRead() {
-  try {
-    await http.patch('/notifications/read-all')
-    notifications.value.forEach(n => { n.isRead = true })
-    unreadCount.value = 0
-  } catch {}
+  await notifStore.markAllRead()
 }
 
 function timeAgo(iso) {
@@ -305,14 +287,7 @@ async function handleLogout() {
   router.push({ name: 'home' })
 }
 
-onMounted(async () => {
-  if (authStore.isLoggedIn) {
-    try {
-      const { data } = await http.get('/notifications/unread-count')
-      unreadCount.value = data?.count ?? 0
-    } catch {}
-  }
-})
+// unreadCount is kept in sync by App.vue (fetches on login) and the real-time socket listener
 </script>
 
 <style scoped>

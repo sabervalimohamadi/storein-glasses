@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { GatewayModule }  from '../../common/gateway/gateway.module';
 import { NotificationController } from './notification.controller';
 import { NotificationService } from './notification.service';
 import { NotificationListener } from './notification.listener';
@@ -23,6 +24,7 @@ import { SettingsModule }      from '../settings/settings.module';
       { name: BroadcastLog.name, schema: BroadcastLogSchema },
       { name: SmsLog.name,       schema: SmsLogSchema },
     ]),
+    GatewayModule,
     SettingsModule,
   ],
   controllers: [NotificationController],

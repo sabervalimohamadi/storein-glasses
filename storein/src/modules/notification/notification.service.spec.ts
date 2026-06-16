@@ -10,6 +10,7 @@ import {
   PushNotificationChannel,
   SmsNotificationChannel,
 } from './channels/notification-channel.abstract';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 
 const userId  = new Types.ObjectId().toString();
 const notifId = new Types.ObjectId().toString();
@@ -95,6 +96,7 @@ describe('NotificationService', () => {
         { provide: getModelToken(SmsLog.name),        useValue: smsLogModel },
         { provide: SmsNotificationChannel,            useValue: smsChannel },
         { provide: PushNotificationChannel,           useValue: pushChannel },
+        { provide: NotificationsGateway,              useValue: { emitToUser: jest.fn() } },
       ],
     }).compile();
 
