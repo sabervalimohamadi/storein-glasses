@@ -1,5 +1,11 @@
 <template>
-  <div class="flex gap-2 justify-center" dir="ltr">
+  <!-- CSS grid: each box gets 1fr — physically cannot overflow the container -->
+  <div
+    class="grid w-full"
+    :style="`grid-template-columns: repeat(${length}, 1fr); gap: 10px;`"
+    dir="ltr"
+    data-testid="otp-grid"
+  >
     <input
       v-for="(digit, index) in digits"
       :key="index"
@@ -9,17 +15,22 @@
       inputmode="numeric"
       maxlength="1"
       :disabled="disabled"
+      :data-testid="`otp-cell-${index}`"
       :class="[
-        'w-12 h-14 text-center text-xl font-bold rounded-xl border-2',
-        'transition-all duration-150 outline-none',
-        'focus:border-brand focus:ring-2 focus:ring-brand/20',
+        'w-full h-12 text-center text-xl font-bold rounded-xl border-2 min-w-0',
+        'transition-all duration-200 outline-none caret-transparent',
         error
-          ? 'border-error bg-red-50 text-error'
+          ? 'border-error text-error'
           : digit
-            ? 'border-brand bg-brand/5 text-brand'
-            : 'border-surface-border bg-surface-card text-text-primary',
+            ? 'border-brand text-brand'
+            : 'border-surface-border text-text-primary',
+        !error && digit ? 'bg-brand/10' : '',
+        error ? 'bg-error/5' : '',
+        !digit && !error ? '' : '',
+        'focus:border-brand focus:ring-2 focus:ring-brand/20 focus:scale-[1.06]',
         disabled ? 'opacity-50 cursor-not-allowed' : '',
       ]"
+      :style="!digit && !error ? 'background-color: var(--color-bg);' : ''"
       @input="onInput(index, $event)"
       @keydown="onKeydown(index, $event)"
       @paste="onPaste"
@@ -30,10 +41,13 @@
 
 <script setup>
 import { ref, watch, nextTick } from 'vue'
+import { logger } from '@/utils/logger'
+
+const CTX = 'OtpInput'
 
 const props = defineProps({
   modelValue: { type: String,  default: '' },
-  length:     { type: Number,  default: 5  },
+  length:     { type: Number,  default: 6  },
   disabled:   { type: Boolean, default: false },
   error:      { type: Boolean, default: false },
 })
@@ -42,9 +56,11 @@ const emit = defineEmits(['update:modelValue', 'complete'])
 const inputs = ref([])
 const digits = ref(Array(props.length).fill(''))
 
-// Sync digits when parent resets modelValue to ''
 watch(() => props.modelValue, (val) => {
-  if (val === '') digits.value = Array(props.length).fill('')
+  if (val === '') {
+    digits.value = Array(props.length).fill('')
+    logger.debug('OTP input: cleared by parent', {}, CTX)
+  }
 })
 
 function onInput(index, event) {
@@ -79,11 +95,10 @@ function onPaste(event) {
     .getData('text')
     .replace(/\D/g, '')
     .slice(0, props.length)
-  pasted.split('').forEach((char, i) => {
-    digits.value[i] = char
-  })
+  pasted.split('').forEach((char, i) => { digits.value[i] = char })
   emitValue()
   const focusIndex = Math.min(pasted.length, props.length - 1)
+  logger.debug('OTP input: pasted digits', { count: pasted.length }, CTX)
   nextTick(() => inputs.value[focusIndex]?.focus())
 }
 
@@ -91,6 +106,7 @@ function emitValue() {
   const joined = digits.value.join('')
   emit('update:modelValue', joined)
   if (joined.length === props.length) {
+    logger.debug('OTP input: all digits entered', { length: props.length }, CTX)
     emit('complete', joined)
   }
 }
