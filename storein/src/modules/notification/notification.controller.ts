@@ -69,6 +69,12 @@ export class NotificationController {
   }
 
   @UseGuards(AdminGuard)
+  @Delete('admin/broadcast-log/:id')
+  deleteBroadcastLog(@Param('id') id: string) {
+    return this.notifService.adminDeleteBroadcastLog(id);
+  }
+
+  @UseGuards(AdminGuard)
   @Delete('admin/:id')
   remove(@Param('id') id: string) {
     return this.notifService.adminDelete(id);

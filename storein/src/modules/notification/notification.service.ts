@@ -288,9 +288,22 @@ export class NotificationService {
     return { logs, total, totalPages: Math.ceil(total / limit) };
   }
 
-  // ── Admin: Delete notification ────────────────────────────────
+  // ── Admin: Delete individual notification ────────────────────
   async adminDelete(notifId: string): Promise<void> {
     if (!Types.ObjectId.isValid(notifId)) return;
     await this.notifModel.findByIdAndDelete(notifId);
+  }
+
+  // ── Admin: Delete broadcast log entry ────────────────────────
+  async adminDeleteBroadcastLog(logId: string): Promise<{ deleted: boolean }> {
+    if (!Types.ObjectId.isValid(logId)) {
+      throw new NotFoundException(`Broadcast log ${logId} not found`);
+    }
+    const result = await this.broadcastLogModel.findByIdAndDelete(logId);
+    if (!result) {
+      throw new NotFoundException(`Broadcast log ${logId} not found`);
+    }
+    this.logger.log(`Admin deleted broadcast log ${logId}`);
+    return { deleted: true };
   }
 }

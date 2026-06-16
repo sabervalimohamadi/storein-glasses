@@ -3,10 +3,11 @@ import { mount } from '@vue/test-utils'
 
 vi.mock('@/services/notification.service', () => ({
   notificationService: {
-    broadcast:        vi.fn(),
-    sendSms:          vi.fn(),
-    getBroadcastLogs: vi.fn(),
-    getSmsLogs:       vi.fn(),
+    broadcast:           vi.fn(),
+    sendSms:             vi.fn(),
+    getBroadcastLogs:    vi.fn(),
+    getSmsLogs:          vi.fn(),
+    deleteBroadcastLog:  vi.fn(),
   },
 }))
 
@@ -384,6 +385,94 @@ describe('NotificationsSendView', () => {
       w.vm.resetSms()
       expect(w.vm.smsForm.message).toBe('')
       expect(w.vm.sms.error).toBe('')
+    })
+  })
+
+  // ── broadcast log delete ───────────────────────────────────────
+  describe('handleDeleteBroadcastLog()', () => {
+    const mockLogs = [
+      { _id: 'aaa', type: 'system', title: 'اعلان ۱', body: 'متن', target: 'all', sent: 3, createdAt: new Date().toISOString() },
+      { _id: 'bbb', type: 'promo',  title: 'اعلان ۲', body: 'متن', target: 'all', sent: 5, createdAt: new Date().toISOString() },
+    ]
+
+    beforeEach(() => {
+      notificationService.getBroadcastLogs.mockResolvedValue({ data: { logs: mockLogs, total: 2, totalPages: 1 } })
+      notificationService.deleteBroadcastLog.mockResolvedValue({ data: { deleted: true } })
+    })
+
+    it('calls deleteBroadcastLog service with the correct id', async () => {
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(notificationService.deleteBroadcastLog).toHaveBeenCalledWith('aaa')
+    })
+
+    it('removes the deleted row from broadcastLogs.items', async () => {
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.items).toHaveLength(2)
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(w.vm.broadcastLogs.items).toHaveLength(1)
+      expect(w.vm.broadcastLogs.items[0]._id).toBe('bbb')
+    })
+
+    it('decrements broadcastLogs.total by 1', async () => {
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.total).toBe(2)
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(w.vm.broadcastLogs.total).toBe(1)
+    })
+
+    it('logs info on successful delete', async () => {
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(logger.info).toHaveBeenCalledWith(
+        'Admin deleted broadcast log',
+        { id: 'aaa' },
+        'NotificationsSendView',
+      )
+    })
+
+    it('resets deletingBroadcastId and deleteBroadcastLoading after success', async () => {
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      w.vm.deletingBroadcastId = 'aaa'   // refs auto-unwrap on vm
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(w.vm.deletingBroadcastId).toBeNull()
+      expect(w.vm.deleteBroadcastLoading).toBeNull()
+    })
+
+    it('logs error and resets state on API failure', async () => {
+      const err = Object.assign(new Error(), { response: { data: { message: 'سرور خطا داد' } } })
+      notificationService.deleteBroadcastLog.mockRejectedValue(err)
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(logger.error).toHaveBeenCalledWith(
+        'Admin delete broadcast log failed',
+        err,
+        { id: 'aaa' },
+        'NotificationsSendView',
+      )
+      expect(w.vm.deletingBroadcastId).toBeNull()
+      expect(w.vm.deleteBroadcastLoading).toBeNull()
+    })
+
+    it('does not remove any item on API failure', async () => {
+      notificationService.deleteBroadcastLog.mockRejectedValue(new Error('net'))
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      const countBefore = w.vm.broadcastLogs.items.length
+      await w.vm.handleDeleteBroadcastLog('aaa')
+      expect(w.vm.broadcastLogs.items).toHaveLength(countBefore)
+    })
+
+    it('broadcastCols includes an actions column', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      expect(w.vm.broadcastCols.some(c => c.key === 'actions')).toBe(true)
     })
   })
 })

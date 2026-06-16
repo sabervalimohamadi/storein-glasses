@@ -328,6 +328,38 @@
           <template #cell-createdAt="{ value }">
             <span class="text-text-secondary text-xs font-fanum" dir="rtl">{{ formatDateTime(value) }}</span>
           </template>
+
+          <template #cell-actions="{ row }">
+            <div class="flex items-center justify-center gap-1.5">
+              <!-- Confirm step -->
+              <template v-if="deletingBroadcastId === row._id">
+                <button
+                  class="px-2 py-1 rounded-lg text-xs bg-error text-white hover:bg-error/90 transition-colors disabled:opacity-50"
+                  :disabled="deleteBroadcastLoading === row._id"
+                  @click="handleDeleteBroadcastLog(row._id)">
+                  {{ deleteBroadcastLoading === row._id ? '...' : 'حذف' }}
+                </button>
+                <button
+                  class="px-2 py-1 rounded-lg text-xs border border-border text-text-secondary hover:text-text-primary transition-colors"
+                  :disabled="deleteBroadcastLoading === row._id"
+                  @click="deletingBroadcastId = null">
+                  انصراف
+                </button>
+              </template>
+
+              <!-- Initial delete trigger -->
+              <button
+                v-else
+                class="p-1.5 rounded-lg text-text-disabled hover:text-error hover:bg-error/10 transition-colors"
+                title="حذف رکورد"
+                @click="deletingBroadcastId = row._id">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round"
+                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+              </button>
+            </div>
+          </template>
         </AdminTable>
 
         <div class="px-5 pb-4">
@@ -553,13 +585,35 @@ async function handleSendSms() {
 const broadcastLogs = reactive({ items: [], total: 0, totalPages: 1, page: 1, loading: false })
 const lastBroadcastLog = ref(null)
 
+const deletingBroadcastId      = ref(null)   // row._id currently in confirm state
+const deleteBroadcastLoading   = ref(null)   // row._id being actively deleted
+
 const broadcastCols = [
   { key: 'type',      label: 'نوع',     width: '90px' },
   { key: 'title',     label: 'عنوان و متن' },
   { key: 'target',    label: 'گیرنده',  width: '110px', align: 'center' },
   { key: 'sent',      label: 'ارسال شد', width: '80px', align: 'center' },
   { key: 'createdAt', label: 'تاریخ',   width: '160px' },
+  { key: 'actions',   label: '',         width: '90px',  align: 'center' },
 ]
+
+async function handleDeleteBroadcastLog(id) {
+  deleteBroadcastLoading.value = id
+  try {
+    await notificationService.deleteBroadcastLog(id)
+    logger.info('Admin deleted broadcast log', { id }, 'NotificationsSendView')
+    broadcastLogs.items = broadcastLogs.items.filter(r => r._id !== id)
+    broadcastLogs.total = Math.max(0, broadcastLogs.total - 1)
+    if (broadcastLogs.items.length === 0 && broadcastLogs.page > 1) {
+      loadBroadcastLogs(broadcastLogs.page - 1)
+    }
+  } catch (e) {
+    logger.error('Admin delete broadcast log failed', e, { id }, 'NotificationsSendView')
+  } finally {
+    deleteBroadcastLoading.value = null
+    deletingBroadcastId.value    = null
+  }
+}
 
 async function loadBroadcastLogs(page = 1) {
   broadcastLogs.loading = true
