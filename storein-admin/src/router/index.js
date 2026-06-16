@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuthStore } from '@/stores/auth.store'
+import { authGuard } from './guard'
 
 const routes = [
   {
@@ -168,28 +168,6 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 }),
 })
 
-router.beforeEach(async (to, _from, next) => {
-  const auth = useAuthStore()
-
-  if (to.meta.guestOnly && auth.isLoggedIn)
-    return next({ name: 'dashboard' })
-
-  if (to.meta.layout === 'admin' && !auth.token)
-    return next({ name: 'login', query: { redirect: to.fullPath } })
-
-  if (to.meta.layout === 'admin' && !auth.user) {
-    await auth.fetchProfile()
-    if (!auth.isLoggedIn) return next({ name: 'login' })
-  }
-
-  if (to.meta.adminOnly && !auth.isAdmin)
-    return next({ name: 'dashboard' })
-
-  // Managers can only access routes they have permission for
-  if (to.meta.permission && auth.isManager && !auth.hasPermission(to.meta.permission))
-    return next({ name: 'dashboard' })
-
-  next()
-})
+router.beforeEach(authGuard)
 
 export default router

@@ -134,6 +134,28 @@ describe('useAuthStore', () => {
       expect(store.user).toEqual(adminProfile)
     })
 
+    it('sets initialized to true on success', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      expect(store.initialized).toBe(false)
+      await store.initAuth()
+      expect(store.initialized).toBe(true)
+    })
+
+    it('logs info when session is restored', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.initAuth()
+
+      expect(logger.info).toHaveBeenCalledWith(
+        'admin-auth: session restored from refresh token', {}, 'AuthStore',
+      )
+    })
+
     it('logs out when refresh fails', async () => {
       authService.refresh.mockRejectedValue(new Error('expired'))
 
@@ -147,6 +169,45 @@ describe('useAuthStore', () => {
         expect.any(Object),
         'AuthStore',
       )
+    })
+
+    it('sets initialized to true even when refresh fails', async () => {
+      authService.refresh.mockRejectedValue(new Error('no cookie'))
+
+      const store = useAuthStore()
+      await store.initAuth()
+      expect(store.initialized).toBe(true)
+    })
+
+    it('sets initialized to true when profile has no admin access', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: userProfile })
+
+      const store = useAuthStore()
+      await store.initAuth()
+      expect(store.initialized).toBe(true)
+      expect(store.token).toBeNull()
+    })
+
+    it('skips API calls when already initialized', async () => {
+      const store = useAuthStore()
+      store.initialized = true
+
+      await store.initAuth()
+
+      expect(authService.refresh).not.toHaveBeenCalled()
+      expect(authService.getProfile).not.toHaveBeenCalled()
+    })
+
+    it('is idempotent — second call is a no-op', async () => {
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = useAuthStore()
+      await store.initAuth()
+      await store.initAuth()
+
+      expect(authService.refresh).toHaveBeenCalledTimes(1)
     })
   })
 

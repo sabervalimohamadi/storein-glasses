@@ -9,6 +9,7 @@ export const useAuthStore = defineStore('auth', () => {
   const token        = ref(null)
   const loading      = ref(false)
   const pendingPhone = ref('')
+  const initialized  = ref(false)
 
   const isAdmin     = computed(() => user.value?.isAdmin === true)
   const isManager   = computed(() => user.value?.role === 'manager')
@@ -79,16 +80,19 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function initAuth() {
-    // Browser sends the HttpOnly cookie automatically — no localStorage needed
+    if (initialized.value) return
     try {
       const { data } = await authService.refresh()
       token.value = data.accessToken
       const { data: profile } = await authService.getProfile()
       if (!hasAdminAccess(profile)) { logout(); return }
       user.value = profile
+      logger.info('admin-auth: session restored from refresh token', {}, 'AuthStore')
     } catch (error) {
       logger.warn('admin-auth: initAuth failed, clearing session', { error: error?.message }, 'AuthStore')
       logout()
+    } finally {
+      initialized.value = true
     }
   }
 
@@ -113,5 +117,5 @@ export const useAuthStore = defineStore('auth', () => {
     socketService.disconnect()
   }
 
-  return { user, token, loading, pendingPhone, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
+  return { user, token, loading, pendingPhone, initialized, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
 })

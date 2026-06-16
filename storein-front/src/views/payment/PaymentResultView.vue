@@ -2,9 +2,6 @@
   <div class="container-main py-16 flex items-center justify-center min-h-[60vh]">
     <div class="w-full max-w-md text-center">
 
-      <!-- Notification consent (teleported to body — must be outside the v-if chain) -->
-      <NotificationConsentModal v-model="showConsentModal" />
-
       <!-- Loading -->
       <div v-if="verifying" class="space-y-4">
         <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" />
@@ -77,28 +74,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { paymentService } from '@/services/payment.service'
 import { orderService }   from '@/services/order.service'
 import { useCartStore }   from '@/stores/cart.store'
-import { useNotificationPermission } from '@/composables/useNotificationPermission'
-import NotificationConsentModal from '@/components/common/NotificationConsentModal.vue'
 
 const route     = useRoute()
 const router    = useRouter()
 const cartStore = useCartStore()
-
-const { canAsk } = useNotificationPermission()
-const showConsentModal = ref(false)
-let consentTimer = null
-
-function scheduleConsentModal() {
-  if (!canAsk.value) return
-  consentTimer = setTimeout(() => { showConsentModal.value = true }, 3000)
-}
-
-onUnmounted(() => { if (consentTimer) clearTimeout(consentTimer) })
 
 const verifying    = ref(true)
 const result       = ref(null)   // 'success' | 'failed'
@@ -125,7 +109,6 @@ onMounted(async () => {
     result.value   = 'success'
     verifying.value = false
     cartStore.items = []
-    scheduleConsentModal()
     return
   }
 
@@ -151,7 +134,6 @@ onMounted(async () => {
         } catch { /* silent */ }
       }
       await cartStore.fetchCart()
-      scheduleConsentModal()
     } else {
       result.value    = 'failed'
       errorMessage.value = data.message ?? 'پرداخت تأیید نشد'
