@@ -2,39 +2,50 @@
   <div>
     <!-- Row -->
     <div
-      class="flex items-center transition-colors"
-      :style="`color: var(--color-text-primary); background-color: ${open ? 'var(--color-bg)' : ''}`"
+      class="flex items-center rounded-xl transition-colors duration-150"
+      :class="open && depth === 0 ? 'bg-brand/10' : ''"
+      @mouseenter="e => { if (!(open && depth === 0)) e.currentTarget.style.backgroundColor = 'var(--color-bg)' }"
+      @mouseleave="e => { if (!(open && depth === 0)) e.currentTarget.style.backgroundColor = '' }"
     >
-      <!-- Indent spacer -->
-      <span v-if="depth > 0" :style="`width: ${depth * 16}px; flex-shrink: 0;`" />
+      <!-- Indent spacer for sub-items -->
+      <span v-if="depth > 0" :style="`width: ${depth * 8}px; flex-shrink: 0;`" />
 
-      <!-- Name -->
       <RouterLink
         :to="{ name: 'category', params: { slug: item.slug } }"
         @click="$emit('close')"
-        class="flex-1 py-2.5 text-sm"
-        :class="depth === 0 ? 'px-4 font-medium' : 'px-3'"
-        :style="depth > 0 ? 'color: var(--color-text-secondary);' : ''"
+        class="flex-1 flex items-center gap-2 py-2.5 text-sm transition-colors"
+        :class="depth === 0 ? 'px-3 font-semibold' : 'px-2 font-normal'"
+        :style="open ? 'color: var(--color-brand);' : depth > 0 ? 'color: var(--color-text-secondary);' : 'color: var(--color-text-primary);'"
       >
-        <span v-if="depth > 0" class="ml-1" style="color: var(--color-text-disabled);">└</span>
+        <span v-if="item.icon && depth === 0" class="text-base leading-none flex-shrink-0">{{ item.icon }}</span>
+        <span v-else-if="depth > 0" class="w-1.5 h-1.5 rounded-full flex-shrink-0"
+              style="background-color: var(--color-text-disabled);" />
         {{ item.name }}
       </RouterLink>
 
-      <!-- Expand toggle -->
       <button
         v-if="item.children?.length"
         @click.stop="open = !open"
-        class="px-4 py-2.5 flex-shrink-0 transition-transform duration-200"
-        :style="open ? 'transform: rotate(-90deg); color: var(--color-brand);' : 'color: var(--color-text-disabled);'"
+        class="px-3 py-2.5 flex-shrink-0"
+        :style="open ? 'color: var(--color-brand);' : 'color: var(--color-text-disabled);'"
       >
-        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <svg
+          class="w-4 h-4 transition-transform duration-200"
+          :style="open ? 'transform: rotate(-90deg)' : ''"
+          fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"
+        >
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
         </svg>
       </button>
     </div>
 
-    <!-- Children (recursive) -->
-    <div v-if="open && item.children?.length" style="background-color: var(--color-bg);">
+    <!-- Children with tree line -->
+    <div
+      v-if="item.children?.length"
+      v-show="open"
+      class="mt-0.5 mb-1 flex flex-col gap-0.5"
+      style="margin-right: 20px; padding-right: 10px; border-right: 2px solid var(--color-border);"
+    >
       <MobileNavItem
         v-for="child in item.children"
         :key="child._id"
