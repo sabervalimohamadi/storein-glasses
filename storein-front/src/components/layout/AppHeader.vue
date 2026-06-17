@@ -18,7 +18,7 @@
       </button>
 
       <!-- Logo — rightmost on desktop (order-3) -->
-      <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight md:order-3">
+      <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight md:order-1">
         <span class="text-brand font-bold text-xl tracking-tight">استورین</span>
         <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">فروشگاه تخصصی عینک</span>
       </RouterLink>
@@ -32,7 +32,7 @@
       <div class="flex-1 md:hidden" />
 
       <!-- Actions — leftmost on desktop (order-1) -->
-      <AppHeaderActions class="md:order-1" />
+      <AppHeaderActions class="md:order-3" />
     </div>
 
     <!-- Mobile search row -->
