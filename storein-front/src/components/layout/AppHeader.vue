@@ -32,7 +32,7 @@
       <div class="flex-1 md:hidden" />
 
       <!-- Actions — leftmost on desktop (order-1) -->
-      <AppHeaderActions class="md:order-3" />
+      <AppHeaderActions class="md:order-3 md:ms-auto" />
     </div>
 
     <!-- Mobile search row -->
