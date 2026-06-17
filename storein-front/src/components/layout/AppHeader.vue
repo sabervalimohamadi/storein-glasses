@@ -19,8 +19,8 @@
 
       <!-- Logo — rightmost on desktop (order-3) -->
       <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight md:order-1">
-        <span class="text-brand font-bold text-xl tracking-tight">استورین</span>
-        <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">فروشگاه تخصصی عینک</span>
+        <span class="text-brand font-bold text-xl tracking-tight">{{ settingsStore.siteName }}</span>
+        <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
       </RouterLink>
 
       <!-- Search (desktop) — middle (order-2) -->
@@ -51,6 +51,7 @@ import { useUiStore }       from '@/stores/ui.store'
 import { useAuthStore }     from '@/stores/auth.store'
 import { useCategoryStore } from '@/stores/category.store'
 import { useCartStore }     from '@/stores/cart.store'
+import { useSettingsStore } from '@/stores/settings.store'
 import AppHeaderSearch  from './AppHeaderSearch.vue'
 import AppHeaderActions from './AppHeaderActions.vue'
 import AppHeaderNav     from './AppHeaderNav.vue'
@@ -59,6 +60,7 @@ const uiStore       = useUiStore()
 const authStore     = useAuthStore()
 const categoryStore = useCategoryStore()
 const cartStore     = useCartStore()
+const settingsStore = useSettingsStore()
 
 onMounted(async () => {
   categoryStore.fetchCategories()
