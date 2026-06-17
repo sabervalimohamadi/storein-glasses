@@ -13,13 +13,15 @@ import AdminLayout  from '@/layouts/AdminLayout.vue'
 import AuthLayout   from '@/layouts/AuthLayout.vue'
 import AdminToast   from '@/components/common/AdminToast.vue'
 import AdminSplash  from '@/components/AdminSplash.vue'
-import { useAuthStore } from '@/stores/auth.store'
+import { useAuthStore }     from '@/stores/auth.store'
+import { useSettingsStore } from '@/stores/settings.store'
 import { logger } from '@/utils/logger'
 
 const CTX = 'App'
 
-const route = useRoute()
-const auth  = useAuthStore()
+const route         = useRoute()
+const auth          = useAuthStore()
+const settingsStore = useSettingsStore()
 const layouts = { admin: AdminLayout, auth: AuthLayout }
 const currentLayout = computed(() => layouts[route.meta.layout] ?? AdminLayout)
 
@@ -30,7 +32,10 @@ watch(
   () => auth.initialized,
   async (initialized) => {
     if (!initialized) return
-    await new Promise((r) => setTimeout(r, 1600))
+    await Promise.all([
+      settingsStore.fetchSettings(),
+      new Promise((r) => setTimeout(r, 1600)),
+    ])
     appReady.value = true
     logger.info('App: auth initialised — splash dismissed', {}, CTX)
   },

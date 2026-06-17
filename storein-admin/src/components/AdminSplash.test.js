@@ -5,6 +5,10 @@ vi.mock('@/utils/logger', () => ({
   logger: { debug: vi.fn(), info: vi.fn(), warn: vi.fn(), error: vi.fn() },
 }))
 
+vi.mock('@/stores/settings.store', () => ({
+  useSettingsStore: () => ({ siteName: 'استورین', tagline: 'فروشگاه تخصصی عینک', logoUrl: '' }),
+}))
+
 import AdminSplash from './AdminSplash.vue'
 import { logger } from '@/utils/logger'
 

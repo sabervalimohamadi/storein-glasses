@@ -49,8 +49,8 @@
         </div>
 
         <!-- ── Brand ── -->
-        <h1 class="splash__brand">استورین</h1>
-        <p class="splash__tagline">فروشگاه تخصصی عینک</p>
+        <h1 class="splash__brand">{{ settingsStore.siteName }}</h1>
+        <p class="splash__tagline">{{ settingsStore.tagline }}</p>
 
         <!-- ── Loading dots ── -->
         <div class="splash__dots" role="status" aria-label="در حال بارگذاری">
@@ -66,7 +66,10 @@
 
 <script setup>
 import { watch, onMounted } from 'vue'
+import { useSettingsStore } from '@/stores/settings.store'
 import { logger } from '@/utils/logger'
+
+const settingsStore = useSettingsStore()
 
 const CTX = 'AppSplash'
 

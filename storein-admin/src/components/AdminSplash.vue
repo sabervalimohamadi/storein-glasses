@@ -54,7 +54,7 @@
 
         <!-- ── Brand ── -->
         <div class="adm-brand-wrap">
-          <h1 class="adm-brand">استورین</h1>
+          <h1 class="adm-brand">{{ settingsStore.siteName }}</h1>
           <span class="adm-badge" data-testid="admin-badge">پنل مدیریت</span>
         </div>
 
@@ -77,7 +77,10 @@
 
 <script setup>
 import { watch, onMounted } from 'vue'
+import { useSettingsStore } from '@/stores/settings.store'
 import { logger } from '@/utils/logger'
+
+const settingsStore = useSettingsStore()
 
 const CTX = 'AdminSplash'
 
