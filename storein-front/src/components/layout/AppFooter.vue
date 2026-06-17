@@ -7,10 +7,10 @@
 
     <!-- ═══ Main grid ═══ -->
     <div class="container-main pt-14 pb-10 relative z-10">
-      <div class="grid grid-cols-1 md:grid-cols-12 gap-10">
+      <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-12 gap-8 md:gap-10">
 
-        <!-- Col 1 — Brand (5 cols) -->
-        <div class="md:col-span-5 flex flex-col gap-6">
+        <!-- Col 1 — Brand (4 cols) -->
+        <div class="sm:col-span-2 md:col-span-4 flex flex-col gap-6">
           <div>
             <div v-if="store.logoUrl" class="mb-3">
               <img :src="store.logoUrl" :alt="store.siteName" class="h-10 object-contain" />
@@ -66,8 +66,8 @@
           </div>
         </div>
 
-        <!-- Col 2 — Categories (3 cols) -->
-        <div class="md:col-span-3">
+        <!-- Col 2 — Categories (2 cols) -->
+        <div class="md:col-span-2">
           <h4 class="footer-heading" data-testid="heading-categories">دسته‌بندی‌ها</h4>
           <ul class="space-y-3 mt-4">
             <li v-for="cat in footerCategories" :key="cat.slug">
@@ -84,72 +84,68 @@
           </ul>
         </div>
 
-        <!-- Col 3 — Quick links + Contact (4 cols) -->
-        <div class="md:col-span-4 flex flex-col gap-7">
-
-          <!-- Quick links -->
-          <div>
-            <template v-if="store.footerLinks.length">
-              <h4 class="footer-heading">لینک‌های سریع</h4>
-              <ul class="space-y-3 mt-4">
-                <li v-for="link in store.footerLinks" :key="link.url">
-                  <a :href="link.url" class="footer-link">
-                    <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    {{ link.label }}
-                  </a>
-                </li>
-              </ul>
-            </template>
-            <template v-else>
-              <h4 class="footer-heading">دسترسی سریع</h4>
-              <ul class="space-y-3 mt-4">
-                <li v-for="link in quickLinks" :key="link.name">
-                  <RouterLink :to="{ name: link.name, params: link.params }" class="footer-link">
-                    <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
-                    </svg>
-                    {{ link.label }}
-                  </RouterLink>
-                </li>
-              </ul>
-            </template>
-          </div>
-
-          <!-- Contact -->
-          <div>
-            <h4 class="footer-heading">تماس با ما</h4>
+        <!-- Col 3 — Quick links (3 cols) -->
+        <div class="md:col-span-3">
+          <template v-if="store.footerLinks.length">
+            <h4 class="footer-heading">لینک‌های سریع</h4>
             <ul class="space-y-3 mt-4">
-              <li class="contact-item" data-testid="contact-email">
-                <span class="contact-icon">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+              <li v-for="link in store.footerLinks" :key="link.url">
+                <a :href="link.url" class="footer-link">
+                  <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
                   </svg>
-                </span>
-                <span dir="ltr" class="footer-muted text-sm">{{ store.email || 'support@storein.ir' }}</span>
-              </li>
-              <li class="contact-item" data-testid="contact-phone">
-                <span class="contact-icon">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
-                  </svg>
-                </span>
-                <span dir="ltr" class="footer-muted text-sm">{{ store.phone || '۰۲۱-۱۲۳۴۵۶۷۸' }}</span>
-              </li>
-              <li v-if="store.address" class="contact-item items-start" data-testid="contact-address">
-                <span class="contact-icon mt-0.5">
-                  <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
-                    <path stroke-linecap="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
-                  </svg>
-                </span>
-                <span class="footer-muted text-sm leading-relaxed">{{ store.address }}</span>
+                  {{ link.label }}
+                </a>
               </li>
             </ul>
-          </div>
-
+          </template>
+          <template v-else>
+            <h4 class="footer-heading">دسترسی سریع</h4>
+            <ul class="space-y-3 mt-4">
+              <li v-for="link in quickLinks" :key="link.name">
+                <RouterLink :to="{ name: link.name, params: link.params }" class="footer-link">
+                  <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
+                  </svg>
+                  {{ link.label }}
+                </RouterLink>
+              </li>
+            </ul>
+          </template>
         </div>
+
+        <!-- Col 4 — Contact (3 cols) -->
+        <div class="md:col-span-3">
+          <h4 class="footer-heading">تماس با ما</h4>
+          <ul class="space-y-3 mt-4">
+            <li class="contact-item" data-testid="contact-email">
+              <span class="contact-icon">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/>
+                </svg>
+              </span>
+              <span dir="ltr" class="footer-muted text-sm">{{ store.email || 'support@storein.ir' }}</span>
+            </li>
+            <li class="contact-item" data-testid="contact-phone">
+              <span class="contact-icon">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                </svg>
+              </span>
+              <span dir="ltr" class="footer-muted text-sm">{{ store.phone || '۰۲۱-۱۲۳۴۵۶۷۸' }}</span>
+            </li>
+            <li v-if="store.address" class="contact-item items-start" data-testid="contact-address">
+              <span class="contact-icon mt-0.5">
+                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                  <path stroke-linecap="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+              </span>
+              <span class="footer-muted text-sm leading-relaxed">{{ store.address }}</span>
+            </li>
+          </ul>
+        </div>
+
       </div>
     </div>
 
@@ -174,7 +170,7 @@
           {{ store.footerCopyright }} &copy; {{ currentYear }}
         </p>
         <p class="text-xs footer-muted opacity-50">
-          طراحی و توسعه با ❤️ توسط تیم استورین
+          طراحی و توسعه SVM
         </p>
       </div>
     </div>
