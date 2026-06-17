@@ -60,12 +60,25 @@ async function bootstrap() {
   }
 
   app.use(cookieParser());
-  app.use(helmet());
+
+  // Helmet must disable crossOriginResourcePolicy on the API — the default
+  // "same-origin" policy causes browsers to block cross-origin API responses
+  // (frontend ↔ backend on different Railway subdomains).
+  app.use(helmet({
+    crossOriginResourcePolicy: { policy: 'cross-origin' },
+  }));
+
   app.enableCors({
     origin:      allowedOrigins,
     credentials: true,
     methods:     ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
+
+  winstonLogger.info(
+    `🔒 CORS origins: ${allowedOrigins.join(', ')} | NODE_ENV: ${process.env.NODE_ENV}`,
+    { context: 'Bootstrap' },
+  );
 
   app.enableShutdownHooks();
 

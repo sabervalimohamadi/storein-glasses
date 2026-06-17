@@ -1,5 +1,5 @@
 import {
-  Body, Controller, ForbiddenException, HttpCode, HttpStatus, Post, Req, Res, UseGuards,
+  Body, Controller, ForbiddenException, HttpCode, HttpStatus, Logger, Post, Req, Res, UseGuards,
 } from '@nestjs/common';
 import type { Request } from 'express';
 import type { Response } from 'express';
@@ -20,32 +20,42 @@ import { UserRole } from '../user/entities/user.schema';
 const COOKIE_NAME = 'refresh_token';
 const COOKIE_PATH = '/api/v1/auth';
 
+// Explicit env overrides — set COOKIE_SAME_SITE=none and COOKIE_SECURE=true on Railway
+// if NODE_ENV is not being propagated correctly.
+function cookieConfig(): { sameSite: 'none' | 'lax'; secure: boolean } {
+  const isProd    = process.env.NODE_ENV === 'production';
+  const sameSite  = (process.env.COOKIE_SAME_SITE as 'none' | 'lax' | undefined)
+                    ?? (isProd ? 'none' : 'lax');
+  const secure    = process.env.COOKIE_SECURE === 'true' || isProd;
+  return { sameSite, secure };
+}
+
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  private readonly logger = new Logger(AuthController.name);
+
+  constructor(private readonly authService: AuthService) {
+    const { sameSite, secure } = cookieConfig();
+    this.logger.log(
+      `Cookie config — sameSite: ${sameSite}, secure: ${secure}, NODE_ENV: ${process.env.NODE_ENV}`,
+    );
+  }
 
   private setRefreshCookie(res: Response, token: string): void {
-    // In production the frontend and backend are on different Railway subdomains
-    // (cross-site). SameSite=Strict blocks the cookie on cross-site requests, so
-    // the refresh call never receives the cookie → user is logged out on every reload.
-    // SameSite=None (requires Secure=true) allows the cookie in cross-origin fetches.
-    const isProd = process.env.NODE_ENV === 'production';
+    const { sameSite, secure } = cookieConfig();
+    this.logger.debug(`Setting refresh cookie — sameSite: ${sameSite}, secure: ${secure}`);
     res.cookie(COOKIE_NAME, token, {
       httpOnly: true,
-      secure:   isProd,
-      sameSite: isProd ? 'none' : 'lax',
+      secure,
+      sameSite,
       maxAge:   30 * 24 * 60 * 60 * 1000,
       path:     COOKIE_PATH,
     });
   }
 
   private clearRefreshCookie(res: Response): void {
-    const isProd = process.env.NODE_ENV === 'production';
-    res.clearCookie(COOKIE_NAME, {
-      path:     COOKIE_PATH,
-      secure:   isProd,
-      sameSite: isProd ? 'none' : 'lax',
-    });
+    const { sameSite, secure } = cookieConfig();
+    res.clearCookie(COOKIE_NAME, { path: COOKIE_PATH, secure, sameSite });
   }
 
   @Public() @Post('send-otp') @HttpCode(HttpStatus.OK)
