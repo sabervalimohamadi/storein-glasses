@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { mount } from '@vue/test-utils'
 
 vi.mock('@/utils/logger', () => ({
@@ -6,7 +6,13 @@ vi.mock('@/utils/logger', () => ({
 }))
 
 vi.mock('@/stores/settings.store', () => ({
-  useSettingsStore: () => ({ siteName: 'استورین', tagline: 'فروشگاه تخصصی عینک', logoUrl: '' }),
+  useSettingsStore: () => ({
+    siteName: 'استورین',
+    tagline: 'فروشگاه تخصصی عینک',
+    logoUrl: '',
+    // Non-null so the brandVisible watch fires immediately in tests
+    settings: { siteName: 'استورین', tagline: 'فروشگاه تخصصی عینک' },
+  }),
 }))
 
 import AdminSplash from './AdminSplash.vue'
@@ -16,7 +22,11 @@ const factory = (props = {}) =>
   mount(AdminSplash, { props: { ready: false, ...props } })
 
 describe('AdminSplash', () => {
-  beforeEach(() => vi.clearAllMocks())
+  beforeEach(() => {
+    vi.clearAllMocks()
+    vi.useFakeTimers()
+  })
+  afterEach(() => vi.useRealTimers())
 
   // ── visibility ──────────────────────────────────────────────────────────────
 
@@ -49,12 +59,18 @@ describe('AdminSplash', () => {
       expect(factory().find('[aria-hidden="true"]').exists()).toBe(true)
     })
 
-    it('shows brand name استورین', () => {
-      expect(factory().find('.adm-brand').text()).toContain('استورین')
+    it('shows brand name استورین after timer + settings ready', async () => {
+      const w = factory()
+      vi.advanceTimersByTime(1000)
+      await w.vm.$nextTick()
+      expect(w.find('.adm-brand').text()).toContain('استورین')
     })
 
-    it('shows پنل مدیریت badge', () => {
-      expect(factory().find('[data-testid="admin-badge"]').text()).toContain('پنل مدیریت')
+    it('shows پنل مدیریت badge after timer + settings ready', async () => {
+      const w = factory()
+      vi.advanceTimersByTime(1000)
+      await w.vm.$nextTick()
+      expect(w.find('[data-testid="admin-badge"]').text()).toContain('پنل مدیریت')
     })
 
     it('renders progress bar', () => {

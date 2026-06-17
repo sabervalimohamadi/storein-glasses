@@ -7,7 +7,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import AdminLayout  from '@/layouts/AdminLayout.vue'
 import AuthLayout   from '@/layouts/AuthLayout.vue'
@@ -24,6 +24,10 @@ const auth          = useAuthStore()
 const settingsStore = useSettingsStore()
 const layouts = { admin: AdminLayout, auth: AuthLayout }
 const currentLayout = computed(() => layouts[route.meta.layout] ?? AdminLayout)
+
+// Fire settings fetch immediately — races ahead of auth init so the real site name
+// is ready before the brand text animation starts (~1.05 s from mount).
+onMounted(() => settingsStore.fetchSettings())
 
 // Splash gate: wait for auth init + minimum display time so radar animation completes
 const appReady = ref(false)

@@ -48,9 +48,13 @@
           </svg>
         </div>
 
-        <!-- ── Brand ── -->
-        <h1 class="splash__brand">{{ settingsStore.siteName }}</h1>
-        <p class="splash__tagline">{{ settingsStore.tagline }}</p>
+        <!-- ── Brand ── only revealed once settings are loaded + min timer has elapsed -->
+        <Transition name="sp-brand">
+          <div v-if="brandVisible" class="splash__brand-wrap">
+            <h1 class="splash__brand">{{ settingsStore.siteName }}</h1>
+            <p class="splash__tagline">{{ settingsStore.tagline }}</p>
+          </div>
+        </Transition>
 
         <!-- ── Loading dots ── -->
         <div class="splash__dots" role="status" aria-label="در حال بارگذاری">
@@ -65,7 +69,7 @@
 </template>
 
 <script setup>
-import { watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings.store'
 import { logger } from '@/utils/logger'
 
@@ -78,6 +82,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['hidden'])
+
+// ── Brand reveal: only show the site name once BOTH conditions are met:
+//   1. Minimum timer elapsed (keeps glasses mostly drawn before text appears)
+//   2. Settings loaded (guarantees we show the real name, not the default)
+const brandVisible = ref(false)
+let _timerFired = false
+let _settingsFired = false
+
+function _checkBrand() {
+  if (_timerFired && _settingsFired && !brandVisible.value) {
+    brandVisible.value = true
+    logger.debug('splash: brand text revealed', { siteName: settingsStore.siteName }, CTX)
+  }
+}
+
+watch(
+  () => settingsStore.settings,
+  (s) => { if (s) { _settingsFired = true; _checkBrand() } },
+  { immediate: true },
+)
 
 watch(
   () => props.ready,
@@ -93,6 +117,8 @@ function onAfterLeave() {
 
 onMounted(() => {
   logger.debug('splash: glasses animation started', {}, CTX)
+  // Same visual timing as before (1.0 s CSS delay) but now waits for real site name
+  setTimeout(() => { _timerFired = true; _checkBrand() }, 950)
 })
 
 defineExpose({ onAfterLeave })
@@ -208,15 +234,19 @@ defineExpose({ onAfterLeave })
 }
 
 /* ── Brand text ── */
+.splash__brand-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .splash__brand {
   margin: 0;
   color: #ffffff;
   font-size: 2rem;
   font-weight: 800;
   letter-spacing: 0.04em;
-  opacity: 0;
-  transform: translateY(12px);
-  animation: sp-text-in 0.5s ease-out forwards 1.0s;
 }
 
 .splash__tagline {
@@ -224,13 +254,15 @@ defineExpose({ onAfterLeave })
   color: rgba(255, 255, 255, 0.45);
   font-size: 0.875rem;
   letter-spacing: 0.02em;
-  opacity: 0;
-  transform: translateY(8px);
-  animation: sp-text-in 0.5s ease-out forwards 1.18s;
 }
 
-@keyframes sp-text-in {
-  to { opacity: 1; transform: translateY(0); }
+/* Vue Transition: brand slides in once settings are ready */
+.sp-brand-enter-active {
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.sp-brand-enter-from {
+  opacity: 0;
+  transform: translateY(12px);
 }
 
 /* ── Loading dots ── */

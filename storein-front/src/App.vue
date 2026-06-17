@@ -38,6 +38,10 @@ useSiteHead(settings, routeTitle)
 const { applyFromSettings } = useTheme()
 watch(theme, (t) => { if (t) applyFromSettings(t) }, { immediate: true })
 
+// Fire settings fetch immediately — races ahead of auth init so the real site name
+// is ready before the brand text animation starts (~1.0 s from mount).
+onMounted(() => settingsStore.fetchSettings())
+
 // ── Splash gate: wait for auth init + settings, enforce minimum display time ──
 // Minimum 1.6 s ensures the full glasses draw animation completes before hiding.
 watch(

@@ -52,11 +52,13 @@
           </svg>
         </div>
 
-        <!-- ── Brand ── -->
-        <div class="adm-brand-wrap">
-          <h1 class="adm-brand">{{ settingsStore.siteName }}</h1>
-          <span class="adm-badge" data-testid="admin-badge">پنل مدیریت</span>
-        </div>
+        <!-- ── Brand ── only revealed once settings are loaded + min timer has elapsed -->
+        <Transition name="adm-brand">
+          <div v-if="brandVisible" class="adm-brand-wrap">
+            <h1 class="adm-brand">{{ settingsStore.siteName }}</h1>
+            <span class="adm-badge" data-testid="admin-badge">پنل مدیریت</span>
+          </div>
+        </Transition>
 
         <!-- ── Progress bar ── -->
         <div
@@ -76,7 +78,7 @@
 </template>
 
 <script setup>
-import { watch, onMounted } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import { useSettingsStore } from '@/stores/settings.store'
 import { logger } from '@/utils/logger'
 
@@ -89,6 +91,26 @@ const props = defineProps({
 })
 
 const emit = defineEmits(['hidden'])
+
+// ── Brand reveal: only show the site name once BOTH conditions are met:
+//   1. Minimum timer elapsed (keeps glasses mostly drawn before text appears)
+//   2. Settings loaded (guarantees we show the real name, not the default)
+const brandVisible = ref(false)
+let _timerFired = false
+let _settingsFired = false
+
+function _checkBrand() {
+  if (_timerFired && _settingsFired && !brandVisible.value) {
+    brandVisible.value = true
+    logger.debug('admin-splash: brand text revealed', { siteName: settingsStore.siteName }, CTX)
+  }
+}
+
+watch(
+  () => settingsStore.settings,
+  (s) => { if (s) { _settingsFired = true; _checkBrand() } },
+  { immediate: true },
+)
 
 watch(
   () => props.ready,
@@ -104,6 +126,8 @@ function onAfterLeave() {
 
 onMounted(() => {
   logger.debug('admin-splash: radar animation started', {}, CTX)
+  // Same visual timing as original 1.05 s CSS delay but now waits for real site name
+  setTimeout(() => { _timerFired = true; _checkBrand() }, 950)
 })
 
 defineExpose({ onAfterLeave })
@@ -225,9 +249,6 @@ defineExpose({ onAfterLeave })
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  opacity: 0;
-  transform: translateY(10px);
-  animation: adm-text-in 0.5s ease-out forwards 1.05s;
 }
 .adm-brand {
   margin: 0;
@@ -248,8 +269,13 @@ defineExpose({ onAfterLeave })
   background: rgba(0, 212, 232, 0.08);
 }
 
-@keyframes adm-text-in {
-  to { opacity: 1; transform: translateY(0); }
+/* Vue Transition: brand slides in once settings are ready */
+.adm-brand-enter-active {
+  transition: opacity 0.5s ease-out, transform 0.5s ease-out;
+}
+.adm-brand-enter-from {
+  opacity: 0;
+  transform: translateY(10px);
 }
 
 /* ── Progress bar ──────────────────────────────── */
