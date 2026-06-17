@@ -151,9 +151,11 @@ export class DiscountService {
     page = 1,
     limit = 20,
     isActive?: boolean,
+    search?: string,
   ): Promise<{ coupons: CouponDocument[]; total: number; totalPages: number }> {
     const filter: Record<string, any> = {};
     if (isActive !== undefined) filter.isActive = isActive;
+    if (search?.trim()) filter.code = { $regex: search.trim(), $options: 'i' };
 
     const skip = (page - 1) * limit;
     const [coupons, total] = await Promise.all([
@@ -204,6 +206,23 @@ export class DiscountService {
 
     if (!updated) throw new NotFoundException('کوپن یافت نشد');
     return updated;
+  }
+
+  async adminToggle(id: string): Promise<CouponDocument> {
+    this.assertId(id);
+    const coupon = await this.couponModel.findById(id).select('-__v');
+    if (!coupon) throw new NotFoundException('کوپن یافت نشد');
+    coupon.isActive = !coupon.isActive;
+    await coupon.save();
+    this.logger.log('Coupon toggled', { couponId: id, code: coupon.code, isActive: coupon.isActive });
+    return coupon.toObject() as CouponDocument;
+  }
+
+  async adminDelete(id: string): Promise<void> {
+    this.assertId(id);
+    const coupon = await this.couponModel.findByIdAndDelete(id);
+    if (!coupon) throw new NotFoundException('کوپن یافت نشد');
+    this.logger.log('Coupon deleted', { couponId: id, code: coupon.code });
   }
 
   async adminDeactivate(id: string): Promise<CouponDocument> {

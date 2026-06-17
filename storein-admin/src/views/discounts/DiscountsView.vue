@@ -193,6 +193,9 @@ import { useUiStore }      from '@/stores/ui.store'
 import { useDebounce }     from '@/composables/useDebounce'
 import { formatPrice, formatNumber, formatDate } from '@/utils/formatters'
 import { ITEMS_PER_PAGE }  from '@/utils/constants'
+import { logger }          from '@/utils/logger'
+
+const CTX = 'DiscountsView'
 
 import AdminTable      from '@/components/common/AdminTable.vue'
 import AdminButton     from '@/components/common/AdminButton.vue'
@@ -271,12 +274,14 @@ async function toggleActive(row) {
   try {
     const { data } = await discountService.toggle(row._id)
     row.isActive = data?.isActive ?? !prev
+    logger.info('discounts: toggled', { code: row.code, isActive: row.isActive }, CTX)
     ui.addToast(
       row.isActive ? 'کد تخفیف فعال شد' : 'کد تخفیف غیرفعال شد',
       row.isActive ? 'success' : 'warning'
     )
-  } catch {
+  } catch (err) {
     row.isActive = prev
+    logger.error('discounts: toggle failed', { err, code: row.code }, CTX)
     ui.addToast('خطا در تغییر وضعیت', 'error')
   } finally {
     togglingId.value = null
@@ -289,13 +294,16 @@ function confirmDelete(item) {
 
 async function doDelete() {
   deleteDialog.value.loading = true
+  const item = deleteDialog.value.item
   try {
-    await discountService.remove(deleteDialog.value.item._id)
-    discounts.value = discounts.value.filter(d => d._id !== deleteDialog.value.item._id)
+    await discountService.remove(item._id)
+    discounts.value = discounts.value.filter(d => d._id !== item._id)
     total.value--
+    logger.info('discounts: deleted', { code: item.code }, CTX)
     ui.addToast('کد تخفیف حذف شد', 'success')
     deleteDialog.value.open = false
-  } catch {
+  } catch (err) {
+    logger.error('discounts: delete failed', { err, code: item.code }, CTX)
     ui.addToast('خطا در حذف کد تخفیف', 'error')
   } finally {
     deleteDialog.value.loading = false
@@ -309,21 +317,27 @@ function resetFilters() {
 
 async function fetchDiscounts() {
   loading.value = true
+  logger.debug('discounts: fetching', { page: page.value, search: dSearch.value, isActive: activeFilter.value }, CTX)
   try {
     const { data } = await discountService.getAll({
       page:  page.value,
       limit: ITEMS_PER_PAGE,
-      ...(dSearch.value         ? { search:   dSearch.value }        : {}),
-      ...(activeFilter.value !== '' ? { isActive: activeFilter.value } : {}),
+      ...(dSearch.value             ? { search:   dSearch.value }        : {}),
+      ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-    discounts.value = data?.items ?? []
-    total.value     = data?.total ?? 0
-  } catch {
+    discounts.value = data?.coupons ?? []
+    total.value     = data?.total   ?? 0
+    logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
+  } catch (err) {
+    logger.error('discounts: fetch failed', { err }, CTX)
     ui.addToast('خطا در بارگذاری کدهای تخفیف', 'error')
   } finally {
     loading.value = false
   }
 }
 
-onMounted(fetchDiscounts)
+onMounted(() => {
+  logger.debug('discounts: view mounted', {}, CTX)
+  fetchDiscounts()
+})
 </script>

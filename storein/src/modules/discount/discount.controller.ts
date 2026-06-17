@@ -1,6 +1,6 @@
 import {
-  Body, Controller, Get, Param,
-  Patch, Post, Query, UseGuards,
+  Body, Controller, Delete, Get, HttpCode, HttpStatus,
+  Param, Patch, Post, Query, UseGuards,
 } from '@nestjs/common';
 import { DiscountService } from './discount.service';
 import { CreateCouponDto } from './dto/create-coupon.dto';
@@ -34,12 +34,13 @@ export class DiscountController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()
   findAll(
-    @Query('page') page = 1,
-    @Query('limit') limit = 20,
+    @Query('page')     page     = 1,
+    @Query('limit')    limit    = 20,
     @Query('isActive') isActive?: string,
+    @Query('search')   search?:  string,
   ) {
     const active = isActive === undefined ? undefined : isActive === 'true';
-    return this.discountService.adminFindAll(+page, +limit, active);
+    return this.discountService.adminFindAll(+page, +limit, active, search);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -55,9 +56,22 @@ export class DiscountController {
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @Patch(':id/toggle')
+  toggle(@Param('id') id: string) {
+    return this.discountService.adminToggle(id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id/deactivate')
   deactivate(@Param('id') id: string) {
     return this.discountService.adminDeactivate(id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
+  @Delete(':id')
+  @HttpCode(HttpStatus.NO_CONTENT)
+  remove(@Param('id') id: string) {
+    return this.discountService.adminDelete(id);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
