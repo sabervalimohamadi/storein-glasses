@@ -17,22 +17,22 @@
         </svg>
       </button>
 
-      <!-- Logo -->
-      <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight">
+      <!-- Logo — rightmost on desktop (order-3) -->
+      <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight md:order-3">
         <span class="text-brand font-bold text-xl tracking-tight">استورین</span>
         <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">فروشگاه تخصصی عینک</span>
       </RouterLink>
 
-      <!-- Search (desktop) -->
-      <div class="hidden md:flex flex-1 max-w-xl">
+      <!-- Search (desktop) — middle (order-2) -->
+      <div class="hidden md:flex md:order-2 flex-1 max-w-xl">
         <AppHeaderSearch />
       </div>
 
       <!-- Spacer for mobile -->
       <div class="flex-1 md:hidden" />
 
-      <!-- Actions (cart, user, bell, theme) -->
-      <AppHeaderActions />
+      <!-- Actions — leftmost on desktop (order-1) -->
+      <AppHeaderActions class="md:order-1" />
     </div>
 
     <!-- Mobile search row -->
