@@ -4,19 +4,22 @@
     :class="['sb', ui.sidebarCollapsed ? 'sb--sm' : 'sb--lg', 'hidden lg:flex']"
     :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
+    <!-- Ambient glow behind logo -->
+    <div class="sb-glow" aria-hidden="true" />
+
     <!-- ── Logo ── -->
     <div class="sb-head">
       <div class="sb-head__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-[18px] h-[18px] text-white">
-          <circle cx="7"  cy="12" r="3.5"/>
-          <circle cx="17" cy="12" r="3.5"/>
-          <path stroke-linecap="round" d="M10.5 12h3M3.5 11.5V10M20.5 11.5V10"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" class="w-[19px] h-[19px] text-white">
+          <circle cx="7"  cy="12" r="3.4"/>
+          <circle cx="17" cy="12" r="3.4"/>
+          <path stroke-linecap="round" d="M10.4 12h3.2M3.2 11.5V10M20.8 11.5V10"/>
         </svg>
       </div>
       <Transition name="ft">
         <div v-if="!ui.sidebarCollapsed" class="sb-head__text">
           <span class="sb-head__name">{{ settingsStore.siteName }}</span>
-          <span class="sb-head__sub">پنل مدیریت</span>
+          <span class="sb-head__badge">پنل مدیریت</span>
         </div>
       </Transition>
     </div>
@@ -24,10 +27,13 @@
     <!-- ── Navigation ── -->
     <nav class="sb-nav scrollbar-hide">
       <template v-for="group in navGroups" :key="group.label">
-        <!-- Section header -->
-        <div v-if="group.label" class="sb-section">
-          <span v-if="!ui.sidebarCollapsed" class="sb-section__lbl">{{ group.label }}</span>
-          <div  v-else                       class="sb-section__hr" />
+        <div v-if="group.label" class="sb-sep">
+          <template v-if="!ui.sidebarCollapsed">
+            <div class="sb-sep__line" />
+            <span class="sb-sep__lbl">{{ group.label }}</span>
+            <div class="sb-sep__line" />
+          </template>
+          <div v-else class="sb-sep__dot" />
         </div>
 
         <RouterLink
@@ -37,6 +43,9 @@
           :title="ui.sidebarCollapsed ? item.label : undefined"
           :class="['nav-item', isActive(item) && 'nav-item--on']"
         >
+          <!-- Active glow ring (collapsed) -->
+          <span v-if="isActive(item) && ui.sidebarCollapsed" class="nav-ring" />
+
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path
               v-for="(d, i) in iconPaths(item.icon)"
@@ -49,7 +58,6 @@
           <Transition name="ft">
             <span v-if="!ui.sidebarCollapsed" class="nav-lbl">{{ item.label }}</span>
           </Transition>
-          <!-- Collapsed tooltip -->
           <span v-if="ui.sidebarCollapsed" class="nav-tip">{{ item.label }}</span>
         </RouterLink>
       </template>
@@ -57,39 +65,39 @@
 
     <!-- ── Footer ── -->
     <div class="sb-foot">
-      <!-- User card -->
       <Transition name="ft">
         <div v-if="!ui.sidebarCollapsed && auth.user" class="sb-user">
-          <div class="sb-user__av">{{ userInitial }}</div>
+          <div class="sb-user__av">
+            <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-white/80">
+              <path d="M12 12a4 4 0 110-8 4 4 0 010 8zm-7 8a7 7 0 1114 0H5z"/>
+            </svg>
+          </div>
           <div class="sb-user__info">
             <span class="sb-user__phone">{{ auth.user.phone }}</span>
             <span :class="['sb-user__role', auth.isAdmin ? 'sb-user__role--admin' : 'sb-user__role--mgr']">
               {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
             </span>
           </div>
+          <div class="sb-user__pulse" />
         </div>
       </Transition>
 
-      <div class="sb-foot__actions">
-        <a :href="siteUrl" target="_blank" class="foot-btn">
+      <div class="sb-foot__btns">
+        <a :href="siteUrl" target="_blank" class="foot-btn" title="مشاهده سایت">
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
           </svg>
-          <Transition name="ft">
-            <span v-if="!ui.sidebarCollapsed">مشاهده سایت</span>
-          </Transition>
+          <Transition name="ft"><span v-if="!ui.sidebarCollapsed">مشاهده سایت</span></Transition>
           <span v-if="ui.sidebarCollapsed" class="nav-tip">مشاهده سایت</span>
         </a>
 
-        <button @click="logout" class="foot-btn foot-btn--danger">
+        <button @click="logout" class="foot-btn foot-btn--out" title="خروج">
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
           </svg>
-          <Transition name="ft">
-            <span v-if="!ui.sidebarCollapsed">خروج</span>
-          </Transition>
+          <Transition name="ft"><span v-if="!ui.sidebarCollapsed">خروج</span></Transition>
           <span v-if="ui.sidebarCollapsed" class="nav-tip">خروج</span>
         </button>
       </div>
@@ -98,23 +106,25 @@
 
   <!-- ═══ Mobile Drawer ════════════════════════════════════════════════════════ -->
   <aside
-    :class="['mob', ui.sidebarMobileOpen ? 'mob--open' : '', 'lg:hidden']"
+    :class="['mob', ui.sidebarMobileOpen && 'mob--open', 'lg:hidden']"
     :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
+    <div class="sb-glow" aria-hidden="true" />
+
     <div class="sb-head">
       <div class="sb-head__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-[18px] h-[18px] text-white">
-          <circle cx="7"  cy="12" r="3.5"/>
-          <circle cx="17" cy="12" r="3.5"/>
-          <path stroke-linecap="round" d="M10.5 12h3M3.5 11.5V10M20.5 11.5V10"/>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" class="w-[19px] h-[19px] text-white">
+          <circle cx="7"  cy="12" r="3.4"/>
+          <circle cx="17" cy="12" r="3.4"/>
+          <path stroke-linecap="round" d="M10.4 12h3.2M3.2 11.5V10M20.8 11.5V10"/>
         </svg>
       </div>
       <div class="sb-head__text">
         <span class="sb-head__name">{{ settingsStore.siteName }}</span>
-        <span class="sb-head__sub">پنل مدیریت</span>
+        <span class="sb-head__badge">پنل مدیریت</span>
       </div>
       <button @click="ui.closeMobileSidebar()" class="mob-close">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <svg class="w-4.5 h-4.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
@@ -122,8 +132,10 @@
 
     <nav class="sb-nav scrollbar-hide">
       <template v-for="group in navGroups" :key="group.label">
-        <div v-if="group.label" class="sb-section">
-          <span class="sb-section__lbl">{{ group.label }}</span>
+        <div v-if="group.label" class="sb-sep">
+          <div class="sb-sep__line" />
+          <span class="sb-sep__lbl">{{ group.label }}</span>
+          <div class="sb-sep__line" />
         </div>
         <RouterLink
           v-for="item in group.items"
@@ -133,13 +145,8 @@
           :class="['nav-item', isActive(item) && 'nav-item--on']"
         >
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
-            <path
-              v-for="(d, i) in iconPaths(item.icon)"
-              :key="i"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              :d="d"
-            />
+            <path v-for="(d, i) in iconPaths(item.icon)" :key="i"
+                  stroke-linecap="round" stroke-linejoin="round" :d="d" />
           </svg>
           <span class="nav-lbl">{{ item.label }}</span>
         </RouterLink>
@@ -148,15 +155,20 @@
 
     <div class="sb-foot">
       <div v-if="auth.user" class="sb-user">
-        <div class="sb-user__av">{{ userInitial }}</div>
+        <div class="sb-user__av">
+          <svg viewBox="0 0 24 24" fill="currentColor" class="w-3.5 h-3.5 text-white/80">
+            <path d="M12 12a4 4 0 110-8 4 4 0 010 8zm-7 8a7 7 0 1114 0H5z"/>
+          </svg>
+        </div>
         <div class="sb-user__info">
           <span class="sb-user__phone">{{ auth.user.phone }}</span>
           <span :class="['sb-user__role', auth.isAdmin ? 'sb-user__role--admin' : 'sb-user__role--mgr']">
             {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
           </span>
         </div>
+        <div class="sb-user__pulse" />
       </div>
-      <div class="sb-foot__actions">
+      <div class="sb-foot__btns">
         <a :href="siteUrl" target="_blank" class="foot-btn">
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -164,7 +176,7 @@
           </svg>
           <span>مشاهده سایت</span>
         </a>
-        <button @click="logout" class="foot-btn foot-btn--danger">
+        <button @click="logout" class="foot-btn foot-btn--out">
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round"
               d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
@@ -194,7 +206,7 @@ const activeSidebarBg = computed(() =>
   (ui.isDark && sidebarBgDark.value) ? sidebarBgDark.value : sidebarBg.value
 )
 
-// ── Icons: Heroicons outline paths ──────────────────────────────────────────
+// ── Icons ───────────────────────────────────────────────────────────────────
 const ICONS = {
   dashboard:     ['M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
   products:      ['M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
@@ -214,10 +226,7 @@ const ICONS = {
   password:      ['M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'],
   notifications: ['M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
 }
-
-function iconPaths(name) {
-  return ICONS[name] ?? ['M12 4v16m-8-8h16']
-}
+function iconPaths(name) { return ICONS[name] ?? ['M12 4v16m-8-8h16'] }
 
 // ── Nav groups ──────────────────────────────────────────────────────────────
 function canAccess(perm) {
@@ -270,16 +279,8 @@ function isActive(item) {
     route.path.startsWith('/' + item.name.split('-')[0])
 }
 
-// ── User ────────────────────────────────────────────────────────────────────
-const userInitial = computed(() => {
-  const p = auth.user?.phone ?? ''
-  return p.slice(-2)
-})
-
-// ── Site URL ────────────────────────────────────────────────────────────────
 const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000'
 
-// ── Logout ──────────────────────────────────────────────────────────────────
 function logout() {
   auth.logout()
   router.push({ name: 'login' })
@@ -292,149 +293,188 @@ function logout() {
   position: fixed; top: 0; right: 0; height: 100%;
   z-index: 50;
   flex-direction: column;
-  background: #0B1120;
-  border-left: 1px solid rgba(255,255,255,0.05);
-  box-shadow: -2px 0 20px rgba(0,0,0,0.4);
-  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  background: #080D19;
+  border-left: 1px solid rgba(99,130,255,0.08);
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 .sb--lg { width: 256px; }
 .sb--sm { width: 64px; }
 
-/* ═══ Logo / Head ══════════════════════════════════════════════════════════ */
+/* Ambient glow top-right */
+.sb-glow {
+  position: absolute;
+  top: -60px; right: -60px;
+  width: 220px; height: 220px;
+  background: radial-gradient(circle, rgba(59,130,246,0.14) 0%, transparent 65%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ═══ Head ══════════════════════════════════════════════════════════════════ */
 .sb-head {
+  position: relative; z-index: 1;
   display: flex;
   align-items: center;
   gap: 0.75rem;
   padding: 0 0.875rem;
   min-height: 64px;
-  border-bottom: 1px solid rgba(255,255,255,0.055);
+  border-bottom: 1px solid rgba(255,255,255,0.045);
   flex-shrink: 0;
 }
 .sb-head__icon {
-  width: 36px; height: 36px;
-  background: linear-gradient(145deg, #1D4ED8 0%, #1B4F8A 100%);
-  border-radius: 10px;
+  width: 38px; height: 38px;
+  background: linear-gradient(145deg, #2563EB 0%, #1D4ED8 60%, #1B3FAA 100%);
+  border-radius: 11px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 2px 10px rgba(29, 78, 216, 0.45);
+  box-shadow: 0 0 0 1px rgba(99,179,255,0.15), 0 4px 16px rgba(29,78,216,0.5);
 }
 .sb-head__text {
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  min-width: 0;
+  display: flex; flex-direction: column; gap: 3px;
+  overflow: hidden; min-width: 0;
 }
 .sb-head__name {
-  color: #E2E8F0;
+  color: #E8F0FF;
   font-size: 0.875rem;
   font-weight: 700;
-  line-height: 1.25;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  letter-spacing: 0.01em;
 }
-.sb-head__sub {
-  margin-top: 3px;
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.1em;
-  color: #2A3D56;
+.sb-head__badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-size: 0.575rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  white-space: nowrap;
+  color: #3B82F6;
+  background: rgba(59,130,246,0.1);
+  border: 1px solid rgba(59,130,246,0.2);
+  padding: 1px 7px;
+  border-radius: 4px;
 }
 
 /* ═══ Navigation ════════════════════════════════════════════════════════════ */
 .sb-nav {
+  position: relative; z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 0.625rem 0.5rem;
+  padding: 0.5rem 0.5rem;
   display: flex;
   flex-direction: column;
   gap: 1px;
 }
 
 /* Section separator */
-.sb-section {
-  padding: 0.875rem 0.625rem 0.3rem;
+.sb-sep {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 0.75rem 0.3rem;
 }
-.sb-section__lbl {
-  font-size: 0.6rem;
+.sb-sep__line {
+  flex: 1;
+  height: 1px;
+  background: rgba(255,255,255,0.045);
+}
+.sb-sep__lbl {
+  font-size: 0.58rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.14em;
-  color: #243244;
+  letter-spacing: 0.16em;
+  color: #2A3D56;
+  white-space: nowrap;
 }
-.sb-section__hr {
-  height: 1px;
-  background: rgba(255,255,255,0.055);
-  margin: 0.375rem 0.25rem;
+.sb-sep__dot {
+  width: 16px; height: 1px;
+  background: rgba(255,255,255,0.06);
+  margin: 0.75rem auto 0.3rem;
 }
 
 /* Nav item */
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.7rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
+  gap: 0.75rem;
+  padding: 0.52rem 0.75rem;
+  border-radius: 9px;
   position: relative;
-  color: #4A6075;
+  color: #3D5470;
   font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: none;
-  transition: background 0.14s ease, color 0.14s ease;
-  overflow: visible;
+  transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap;
+  overflow: visible;
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.04);
-  color: #7A97B0;
+  background: rgba(255,255,255,0.05);
+  color: #8BACCF;
 }
-.nav-item:hover .nav-ico {
-  color: #6A90A8;
-}
+.nav-item:hover .nav-ico { color: #5A80A0; }
 
-/* Active */
+/* ── Active ── */
 .nav-item--on {
-  background: rgba(29, 78, 216, 0.14);
-  color: #E2E8F0;
+  background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(29,78,216,0.07) 100%);
+  color: #D4E8FF;
 }
+/* Left border accent */
 .nav-item--on::before {
   content: '';
   position: absolute;
   left: 0; top: 5px; bottom: 5px;
   width: 3px;
-  background: linear-gradient(180deg, #3B82F6, #1D4ED8);
+  background: linear-gradient(180deg, #60A5FA 0%, #2563EB 100%);
   border-radius: 0 3px 3px 0;
+}
+/* Top highlight line */
+.nav-item--on::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9px;
+  border: 1px solid rgba(96,165,250,0.12);
+  pointer-events: none;
 }
 .nav-item--on .nav-ico {
   color: #60A5FA;
+  filter: drop-shadow(0 0 5px rgba(96,165,250,0.55));
 }
 .nav-item--on .nav-lbl {
   font-weight: 600;
+  color: #D4E8FF;
+}
+
+/* Active glow ring in collapsed mode */
+.nav-ring {
+  position: absolute;
+  inset: 2px;
+  border-radius: 7px;
+  border: 1px solid rgba(96,165,250,0.3);
+  box-shadow: inset 0 0 8px rgba(59,130,246,0.12);
+  pointer-events: none;
 }
 
 .nav-ico {
   width: 17px; height: 17px;
   flex-shrink: 0;
-  color: #364859;
-  transition: color 0.14s ease;
+  color: #2E4460;
+  transition: color 0.15s ease, filter 0.15s ease;
 }
-.nav-lbl {
-  flex: 1;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
+.nav-lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; }
 
-/* Tooltip (collapsed mode) */
+/* Tooltip */
 .nav-tip {
   position: absolute;
   right: calc(100% + 10px);
   top: 50%;
   transform: translateY(-50%);
-  background: #1A2535;
-  color: #C8D8E8;
+  background: #111C30;
+  color: #B8D0F0;
   font-size: 0.72rem;
   font-weight: 500;
   padding: 0.3rem 0.7rem;
@@ -443,123 +483,108 @@ function logout() {
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
-  border: 1px solid rgba(255,255,255,0.1);
-  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  border: 1px solid rgba(96,165,250,0.15);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px rgba(96,165,250,0.05);
   z-index: 9999;
 }
 .nav-item:hover .nav-tip,
-.foot-btn:hover .nav-tip {
-  opacity: 1;
-}
+.foot-btn:hover .nav-tip { opacity: 1; }
 
 /* ═══ Footer ════════════════════════════════════════════════════════════════ */
 .sb-foot {
-  border-top: 1px solid rgba(255,255,255,0.055);
+  position: relative; z-index: 1;
+  border-top: 1px solid rgba(255,255,255,0.045);
   padding: 0.625rem 0.5rem;
   flex-shrink: 0;
 }
-.sb-foot__actions {
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
+.sb-foot__btns { display: flex; flex-direction: column; gap: 1px; }
 
 /* User card */
 .sb-user {
   display: flex;
   align-items: center;
   gap: 0.65rem;
-  padding: 0.5rem 0.75rem;
-  margin-bottom: 0.375rem;
-  border-radius: 8px;
-  background: rgba(255,255,255,0.025);
+  padding: 0.55rem 0.75rem;
+  margin-bottom: 0.4rem;
+  border-radius: 9px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.045);
+  position: relative;
+  overflow: hidden;
 }
 .sb-user__av {
   width: 30px; height: 30px;
-  background: linear-gradient(135deg, #1E3A6E 0%, #1D4ED8 100%);
+  background: linear-gradient(135deg, #1E3A70 0%, #2563EB 100%);
   border-radius: 8px;
   display: flex; align-items: center; justify-content: center;
-  font-size: 0.65rem;
-  font-weight: 700;
-  color: #fff;
   flex-shrink: 0;
-  font-family: 'IRANSansFaNum', monospace;
-  letter-spacing: 0.05em;
+  box-shadow: 0 0 0 1px rgba(99,179,255,0.2), 0 2px 8px rgba(29,78,216,0.4);
 }
 .sb-user__info {
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
+  display: flex; flex-direction: column; min-width: 0;
 }
 .sb-user__phone {
-  font-size: 0.7rem;
-  color: #4A6075;
+  font-size: 0.68rem;
+  color: #3D5470;
   direction: ltr;
   font-family: 'IRANSansFaNum', monospace;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sb-user__role {
-  margin-top: 3px;
+  margin-top: 2px;
   font-size: 0.58rem;
   font-weight: 700;
+  letter-spacing: 0.05em;
   padding: 1px 7px;
   border-radius: 4px;
-  letter-spacing: 0.04em;
   width: fit-content;
 }
-.sb-user__role--admin {
-  background: rgba(29, 78, 216, 0.18);
-  color: #60A5FA;
+.sb-user__role--admin { background: rgba(59,130,246,0.15); color: #60A5FA; }
+.sb-user__role--mgr   { background: rgba(245,158,11,0.12); color: #FBBF24; }
+
+/* Online pulse dot */
+.sb-user__pulse {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: #22C55E;
+  box-shadow: 0 0 0 2px rgba(34,197,94,0.25);
+  flex-shrink: 0;
+  margin-right: auto;
+  animation: pulse 2.5s ease-in-out infinite;
 }
-.sb-user__role--mgr {
-  background: rgba(245, 158, 11, 0.15);
-  color: #F59E0B;
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(34,197,94,0.25); }
+  50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0.1); }
 }
 
 /* Footer buttons */
 .foot-btn {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-  padding: 0.45rem 0.75rem;
+  display: flex; align-items: center; gap: 0.7rem;
+  padding: 0.48rem 0.75rem;
   border-radius: 8px;
-  color: #36495A;
+  color: #2E4460;
   font-size: 0.8rem;
   font-weight: 500;
   text-decoration: none;
-  width: 100%;
-  cursor: pointer;
-  background: transparent;
-  border: none;
-  transition: background 0.14s ease, color 0.14s ease;
-  white-space: nowrap;
-  position: relative;
+  width: 100%; cursor: pointer;
+  background: transparent; border: none;
+  transition: background 0.15s ease, color 0.15s ease;
+  white-space: nowrap; position: relative;
 }
-.foot-btn:hover {
-  background: rgba(255,255,255,0.04);
-  color: #7A97B0;
-}
-.foot-btn:hover .nav-ico { color: #6A90A8; }
-.foot-btn--danger:hover {
-  background: rgba(239, 68, 68, 0.08);
-  color: #F87171;
-}
-.foot-btn--danger:hover .nav-ico { color: #F87171; }
+.foot-btn:hover { background: rgba(255,255,255,0.05); color: #7AAACF; }
+.foot-btn:hover .nav-ico { color: #5A80A0; }
+.foot-btn--out:hover { background: rgba(239,68,68,0.08); color: #F87171; }
+.foot-btn--out:hover .nav-ico { color: #F87171; }
 
-/* ═══ Mobile Drawer ══════════════════════════════════════════════════════════ */
+/* ═══ Mobile ════════════════════════════════════════════════════════════════ */
 .mob {
   position: fixed; top: 0; right: 0; height: 100%;
-  z-index: 50;
-  width: 260px;
-  display: flex;
-  flex-direction: column;
-  background: #0B1120;
-  border-left: 1px solid rgba(255,255,255,0.05);
-  box-shadow: -4px 0 32px rgba(0,0,0,0.5);
+  z-index: 50; width: 260px;
+  display: flex; flex-direction: column;
+  background: #080D19;
+  border-left: 1px solid rgba(99,130,255,0.08);
   transform: translateX(100%);
-  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
 .mob--open { transform: translateX(0); }
@@ -567,21 +592,16 @@ function logout() {
 .mob-close {
   margin-right: auto;
   display: flex; align-items: center; justify-content: center;
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   border-radius: 7px;
-  color: #4A6075;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  transition: background 0.14s ease, color 0.14s ease;
+  color: #2E4460;
+  background: transparent; border: none; cursor: pointer;
   flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease;
 }
-.mob-close:hover {
-  background: rgba(255,255,255,0.06);
-  color: #94A3B8;
-}
+.mob-close:hover { background: rgba(255,255,255,0.06); color: #7AAACF; }
 
 /* ═══ Transition ════════════════════════════════════════════════════════════ */
 .ft-enter-active, .ft-leave-active { transition: opacity 0.12s ease; }
-.ft-enter-from, .ft-leave-to       { opacity: 0; }
+.ft-enter-from,   .ft-leave-to     { opacity: 0; }
 </style>
