@@ -14,7 +14,7 @@
     <!-- Main area -->
     <div
       class="flex-1 flex flex-col min-w-0 transition-all duration-300"
-      :class="ui.sidebarCollapsed ? 'lg:pr-16' : 'lg:pr-64'"
+      :class="ui.sidebarCollapsed ? 'lg:pr-[68px]' : 'lg:pr-[268px]'"
     >
       <AdminHeader />
 

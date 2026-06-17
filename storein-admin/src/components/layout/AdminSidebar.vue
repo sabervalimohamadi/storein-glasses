@@ -2,9 +2,8 @@
   <!-- ═══ Desktop Sidebar ═══════════════════════════════════════════════════════ -->
   <aside
     :class="['sb', ui.sidebarCollapsed ? 'sb--sm' : 'sb--lg', 'hidden lg:flex']"
-    :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
+    :style="activeSidebarBg ? { background: activeSidebarBg } : {}"
   >
-    <!-- Ambient glow behind logo -->
     <div class="sb-glow" aria-hidden="true" />
 
     <!-- ── Logo ── -->
@@ -27,12 +26,9 @@
     <!-- ── Navigation ── -->
     <nav class="sb-nav scrollbar-hide">
       <template v-for="group in navGroups" :key="group.label">
+
         <div v-if="group.label" class="sb-sep">
-          <template v-if="!ui.sidebarCollapsed">
-            <div class="sb-sep__line" />
-            <span class="sb-sep__lbl">{{ group.label }}</span>
-            <div class="sb-sep__line" />
-          </template>
+          <span v-if="!ui.sidebarCollapsed" class="sb-sep__lbl">{{ group.label }}</span>
           <div v-else class="sb-sep__dot" />
         </div>
 
@@ -43,9 +39,7 @@
           :title="ui.sidebarCollapsed ? item.label : undefined"
           :class="['nav-item', isActive(item) && 'nav-item--on']"
         >
-          <!-- Active glow ring (collapsed) -->
           <span v-if="isActive(item) && ui.sidebarCollapsed" class="nav-ring" />
-
           <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
             <path
               v-for="(d, i) in iconPaths(item.icon)"
@@ -60,6 +54,7 @@
           </Transition>
           <span v-if="ui.sidebarCollapsed" class="nav-tip">{{ item.label }}</span>
         </RouterLink>
+
       </template>
     </nav>
 
@@ -107,7 +102,7 @@
   <!-- ═══ Mobile Drawer ════════════════════════════════════════════════════════ -->
   <aside
     :class="['mob', ui.sidebarMobileOpen && 'mob--open', 'lg:hidden']"
-    :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
+    :style="activeSidebarBg ? { background: activeSidebarBg } : {}"
   >
     <div class="sb-glow" aria-hidden="true" />
 
@@ -133,9 +128,7 @@
     <nav class="sb-nav scrollbar-hide">
       <template v-for="group in navGroups" :key="group.label">
         <div v-if="group.label" class="sb-sep">
-          <div class="sb-sep__line" />
           <span class="sb-sep__lbl">{{ group.label }}</span>
-          <div class="sb-sep__line" />
         </div>
         <RouterLink
           v-for="item in group.items"
@@ -288,25 +281,26 @@ function logout() {
 </script>
 
 <style scoped>
-/* ═══ Base ═════════════════════════════════════════════════════════════════ */
+/* ═══ Base ══════════════════════════════════════════════════════════════════ */
 .sb {
   position: fixed; top: 0; right: 0; height: 100%;
   z-index: 50;
   flex-direction: column;
-  background: #080D19;
-  border-left: 1px solid rgba(99,130,255,0.08);
+  background: #07091280;
+  background: linear-gradient(180deg, #080c18 0%, #070a15 100%);
+  border-left: 1px solid rgba(255,255,255,0.05);
   transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
 }
-.sb--lg { width: 256px; }
-.sb--sm { width: 64px; }
+.sb--lg { width: 268px; }
+.sb--sm { width: 68px; }
 
-/* Ambient glow top-right */
+/* Ambient glow */
 .sb-glow {
   position: absolute;
-  top: -60px; right: -60px;
-  width: 220px; height: 220px;
-  background: radial-gradient(circle, rgba(59,130,246,0.14) 0%, transparent 65%);
+  top: -80px; right: -80px;
+  width: 280px; height: 280px;
+  background: radial-gradient(circle, rgba(59,130,246,0.12) 0%, transparent 60%);
   pointer-events: none;
   z-index: 0;
 }
@@ -316,27 +310,30 @@ function logout() {
   position: relative; z-index: 1;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0 0.875rem;
-  min-height: 64px;
-  border-bottom: 1px solid rgba(255,255,255,0.045);
+  gap: 0.875rem;
+  padding: 0 1rem;
+  min-height: 68px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
   flex-shrink: 0;
 }
 .sb-head__icon {
-  width: 38px; height: 38px;
+  width: 40px; height: 40px;
   background: linear-gradient(145deg, #2563EB 0%, #1D4ED8 60%, #1B3FAA 100%);
-  border-radius: 11px;
+  border-radius: 12px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(99,179,255,0.15), 0 4px 16px rgba(29,78,216,0.5);
+  box-shadow:
+    0 0 0 1px rgba(96,165,250,0.2),
+    0 4px 20px rgba(29,78,216,0.55),
+    0 1px 3px rgba(0,0,0,0.4);
 }
 .sb-head__text {
-  display: flex; flex-direction: column; gap: 3px;
+  display: flex; flex-direction: column; gap: 4px;
   overflow: hidden; min-width: 0;
 }
 .sb-head__name {
-  color: #E8F0FF;
-  font-size: 0.875rem;
+  color: #EEF4FF;
+  font-size: 0.9rem;
   font-weight: 700;
   white-space: nowrap;
   overflow: hidden;
@@ -349,13 +346,13 @@ function logout() {
   width: fit-content;
   font-size: 0.575rem;
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
   color: #3B82F6;
   background: rgba(59,130,246,0.1);
-  border: 1px solid rgba(59,130,246,0.2);
-  padding: 1px 7px;
-  border-radius: 4px;
+  border: 1px solid rgba(59,130,246,0.22);
+  padding: 2px 8px;
+  border-radius: 5px;
 }
 
 /* ═══ Navigation ════════════════════════════════════════════════════════════ */
@@ -363,47 +360,38 @@ function logout() {
   position: relative; z-index: 1;
   flex: 1;
   overflow-y: auto;
-  padding: 0.5rem 0.5rem;
+  padding: 0.75rem 0.75rem;
   display: flex;
   flex-direction: column;
-  gap: 1px;
+  gap: 2px;
 }
 
 /* Section separator */
 .sb-sep {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 0.75rem 0.3rem;
-}
-.sb-sep__line {
-  flex: 1;
-  height: 1px;
-  background: rgba(255,255,255,0.045);
+  padding: 1.1rem 0.5rem 0.45rem;
 }
 .sb-sep__lbl {
-  font-size: 0.58rem;
+  font-size: 0.6rem;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.16em;
-  color: #2A3D56;
-  white-space: nowrap;
+  letter-spacing: 0.2em;
+  color: #1E3552;
 }
 .sb-sep__dot {
-  width: 16px; height: 1px;
-  background: rgba(255,255,255,0.06);
-  margin: 0.75rem auto 0.3rem;
+  width: 20px; height: 1px;
+  background: rgba(255,255,255,0.05);
+  margin: 1rem auto 0.45rem;
 }
 
 /* Nav item */
 .nav-item {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.52rem 0.75rem;
-  border-radius: 9px;
+  gap: 0.875rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
   position: relative;
-  color: #3D5470;
+  color: #3E587A;
   font-size: 0.8125rem;
   font-weight: 500;
   text-decoration: none;
@@ -412,57 +400,55 @@ function logout() {
   overflow: visible;
 }
 .nav-item:hover {
-  background: rgba(255,255,255,0.05);
-  color: #8BACCF;
+  background: rgba(255,255,255,0.045);
+  color: #7DAACF;
 }
-.nav-item:hover .nav-ico { color: #5A80A0; }
+.nav-item:hover .nav-ico { color: #5A82A8; }
 
 /* ── Active ── */
 .nav-item--on {
-  background: linear-gradient(135deg, rgba(59,130,246,0.18) 0%, rgba(29,78,216,0.07) 100%);
-  color: #D4E8FF;
+  background: linear-gradient(135deg, rgba(59,130,246,0.15) 0%, rgba(29,78,216,0.06) 100%);
+  color: #C8E0FF;
 }
-/* Left border accent */
 .nav-item--on::before {
   content: '';
   position: absolute;
-  left: 0; top: 5px; bottom: 5px;
+  left: 0; top: 6px; bottom: 6px;
   width: 3px;
   background: linear-gradient(180deg, #60A5FA 0%, #2563EB 100%);
   border-radius: 0 3px 3px 0;
 }
-/* Top highlight line */
 .nav-item--on::after {
   content: '';
   position: absolute;
   inset: 0;
-  border-radius: 9px;
-  border: 1px solid rgba(96,165,250,0.12);
+  border-radius: 10px;
+  border: 1px solid rgba(96,165,250,0.1);
   pointer-events: none;
 }
 .nav-item--on .nav-ico {
   color: #60A5FA;
-  filter: drop-shadow(0 0 5px rgba(96,165,250,0.55));
+  filter: drop-shadow(0 0 6px rgba(96,165,250,0.6));
 }
 .nav-item--on .nav-lbl {
   font-weight: 600;
-  color: #D4E8FF;
+  color: #C8E0FF;
 }
 
-/* Active glow ring in collapsed mode */
+/* Active glow ring (collapsed) */
 .nav-ring {
   position: absolute;
   inset: 2px;
-  border-radius: 7px;
-  border: 1px solid rgba(96,165,250,0.3);
-  box-shadow: inset 0 0 8px rgba(59,130,246,0.12);
+  border-radius: 8px;
+  border: 1px solid rgba(96,165,250,0.28);
+  box-shadow: inset 0 0 10px rgba(59,130,246,0.1);
   pointer-events: none;
 }
 
 .nav-ico {
-  width: 17px; height: 17px;
+  width: 18px; height: 18px;
   flex-shrink: 0;
-  color: #2E4460;
+  color: #2C4260;
   transition: color 0.15s ease, filter 0.15s ease;
 }
 .nav-lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; }
@@ -470,21 +456,21 @@ function logout() {
 /* Tooltip */
 .nav-tip {
   position: absolute;
-  right: calc(100% + 10px);
+  right: calc(100% + 12px);
   top: 50%;
   transform: translateY(-50%);
-  background: #111C30;
-  color: #B8D0F0;
+  background: #0F1A2E;
+  color: #A8C8E8;
   font-size: 0.72rem;
   font-weight: 500;
-  padding: 0.3rem 0.7rem;
-  border-radius: 7px;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
   white-space: nowrap;
   pointer-events: none;
   opacity: 0;
   transition: opacity 0.15s ease;
-  border: 1px solid rgba(96,165,250,0.15);
-  box-shadow: 0 4px 16px rgba(0,0,0,0.4), 0 0 0 1px rgba(96,165,250,0.05);
+  border: 1px solid rgba(96,165,250,0.14);
+  box-shadow: 0 4px 20px rgba(0,0,0,0.5), 0 0 0 1px rgba(96,165,250,0.04);
   z-index: 9999;
 }
 .nav-item:hover .nav-tip,
@@ -493,53 +479,50 @@ function logout() {
 /* ═══ Footer ════════════════════════════════════════════════════════════════ */
 .sb-foot {
   position: relative; z-index: 1;
-  border-top: 1px solid rgba(255,255,255,0.045);
-  padding: 0.625rem 0.5rem;
+  border-top: 1px solid rgba(255,255,255,0.04);
+  padding: 0.75rem 0.75rem 0.875rem;
   flex-shrink: 0;
 }
-.sb-foot__btns { display: flex; flex-direction: column; gap: 1px; }
+.sb-foot__btns { display: flex; flex-direction: column; gap: 2px; }
 
 /* User card */
 .sb-user {
   display: flex;
   align-items: center;
-  gap: 0.65rem;
-  padding: 0.55rem 0.75rem;
-  margin-bottom: 0.4rem;
-  border-radius: 9px;
-  background: rgba(255,255,255,0.03);
-  border: 1px solid rgba(255,255,255,0.045);
-  position: relative;
-  overflow: hidden;
+  gap: 0.7rem;
+  padding: 0.6rem 0.875rem;
+  margin-bottom: 0.625rem;
+  border-radius: 10px;
+  background: rgba(255,255,255,0.025);
+  border: 1px solid rgba(255,255,255,0.04);
 }
 .sb-user__av {
-  width: 30px; height: 30px;
+  width: 32px; height: 32px;
   background: linear-gradient(135deg, #1E3A70 0%, #2563EB 100%);
-  border-radius: 8px;
+  border-radius: 9px;
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
-  box-shadow: 0 0 0 1px rgba(99,179,255,0.2), 0 2px 8px rgba(29,78,216,0.4);
+  box-shadow: 0 0 0 1px rgba(96,165,250,0.18), 0 2px 10px rgba(29,78,216,0.45);
 }
 .sb-user__info {
-  display: flex; flex-direction: column; min-width: 0;
+  display: flex; flex-direction: column; min-width: 0; gap: 3px;
 }
 .sb-user__phone {
-  font-size: 0.68rem;
-  color: #3D5470;
+  font-size: 0.7rem;
+  color: #3A5472;
   direction: ltr;
   font-family: 'IRANSansFaNum', monospace;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
 }
 .sb-user__role {
-  margin-top: 2px;
   font-size: 0.58rem;
   font-weight: 700;
-  letter-spacing: 0.05em;
-  padding: 1px 7px;
-  border-radius: 4px;
+  letter-spacing: 0.06em;
+  padding: 2px 8px;
+  border-radius: 5px;
   width: fit-content;
 }
-.sb-user__role--admin { background: rgba(59,130,246,0.15); color: #60A5FA; }
+.sb-user__role--admin { background: rgba(59,130,246,0.14); color: #60A5FA; }
 .sb-user__role--mgr   { background: rgba(245,158,11,0.12); color: #FBBF24; }
 
 /* Online pulse dot */
@@ -554,14 +537,14 @@ function logout() {
 }
 @keyframes pulse {
   0%, 100% { box-shadow: 0 0 0 2px rgba(34,197,94,0.25); }
-  50%       { box-shadow: 0 0 0 4px rgba(34,197,94,0.1); }
+  50%       { box-shadow: 0 0 0 5px rgba(34,197,94,0.08); }
 }
 
 /* Footer buttons */
 .foot-btn {
-  display: flex; align-items: center; gap: 0.7rem;
-  padding: 0.48rem 0.75rem;
-  border-radius: 8px;
+  display: flex; align-items: center; gap: 0.8rem;
+  padding: 0.56rem 0.9rem;
+  border-radius: 9px;
   color: #2E4460;
   font-size: 0.8rem;
   font-weight: 500;
@@ -571,18 +554,18 @@ function logout() {
   transition: background 0.15s ease, color 0.15s ease;
   white-space: nowrap; position: relative;
 }
-.foot-btn:hover { background: rgba(255,255,255,0.05); color: #7AAACF; }
+.foot-btn:hover { background: rgba(255,255,255,0.045); color: #7AAACF; }
 .foot-btn:hover .nav-ico { color: #5A80A0; }
-.foot-btn--out:hover { background: rgba(239,68,68,0.08); color: #F87171; }
+.foot-btn--out:hover { background: rgba(239,68,68,0.07); color: #F87171; }
 .foot-btn--out:hover .nav-ico { color: #F87171; }
 
 /* ═══ Mobile ════════════════════════════════════════════════════════════════ */
 .mob {
   position: fixed; top: 0; right: 0; height: 100%;
-  z-index: 50; width: 260px;
+  z-index: 50; width: 268px;
   display: flex; flex-direction: column;
-  background: #080D19;
-  border-left: 1px solid rgba(99,130,255,0.08);
+  background: linear-gradient(180deg, #080c18 0%, #070a15 100%);
+  border-left: 1px solid rgba(255,255,255,0.05);
   transform: translateX(100%);
   transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
@@ -592,8 +575,8 @@ function logout() {
 .mob-close {
   margin-right: auto;
   display: flex; align-items: center; justify-content: center;
-  width: 30px; height: 30px;
-  border-radius: 7px;
+  width: 32px; height: 32px;
+  border-radius: 8px;
   color: #2E4460;
   background: transparent; border: none; cursor: pointer;
   flex-shrink: 0;
