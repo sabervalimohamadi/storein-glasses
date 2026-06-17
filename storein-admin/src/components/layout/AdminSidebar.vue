@@ -1,160 +1,225 @@
 <template>
-  <!-- Desktop sidebar -->
-  <aside :class="[
-    'fixed top-0 right-0 h-full bg-sidebar-bg z-sidebar flex flex-col',
-    'transition-all duration-300 shadow-sidebar hidden lg:flex',
-    ui.sidebarCollapsed ? 'w-16' : 'w-64',
-  ]"
-  :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
+  <!-- ═══ Desktop Sidebar ═══════════════════════════════════════════════════════ -->
+  <aside
+    :class="['sb', ui.sidebarCollapsed ? 'sb--sm' : 'sb--lg', 'hidden lg:flex']"
+    :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
-    <!-- Logo -->
-    <div class="flex items-center gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
-      <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center flex-shrink-0">
-        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-          <circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/>
-          <path stroke-linecap="round" d="M11 12h2"/>
+    <!-- ── Logo ── -->
+    <div class="sb-head">
+      <div class="sb-head__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-[18px] h-[18px] text-white">
+          <circle cx="7"  cy="12" r="3.5"/>
+          <circle cx="17" cy="12" r="3.5"/>
+          <path stroke-linecap="round" d="M10.5 12h3M3.5 11.5V10M20.5 11.5V10"/>
         </svg>
       </div>
-      <Transition name="fade-text">
-        <div v-if="!ui.sidebarCollapsed">
-          <p class="text-white font-bold text-sm leading-none">استورین</p>
-          <p class="text-sidebar-text text-xs mt-0.5">پنل مدیریت</p>
+      <Transition name="ft">
+        <div v-if="!ui.sidebarCollapsed" class="sb-head__text">
+          <span class="sb-head__name">{{ settingsStore.siteName }}</span>
+          <span class="sb-head__sub">پنل مدیریت</span>
         </div>
       </Transition>
     </div>
 
-    <!-- Nav -->
-    <nav class="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
-      <div v-for="group in navGroups" :key="group.label" class="mb-4">
-        <p v-if="!ui.sidebarCollapsed && group.label"
-           class="text-sidebar-text text-xs font-medium px-3 mb-1 uppercase tracking-wider">
-          {{ group.label }}
-        </p>
+    <!-- ── Navigation ── -->
+    <nav class="sb-nav scrollbar-hide">
+      <template v-for="group in navGroups" :key="group.label">
+        <!-- Section header -->
+        <div v-if="group.label" class="sb-section">
+          <span v-if="!ui.sidebarCollapsed" class="sb-section__lbl">{{ group.label }}</span>
+          <div  v-else                       class="sb-section__hr" />
+        </div>
+
         <RouterLink
           v-for="item in group.items"
           :key="item.name"
           :to="{ name: item.name }"
-          :title="ui.sidebarCollapsed ? item.label : ''"
-          :class="[
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 transition-all duration-150 group relative',
-            isActive(item)
-              ? 'bg-primary text-white'
-              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
-          ]"
+          :title="ui.sidebarCollapsed ? item.label : undefined"
+          :class="['nav-item', isActive(item) && 'nav-item--on']"
         >
-          <span class="text-base flex-shrink-0 w-5 text-center leading-none">{{ item.icon }}</span>
-          <Transition name="fade-text">
-            <span v-if="!ui.sidebarCollapsed" class="text-sm font-medium">{{ item.label }}</span>
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path
+              v-for="(d, i) in iconPaths(item.icon)"
+              :key="i"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              :d="d"
+            />
+          </svg>
+          <Transition name="ft">
+            <span v-if="!ui.sidebarCollapsed" class="nav-lbl">{{ item.label }}</span>
           </Transition>
           <!-- Collapsed tooltip -->
-          <div v-if="ui.sidebarCollapsed"
-               class="absolute right-full mr-2 bg-gray-900 text-white text-xs px-2 py-1 rounded-md
-                      whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100
-                      transition-opacity duration-150 z-dropdown">
-            {{ item.label }}
-          </div>
+          <span v-if="ui.sidebarCollapsed" class="nav-tip">{{ item.label }}</span>
         </RouterLink>
-      </div>
+      </template>
     </nav>
 
-    <!-- Footer -->
-    <div class="border-t border-sidebar-border px-2 py-3 space-y-1">
-      <!-- Role badge -->
-      <div v-if="!ui.sidebarCollapsed && auth.user"
-           class="flex items-center gap-2 px-3 py-1.5">
-        <span class="text-xs text-sidebar-text">{{ auth.user.phone }}</span>
-        <span :class="[
-          'text-[10px] font-bold px-1.5 py-0.5 rounded-full',
-          auth.isAdmin ? 'bg-primary/20 text-primary' : 'bg-yellow-500/20 text-yellow-400',
-        ]">
-          {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
-        </span>
+    <!-- ── Footer ── -->
+    <div class="sb-foot">
+      <!-- User card -->
+      <Transition name="ft">
+        <div v-if="!ui.sidebarCollapsed && auth.user" class="sb-user">
+          <div class="sb-user__av">{{ userInitial }}</div>
+          <div class="sb-user__info">
+            <span class="sb-user__phone">{{ auth.user.phone }}</span>
+            <span :class="['sb-user__role', auth.isAdmin ? 'sb-user__role--admin' : 'sb-user__role--mgr']">
+              {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
+            </span>
+          </div>
+        </div>
+      </Transition>
+
+      <div class="sb-foot__actions">
+        <a :href="siteUrl" target="_blank" class="foot-btn">
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+          </svg>
+          <Transition name="ft">
+            <span v-if="!ui.sidebarCollapsed">مشاهده سایت</span>
+          </Transition>
+          <span v-if="ui.sidebarCollapsed" class="nav-tip">مشاهده سایت</span>
+        </a>
+
+        <button @click="logout" class="foot-btn foot-btn--danger">
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <Transition name="ft">
+            <span v-if="!ui.sidebarCollapsed">خروج</span>
+          </Transition>
+          <span v-if="ui.sidebarCollapsed" class="nav-tip">خروج</span>
+        </button>
       </div>
-      <a href="http://localhost:3000" target="_blank"
-         :class="[
-           'flex items-center gap-3 px-3 py-2.5 rounded-lg',
-           'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
-           'transition-all duration-150 text-sm',
-         ]">
-        <span class="text-base flex-shrink-0 w-5 text-center">🌐</span>
-        <span v-if="!ui.sidebarCollapsed">مشاهده سایت</span>
-      </a>
-      <button @click="logout"
-        :class="[
-          'flex items-center gap-3 px-3 py-2.5 rounded-lg w-full',
-          'text-sidebar-text hover:bg-red-900/30 hover:text-red-400',
-          'transition-all duration-150 text-sm',
-        ]">
-        <span class="text-base flex-shrink-0 w-5 text-center">🚪</span>
-        <span v-if="!ui.sidebarCollapsed">خروج</span>
-      </button>
     </div>
   </aside>
 
-  <!-- Mobile drawer -->
-  <aside :class="[
-    'fixed top-0 right-0 h-full bg-sidebar-bg z-sidebar w-64 flex flex-col',
-    'transition-transform duration-300 shadow-sidebar lg:hidden',
-    ui.sidebarMobileOpen ? 'translate-x-0' : 'translate-x-full',
-  ]"
-  :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
+  <!-- ═══ Mobile Drawer ════════════════════════════════════════════════════════ -->
+  <aside
+    :class="['mob', ui.sidebarMobileOpen ? 'mob--open' : '', 'lg:hidden']"
+    :style="activeSidebarBg ? { backgroundColor: activeSidebarBg } : {}"
   >
-    <div class="flex items-center justify-between gap-3 px-4 py-4 border-b border-sidebar-border min-h-[60px]">
-      <div class="flex items-center gap-3">
-        <div class="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-          <span class="text-white text-sm font-bold">S</span>
-        </div>
-        <div>
-          <p class="text-white font-bold text-sm">استورین</p>
-          <p class="text-sidebar-text text-xs">پنل مدیریت</p>
-        </div>
+    <div class="sb-head">
+      <div class="sb-head__icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" class="w-[18px] h-[18px] text-white">
+          <circle cx="7"  cy="12" r="3.5"/>
+          <circle cx="17" cy="12" r="3.5"/>
+          <path stroke-linecap="round" d="M10.5 12h3M3.5 11.5V10M20.5 11.5V10"/>
+        </svg>
       </div>
-      <button @click="ui.closeMobileSidebar()" class="text-sidebar-text hover:text-white p-1">
+      <div class="sb-head__text">
+        <span class="sb-head__name">{{ settingsStore.siteName }}</span>
+        <span class="sb-head__sub">پنل مدیریت</span>
+      </div>
+      <button @click="ui.closeMobileSidebar()" class="mob-close">
         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
         </svg>
       </button>
     </div>
 
-    <nav class="flex-1 overflow-y-auto py-3 px-2 scrollbar-hide">
-      <div v-for="group in navGroups" :key="group.label" class="mb-4">
-        <p v-if="group.label"
-           class="text-sidebar-text text-xs font-medium px-3 mb-1 uppercase tracking-wider">
-          {{ group.label }}
-        </p>
+    <nav class="sb-nav scrollbar-hide">
+      <template v-for="group in navGroups" :key="group.label">
+        <div v-if="group.label" class="sb-section">
+          <span class="sb-section__lbl">{{ group.label }}</span>
+        </div>
         <RouterLink
-          v-for="item in group.items" :key="item.name"
+          v-for="item in group.items"
+          :key="item.name"
           :to="{ name: item.name }"
           @click="ui.closeMobileSidebar()"
-          :class="[
-            'flex items-center gap-3 px-3 py-2.5 rounded-lg mb-0.5 text-sm',
-            isActive(item)
-              ? 'bg-primary text-white'
-              : 'text-sidebar-text hover:bg-sidebar-hover hover:text-white',
-          ]"
+          :class="['nav-item', isActive(item) && 'nav-item--on']"
         >
-          <span>{{ item.icon }}</span>
-          <span>{{ item.label }}</span>
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path
+              v-for="(d, i) in iconPaths(item.icon)"
+              :key="i"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              :d="d"
+            />
+          </svg>
+          <span class="nav-lbl">{{ item.label }}</span>
         </RouterLink>
-      </div>
+      </template>
     </nav>
+
+    <div class="sb-foot">
+      <div v-if="auth.user" class="sb-user">
+        <div class="sb-user__av">{{ userInitial }}</div>
+        <div class="sb-user__info">
+          <span class="sb-user__phone">{{ auth.user.phone }}</span>
+          <span :class="['sb-user__role', auth.isAdmin ? 'sb-user__role--admin' : 'sb-user__role--mgr']">
+            {{ auth.isAdmin ? 'ادمین' : 'مدیر' }}
+          </span>
+        </div>
+      </div>
+      <div class="sb-foot__actions">
+        <a :href="siteUrl" target="_blank" class="foot-btn">
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+          </svg>
+          <span>مشاهده سایت</span>
+        </a>
+        <button @click="logout" class="foot-btn foot-btn--danger">
+          <svg class="nav-ico" fill="none" stroke="currentColor" stroke-width="1.75" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round"
+              d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+          </svg>
+          <span>خروج</span>
+        </button>
+      </div>
+    </div>
   </aside>
 </template>
 
 <script setup>
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useUiStore }     from '@/stores/ui.store'
-import { useAuthStore }   from '@/stores/auth.store'
-import { useAdminTheme }  from '@/composables/useAdminTheme'
+import { useUiStore }       from '@/stores/ui.store'
+import { useAuthStore }     from '@/stores/auth.store'
+import { useSettingsStore } from '@/stores/settings.store'
+import { useAdminTheme }    from '@/composables/useAdminTheme'
 
 const route  = useRoute()
 const router = useRouter()
 const ui     = useUiStore()
 const auth   = useAuthStore()
+const settingsStore = useSettingsStore()
 const { sidebarBg, sidebarBgDark } = useAdminTheme()
-const activeSidebarBg = computed(() => (ui.isDark && sidebarBgDark.value) ? sidebarBgDark.value : sidebarBg.value)
+const activeSidebarBg = computed(() =>
+  (ui.isDark && sidebarBgDark.value) ? sidebarBgDark.value : sidebarBg.value
+)
 
+// ── Icons: Heroicons outline paths ──────────────────────────────────────────
+const ICONS = {
+  dashboard:     ['M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'],
+  products:      ['M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
+  categories:    ['M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z'],
+  brands:        ['M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z'],
+  features:      ['M11 4a2 2 0 114 0v1a1 1 0 001 1h3a1 1 0 011 1v3a1 1 0 01-1 1h-1a2 2 0 100 4h1a1 1 0 011 1v3a1 1 0 01-1 1h-3a1 1 0 01-1-1v-1a2 2 0 10-4 0v1a1 1 0 01-1 1H7a1 1 0 01-1-1v-3a1 1 0 00-1-1H4a2 2 0 110-4h1a1 1 0 001-1V7a1 1 0 011-1h3a1 1 0 001-1V4z'],
+  banners:       ['M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z'],
+  orders:        ['M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z'],
+  discounts:     ['M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z'],
+  blog:          ['M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
+  pages:         ['M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+  users:         ['M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z'],
+  reviews:       ['M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'],
+  popups:        ['M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122'],
+  settings:      ['M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', 'M15 12a3 3 0 11-6 0 3 3 0 016 0z'],
+  theme:         ['M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01'],
+  password:      ['M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z'],
+  notifications: ['M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9'],
+}
+
+function iconPaths(name) {
+  return ICONS[name] ?? ['M12 4v16m-8-8h16']
+}
+
+// ── Nav groups ──────────────────────────────────────────────────────────────
 function canAccess(perm) {
   if (auth.isAdmin) return true
   return auth.hasPermission(perm)
@@ -164,43 +229,40 @@ const navGroups = computed(() => {
   const groups = [
     {
       label: '',
-      items: [{ name: 'dashboard', perm: 'dashboard', icon: '📊', label: 'داشبورد' }],
+      items: [{ name: 'dashboard', perm: 'dashboard', icon: 'dashboard', label: 'داشبورد' }],
     },
     {
       label: 'فروشگاه',
       items: [
-        { name: 'products',   perm: 'products',   icon: '📦', label: 'محصولات' },
-        { name: 'categories', perm: 'categories', icon: '🏷️', label: 'دسته‌بندی‌ها' },
-        { name: 'brands',     perm: 'brands',     icon: '🔖', label: 'برندها' },
-        { name: 'colors',     perm: 'colors',     icon: '✨', label: 'ویژگی‌های اختصاصی' },
-        { name: 'banners',    perm: 'banners',    icon: '🖼', label: 'بنرها' },
-        { name: 'orders',     perm: 'orders',     icon: '🛒', label: 'سفارشات' },
-        { name: 'discounts',  perm: 'discounts',  icon: '🎟️', label: 'کدهای تخفیف' },
-        { name: 'blog',       perm: 'blog',       icon: '📝', label: 'بلاگ' },
-        { name: 'pages',      perm: 'pages',      icon: '📄', label: 'صفحات' },
+        { name: 'products',   perm: 'products',   icon: 'products',   label: 'محصولات' },
+        { name: 'categories', perm: 'categories', icon: 'categories', label: 'دسته‌بندی‌ها' },
+        { name: 'brands',     perm: 'brands',     icon: 'brands',     label: 'برندها' },
+        { name: 'colors',     perm: 'colors',     icon: 'features',   label: 'ویژگی‌های اختصاصی' },
+        { name: 'banners',    perm: 'banners',    icon: 'banners',    label: 'بنرها' },
+        { name: 'orders',     perm: 'orders',     icon: 'orders',     label: 'سفارشات' },
+        { name: 'discounts',  perm: 'discounts',  icon: 'discounts',  label: 'کدهای تخفیف' },
+        { name: 'blog',       perm: 'blog',       icon: 'blog',       label: 'بلاگ' },
+        { name: 'pages',      perm: 'pages',      icon: 'pages',      label: 'صفحات' },
       ],
     },
     {
       label: 'مدیریت',
       items: [
-        { name: 'users',    perm: 'users',    icon: '👥', label: 'کاربران' },
-        { name: 'reviews',  perm: 'reviews',  icon: '⭐', label: 'نظرات' },
+        { name: 'users',   perm: 'users',   icon: 'users',   label: 'کاربران' },
+        { name: 'reviews', perm: 'reviews', icon: 'reviews', label: 'نظرات' },
         ...(auth.isAdmin ? [
-          { name: 'popups',          perm: null, icon: '🎯', label: 'پاپ‌آپ سایت' },
-          { name: 'settings',        perm: null, icon: '⚙️', label: 'تنظیمات سایت' },
-          { name: 'theme',           perm: null, icon: '🎨', label: 'تم سایت' },
-          { name: 'change-password',    perm: null, icon: '🔑', label: 'تغییر رمز عبور' },
-          { name: 'notifications-send', perm: null, icon: '📢', label: 'ارسال اعلان و پیامک' },
+          { name: 'popups',             perm: null, icon: 'popups',        label: 'پاپ‌آپ سایت' },
+          { name: 'settings',           perm: null, icon: 'settings',      label: 'تنظیمات سایت' },
+          { name: 'theme',              perm: null, icon: 'theme',         label: 'تم سایت' },
+          { name: 'change-password',    perm: null, icon: 'password',      label: 'تغییر رمز عبور' },
+          { name: 'notifications-send', perm: null, icon: 'notifications', label: 'ارسال اعلان و پیامک' },
         ] : []),
       ],
     },
   ]
   return groups
-    .map(group => ({
-      ...group,
-      items: group.items.filter(item => !item.perm || canAccess(item.perm)),
-    }))
-    .filter(group => group.items.length > 0)
+    .map(g => ({ ...g, items: g.items.filter(i => !i.perm || canAccess(i.perm)) }))
+    .filter(g => g.items.length > 0)
 })
 
 function isActive(item) {
@@ -208,6 +270,16 @@ function isActive(item) {
     route.path.startsWith('/' + item.name.split('-')[0])
 }
 
+// ── User ────────────────────────────────────────────────────────────────────
+const userInitial = computed(() => {
+  const p = auth.user?.phone ?? ''
+  return p.slice(-2)
+})
+
+// ── Site URL ────────────────────────────────────────────────────────────────
+const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000'
+
+// ── Logout ──────────────────────────────────────────────────────────────────
 function logout() {
   auth.logout()
   router.push({ name: 'login' })
@@ -215,8 +287,301 @@ function logout() {
 </script>
 
 <style scoped>
-.fade-text-enter-active,
-.fade-text-leave-active { transition: opacity 0.15s ease; }
-.fade-text-enter-from,
-.fade-text-leave-to { opacity: 0; }
+/* ═══ Base ═════════════════════════════════════════════════════════════════ */
+.sb {
+  position: fixed; top: 0; right: 0; height: 100%;
+  z-index: 50;
+  flex-direction: column;
+  background: #0B1120;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  box-shadow: -2px 0 20px rgba(0,0,0,0.4);
+  transition: width 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.sb--lg { width: 256px; }
+.sb--sm { width: 64px; }
+
+/* ═══ Logo / Head ══════════════════════════════════════════════════════════ */
+.sb-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0 0.875rem;
+  min-height: 64px;
+  border-bottom: 1px solid rgba(255,255,255,0.055);
+  flex-shrink: 0;
+}
+.sb-head__icon {
+  width: 36px; height: 36px;
+  background: linear-gradient(145deg, #1D4ED8 0%, #1B4F8A 100%);
+  border-radius: 10px;
+  display: flex; align-items: center; justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 2px 10px rgba(29, 78, 216, 0.45);
+}
+.sb-head__text {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+.sb-head__name {
+  color: #E2E8F0;
+  font-size: 0.875rem;
+  font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-head__sub {
+  margin-top: 3px;
+  font-size: 0.625rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: #2A3D56;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+/* ═══ Navigation ════════════════════════════════════════════════════════════ */
+.sb-nav {
+  flex: 1;
+  overflow-y: auto;
+  padding: 0.625rem 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* Section separator */
+.sb-section {
+  padding: 0.875rem 0.625rem 0.3rem;
+}
+.sb-section__lbl {
+  font-size: 0.6rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: #243244;
+}
+.sb-section__hr {
+  height: 1px;
+  background: rgba(255,255,255,0.055);
+  margin: 0.375rem 0.25rem;
+}
+
+/* Nav item */
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  position: relative;
+  color: #4A6075;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: background 0.14s ease, color 0.14s ease;
+  overflow: visible;
+  white-space: nowrap;
+}
+.nav-item:hover {
+  background: rgba(255,255,255,0.04);
+  color: #7A97B0;
+}
+.nav-item:hover .nav-ico {
+  color: #6A90A8;
+}
+
+/* Active */
+.nav-item--on {
+  background: rgba(29, 78, 216, 0.14);
+  color: #E2E8F0;
+}
+.nav-item--on::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 5px; bottom: 5px;
+  width: 3px;
+  background: linear-gradient(180deg, #3B82F6, #1D4ED8);
+  border-radius: 0 3px 3px 0;
+}
+.nav-item--on .nav-ico {
+  color: #60A5FA;
+}
+.nav-item--on .nav-lbl {
+  font-weight: 600;
+}
+
+.nav-ico {
+  width: 17px; height: 17px;
+  flex-shrink: 0;
+  color: #364859;
+  transition: color 0.14s ease;
+}
+.nav-lbl {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Tooltip (collapsed mode) */
+.nav-tip {
+  position: absolute;
+  right: calc(100% + 10px);
+  top: 50%;
+  transform: translateY(-50%);
+  background: #1A2535;
+  color: #C8D8E8;
+  font-size: 0.72rem;
+  font-weight: 500;
+  padding: 0.3rem 0.7rem;
+  border-radius: 7px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 4px 14px rgba(0,0,0,0.35);
+  z-index: 9999;
+}
+.nav-item:hover .nav-tip,
+.foot-btn:hover .nav-tip {
+  opacity: 1;
+}
+
+/* ═══ Footer ════════════════════════════════════════════════════════════════ */
+.sb-foot {
+  border-top: 1px solid rgba(255,255,255,0.055);
+  padding: 0.625rem 0.5rem;
+  flex-shrink: 0;
+}
+.sb-foot__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+/* User card */
+.sb-user {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.375rem;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.025);
+}
+.sb-user__av {
+  width: 30px; height: 30px;
+  background: linear-gradient(135deg, #1E3A6E 0%, #1D4ED8 100%);
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: #fff;
+  flex-shrink: 0;
+  font-family: 'IRANSansFaNum', monospace;
+  letter-spacing: 0.05em;
+}
+.sb-user__info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.sb-user__phone {
+  font-size: 0.7rem;
+  color: #4A6075;
+  direction: ltr;
+  font-family: 'IRANSansFaNum', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.sb-user__role {
+  margin-top: 3px;
+  font-size: 0.58rem;
+  font-weight: 700;
+  padding: 1px 7px;
+  border-radius: 4px;
+  letter-spacing: 0.04em;
+  width: fit-content;
+}
+.sb-user__role--admin {
+  background: rgba(29, 78, 216, 0.18);
+  color: #60A5FA;
+}
+.sb-user__role--mgr {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+}
+
+/* Footer buttons */
+.foot-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 8px;
+  color: #36495A;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-decoration: none;
+  width: 100%;
+  cursor: pointer;
+  background: transparent;
+  border: none;
+  transition: background 0.14s ease, color 0.14s ease;
+  white-space: nowrap;
+  position: relative;
+}
+.foot-btn:hover {
+  background: rgba(255,255,255,0.04);
+  color: #7A97B0;
+}
+.foot-btn:hover .nav-ico { color: #6A90A8; }
+.foot-btn--danger:hover {
+  background: rgba(239, 68, 68, 0.08);
+  color: #F87171;
+}
+.foot-btn--danger:hover .nav-ico { color: #F87171; }
+
+/* ═══ Mobile Drawer ══════════════════════════════════════════════════════════ */
+.mob {
+  position: fixed; top: 0; right: 0; height: 100%;
+  z-index: 50;
+  width: 260px;
+  display: flex;
+  flex-direction: column;
+  background: #0B1120;
+  border-left: 1px solid rgba(255,255,255,0.05);
+  box-shadow: -4px 0 32px rgba(0,0,0,0.5);
+  transform: translateX(100%);
+  transition: transform 0.28s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+}
+.mob--open { transform: translateX(0); }
+
+.mob-close {
+  margin-right: auto;
+  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 32px;
+  border-radius: 7px;
+  color: #4A6075;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: background 0.14s ease, color 0.14s ease;
+  flex-shrink: 0;
+}
+.mob-close:hover {
+  background: rgba(255,255,255,0.06);
+  color: #94A3B8;
+}
+
+/* ═══ Transition ════════════════════════════════════════════════════════════ */
+.ft-enter-active, .ft-leave-active { transition: opacity 0.12s ease; }
+.ft-enter-from, .ft-leave-to       { opacity: 0; }
 </style>
