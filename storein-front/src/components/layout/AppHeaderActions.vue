@@ -195,7 +195,7 @@
 </template>
 
 <script setup>
-import { ref, computed, h } from 'vue'
+import { ref, computed, h, onMounted } from 'vue'
 import { useRouter }       from 'vue-router'
 import { storeToRefs }     from 'pinia'
 import { onClickOutside }  from '@vueuse/core'
