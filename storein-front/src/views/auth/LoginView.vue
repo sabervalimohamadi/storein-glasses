@@ -8,17 +8,22 @@
       <div class="text-center mb-8">
         <RouterLink :to="{ name: 'home' }">
           <div class="inline-flex flex-col items-center">
-            <svg class="w-12 h-12 text-brand mb-2" viewBox="0 0 48 24"
+            <img v-if="settingsStore.logoUrl"
+                 :src="settingsStore.logoUrl"
+                 :alt="settingsStore.siteName"
+                 class="h-12 w-auto mb-2" />
+            <svg v-else class="w-12 h-12 text-brand mb-2" viewBox="0 0 48 24"
                  fill="none" stroke="currentColor" stroke-width="2.5"
-                 stroke-linecap="round" stroke-linejoin="round">
+                 stroke-linecap="round" stroke-linejoin="round"
+                 aria-hidden="true">
               <rect x="2" y="4" width="18" height="16" rx="8" />
               <rect x="28" y="4" width="18" height="16" rx="8" />
               <path d="M20 12 Q24 6 28 12" />
               <path d="M2 10 Q0 10 0 14" />
               <path d="M46 10 Q48 10 48 14" />
             </svg>
-            <span class="text-brand font-black text-2xl tracking-tight">استورین</span>
-            <span class="text-text-secondary text-xs mt-0.5">فروشگاه تخصصی عینک</span>
+            <span class="text-brand font-black text-2xl tracking-tight" data-testid="login-site-name">{{ settingsStore.siteName }}</span>
+            <span class="text-text-secondary text-xs mt-0.5" data-testid="login-tagline">{{ settingsStore.tagline }}</span>
           </div>
         </RouterLink>
       </div>
@@ -123,7 +128,7 @@
 
       <!-- Terms note -->
       <p class="text-center text-text-disabled text-xs mt-5 leading-6">
-        با ورود به استورین،
+        با ورود به {{ settingsStore.siteName }}،
         <RouterLink to="#" class="text-brand hover:underline">قوانین و مقررات</RouterLink>
         و
         <RouterLink to="#" class="text-brand hover:underline">حریم خصوصی</RouterLink>
@@ -136,14 +141,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useAuthStore } from '@/stores/auth.store'
-import { useUiStore   } from '@/stores/ui.store'
+import { useAuthStore }     from '@/stores/auth.store'
+import { useUiStore   }     from '@/stores/ui.store'
+import { useSettingsStore } from '@/stores/settings.store'
+import { logger }           from '@/utils/logger'
 import BaseSpinner from '@/components/common/BaseSpinner.vue'
 
-const router    = useRouter()
-const route     = useRoute()
-const authStore = useAuthStore()
-const ui        = useUiStore()
+const CTX = 'LoginView'
+
+const router        = useRouter()
+const route         = useRoute()
+const authStore     = useAuthStore()
+const ui            = useUiStore()
+const settingsStore = useSettingsStore()
 
 const phone        = ref('')
 const phoneError   = ref('')
@@ -152,7 +162,7 @@ const phoneInput   = ref(null)
 const isBlocked    = ref(false)
 
 onMounted(() => {
-  // Pre-fill if user navigated back from OTP page
+  logger.debug('login: rendering with site settings', { siteName: settingsStore.siteName, hasLogo: !!settingsStore.logoUrl }, CTX)
   if (authStore.pendingPhone) phone.value = authStore.pendingPhone
   phoneInput.value?.focus()
 })
