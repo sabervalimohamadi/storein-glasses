@@ -5,8 +5,10 @@ const CTX = 'SocketService'
 
 export function resolveSocketUrl() {
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
-  const api = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1'
-  return api.replace(/\/api(\/v\d+)?\/?$/, '')
+  // When VITE_API_BASE_URL is unset the proxy server handles /socket.io,
+  // so an empty string tells Socket.IO to connect to the current origin.
+  if (!import.meta.env.VITE_API_BASE_URL) return ''
+  return import.meta.env.VITE_API_BASE_URL.replace(/\/api(\/v\d+)?\/?$/, '')
 }
 
 const SOCKET_URL = resolveSocketUrl() + '/notifications'

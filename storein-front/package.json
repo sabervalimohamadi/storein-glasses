@@ -9,12 +9,15 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js"
   },
   "dependencies": {
     "@vueuse/core": "^14.3.0",
     "axios": "^1.16.1",
     "dayjs": "^1.11.21",
+    "express": "^5.2.1",
+    "http-proxy-middleware": "^4.1.1",
     "pinia": "^3.0.4",
     "socket.io-client": "^4.8.3",
     "vue": "^3.5.34",

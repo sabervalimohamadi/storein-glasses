@@ -2,7 +2,7 @@ import axios    from 'axios'
 import { logger } from '@/utils/logger'
 
 const http = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
+  baseURL: import.meta.env.VITE_API_BASE_URL || '/api/v1',
   timeout: 15000,
   withCredentials: true,
   headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
