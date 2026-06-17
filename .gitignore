@@ -38,6 +38,7 @@ storein/dist/
 storein-front/dist/
 
 # Uploaded media (local dev only — use CDN/S3 in production)
+# storein/uploads/
 
 # Admin panel build output
 storein-admin/dist/
