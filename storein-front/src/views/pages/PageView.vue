@@ -34,10 +34,12 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute }    from 'vue-router'
-import { pageService } from '@/services/page.service'
+import { useRoute }         from 'vue-router'
+import { pageService }      from '@/services/page.service'
+import { useSettingsStore } from '@/stores/settings.store'
 
-const route   = useRoute()
+const route         = useRoute()
+const settingsStore = useSettingsStore()
 const page    = ref(null)
 const loading = ref(true)
 const prevTitle = document.title
@@ -48,7 +50,8 @@ async function load(slug) {
   try {
     const { data } = await pageService.getBySlug(slug)
     page.value = data
-    document.title = (data.metaTitle || data.title || '') + ' | استورین'
+    const pageTitle = data.metaTitle || data.title || ''
+    document.title = pageTitle ? `${settingsStore.siteName} - ${pageTitle}` : settingsStore.siteName
   } catch {
     // page stays null → shows 404 block
   } finally {

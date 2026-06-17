@@ -107,9 +107,10 @@ import { useRoute } from 'vue-router'
 import { useIntersectionObserver } from '@vueuse/core'
 import { productService }   from '@/services/product.service'
 import { reviewService }    from '@/services/review.service'
-import { useCartStore }     from '@/stores/cart.store'
-import { useWishlistStore } from '@/stores/wishlist.store'
-import { useUiStore }       from '@/stores/ui.store'
+import { useCartStore }      from '@/stores/cart.store'
+import { useWishlistStore }  from '@/stores/wishlist.store'
+import { useUiStore }        from '@/stores/ui.store'
+import { useSettingsStore }  from '@/stores/settings.store'
 import { formatPrice }      from '@/utils/formatters'
 
 import ProductGallery  from './components/ProductGallery.vue'
@@ -122,6 +123,7 @@ const route         = useRoute()
 const cartStore     = useCartStore()
 const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
+const settingsStore = useSettingsStore()
 
 const product         = ref(null)
 const loading         = ref(true)
@@ -163,7 +165,7 @@ async function fetchProduct() {
     const { data } = await productService.getBySlug(slug)
     product.value = data
     if (data.variants?.length) selectedVariant.value = data.variants[0]
-    document.title = `${data.name} | استورین`
+    document.title = `${settingsStore.siteName} - ${data.name}`
 
     // Fetch initial review stats for the tab badge
     try {
@@ -214,7 +216,7 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopObserver?.()
-  document.title = 'استورین | فروشگاه تخصصی عینک'
+  document.title = settingsStore.siteName
 })
 
 // Re-fetch on slug change (nav between products)

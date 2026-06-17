@@ -25,13 +25,15 @@ function upsertFavicon(url) {
 /**
  * Reactively syncs site settings to <head> meta tags.
  * @param {import('vue').Ref} settings — reactive ref to settings object
+ * @param {import('vue').Ref<string>} [routeTitle] — optional reactive page title
  */
-export function useSiteHead(settings) {
+export function useSiteHead(settings, routeTitle) {
   watchEffect(() => {
     const s = settings.value
     if (!s) return
 
-    if (s.siteName)    document.title = s.siteName
+    const page = routeTitle?.value
+    if (s.siteName) document.title = page ? `${s.siteName} - ${page}` : s.siteName
     upsertMeta('name',     'description',  s.description)
     upsertMeta('name',     'keywords',     s.keywords)
     upsertMeta('property', 'og:title',     s.siteName)

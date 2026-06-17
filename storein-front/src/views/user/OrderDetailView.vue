@@ -247,15 +247,17 @@
 import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter }      from 'vue-router'
 import { orderService }             from '@/services/order.service'
-import { useUiStore }               from '@/stores/ui.store'
+import { useUiStore }        from '@/stores/ui.store'
+import { useSettingsStore } from '@/stores/settings.store'
 import { formatPrice, formatNumber, formatDate } from '@/utils/formatters'
 import BaseEmpty from '@/components/common/BaseEmpty.vue'
 
 const PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="64" height="64" fill="%23334155"%3E%3Crect width="64" height="64" rx="8"/%3E%3C/svg%3E'
 
-const route  = useRoute()
-const router = useRouter()
-const ui     = useUiStore()
+const route         = useRoute()
+const router        = useRouter()
+const ui            = useUiStore()
+const settingsStore = useSettingsStore()
 
 const order            = ref(null)
 const copied           = ref(false)
@@ -306,7 +308,7 @@ async function fetchOrder() {
   try {
     const { data } = await orderService.getMyOrder(route.params.id)
     order.value = data
-    document.title = `سفارش ${data.orderNumber} — استورین`
+    document.title = `${settingsStore.siteName} - سفارش ${data.orderNumber}`
   } catch {
     order.value = null
   } finally {

@@ -7,83 +7,83 @@ const routes = [
     path: '/',
     name: 'home',
     component: () => import('@/views/home/HomeView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'صفحه اصلی' },
   },
   {
     path: '/products',
     name: 'products',
     component: () => import('@/views/products/ProductListView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'محصولات' },
   },
   {
     path: '/category/:slug',
     name: 'category',
     component: () => import('@/views/products/ProductListView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'دسته‌بندی' },
   },
   {
     path: '/product/:slug',
     name: 'product-detail',
     component: () => import('@/views/product-detail/ProductDetailView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'محصول' },
   },
   {
     path: '/search',
     name: 'search',
     component: () => import('@/views/products/SearchView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'جستجو' },
   },
   // ── Static Pages ────────────────────────────────────────────
   {
     path: '/pages/:slug',
     name: 'page',
     component: () => import('@/views/pages/PageView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: '' },
   },
   // ── Blog ────────────────────────────────────────────────────
   {
     path: '/blog',
     name: 'blog',
     component: () => import('@/views/blog/BlogListView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'وبلاگ' },
   },
   {
     path: '/blog/:slug',
     name: 'blog-detail',
     component: () => import('@/views/blog/BlogDetailView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'مقاله' },
   },
   // ── Auth ────────────────────────────────────────────────────
   {
     path: '/auth/login',
     name: 'login',
     component: () => import('@/views/auth/LoginView.vue'),
-    meta: { layout: 'auth', guestOnly: true },
+    meta: { layout: 'auth', guestOnly: true, title: 'ورود' },
   },
   {
     path: '/auth/otp',
     name: 'otp',
     component: () => import('@/views/auth/OtpView.vue'),
-    meta: { layout: 'auth', guestOnly: true },
+    meta: { layout: 'auth', guestOnly: true, title: 'تأیید شماره موبایل' },
   },
   // ── Cart & Checkout ─────────────────────────────────────────
   {
     path: '/cart',
     name: 'cart',
     component: () => import('@/views/cart/CartView.vue'),
-    meta: { layout: 'default' },
+    meta: { layout: 'default', title: 'سبد خرید' },
   },
   {
     path: '/checkout',
     name: 'checkout',
     component: () => import('@/views/checkout/CheckoutView.vue'),
-    meta: { layout: 'default', requiresAuth: true },
+    meta: { layout: 'default', requiresAuth: true, title: 'تکمیل خرید' },
   },
   {
     path: '/payment/result',
     name: 'payment-result',
     component: () => import('@/views/payment/PaymentResultView.vue'),
-    meta: { layout: 'default', requiresAuth: true },
+    meta: { layout: 'default', requiresAuth: true, title: 'نتیجه پرداخت' },
   },
   // ── User Dashboard ──────────────────────────────────────────
   {
@@ -94,26 +94,31 @@ const routes = [
         path: 'profile',
         name: 'user-profile',
         component: () => import('@/views/user/ProfileView.vue'),
+        meta: { title: 'پروفایل' },
       },
       {
         path: 'orders',
         name: 'user-orders',
         component: () => import('@/views/user/OrdersView.vue'),
+        meta: { title: 'سفارش‌ها' },
       },
       {
         path: 'orders/:id',
         name: 'user-order-detail',
         component: () => import('@/views/user/OrderDetailView.vue'),
+        meta: { title: 'جزئیات سفارش' },
       },
       {
         path: 'favorites',
         name: 'user-favorites',
         component: () => import('@/views/user/FavoritesView.vue'),
+        meta: { title: 'علاقه‌مندی‌ها' },
       },
       {
         path: 'addresses',
         name: 'user-addresses',
         component: () => import('@/views/user/AddressesView.vue'),
+        meta: { title: 'آدرس‌ها' },
       },
     ],
   },
@@ -122,6 +127,7 @@ const routes = [
     path: '/:pathMatch(.*)*',
     name: 'not-found',
     component: () => import('@/views/NotFoundView.vue'),
+    meta: { title: 'صفحه یافت نشد' },
   },
 ]
 
