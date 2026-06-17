@@ -284,8 +284,19 @@
 
                 <!-- تصویر پس‌زمینه -->
                 <div>
-                  <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide mb-2">تصویر پس‌زمینه</h3>
-                  <p class="text-xs text-text-secondary mb-3">در صورت آپلود، گرادیان با تصویر جایگزین می‌شود</p>
+                  <div class="flex items-center justify-between mb-2">
+                    <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">تصویر پس‌زمینه</h3>
+                    <span class="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-mono font-semibold select-all">
+                      <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
+                      </svg>
+                      {{ form.type === 'hero' ? '1440 × 560' : '720 × 400' }} px
+                    </span>
+                  </div>
+                  <p class="text-xs text-text-secondary mb-3">
+                    در صورت آپلود، گرادیان با تصویر جایگزین می‌شود
+                    — فرمت پیشنهادی: <span class="font-mono text-text-primary">JPG / WebP</span>
+                  </p>
                   <div v-if="form.imageUrl" class="flex items-center gap-3 mb-3 p-3 bg-surface rounded-xl">
                     <img :src="form.imageUrl" class="w-20 h-12 rounded-lg object-cover flex-shrink-0" />
                     <p class="flex-1 text-xs text-text-secondary truncate">{{ form.imageUrl }}</p>
@@ -423,11 +434,19 @@
                 <div class="bg-surface rounded-xl p-4 space-y-1.5 text-xs text-text-secondary">
                   <p class="font-medium text-text-primary text-sm">نکات</p>
                   <template v-if="form.type === 'hero'">
+                    <p class="flex items-center gap-1.5">
+                      <span class="font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">1440 × 560 px</span>
+                      سایز پیشنهادی تصویر
+                    </p>
                     <p>• حداکثر ۵ اسلایدر فعال توصیه می‌شود</p>
                     <p>• زیرعنوان در موبایل مخفی می‌شود</p>
                     <p>• تصویر پس‌زمینه گرادیان را جایگزین می‌کند</p>
                   </template>
                   <template v-else>
+                    <p class="flex items-center gap-1.5">
+                      <span class="font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">720 × 400 px</span>
+                      سایز پیشنهادی تصویر
+                    </p>
                     <p>• معمولاً ۲ بنر ویژه هم‌زمان نمایش داده می‌شود</p>
                     <p>• رنگ دکمه همیشه سفید/شفاف است</p>
                     <p>• زیرعنوان در این نوع بنر نمایش داده نمی‌شود</p>
