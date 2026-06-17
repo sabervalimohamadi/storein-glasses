@@ -74,4 +74,24 @@ describe('useUiStore', () => {
       expect(ui.isSearchOpen).toBe(true)
     })
   })
+
+  describe('markAppReady', () => {
+    it('starts as false', () => {
+      const ui = useUiStore()
+      expect(ui.appReady).toBe(false)
+    })
+
+    it('sets appReady to true', () => {
+      const ui = useUiStore()
+      ui.markAppReady()
+      expect(ui.appReady).toBe(true)
+    })
+
+    it('is idempotent — calling twice keeps it true', () => {
+      const ui = useUiStore()
+      ui.markAppReady()
+      ui.markAppReady()
+      expect(ui.appReady).toBe(true)
+    })
+  })
 })

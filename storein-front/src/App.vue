@@ -1,4 +1,5 @@
 <template>
+  <AppSplash :ready="uiStore.appReady" />
   <component :is="currentLayout">
     <RouterView />
   </component>
@@ -6,10 +7,11 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute }   from 'vue-router'
+import { useRoute }    from 'vue-router'
 import { storeToRefs } from 'pinia'
 import DefaultLayout from '@/layouts/DefaultLayout.vue'
 import AuthLayout    from '@/layouts/AuthLayout.vue'
+import AppSplash                from '@/components/AppSplash.vue'
 import { useSettingsStore }     from '@/stores/settings.store'
 import { useAuthStore }         from '@/stores/auth.store'
 import { useNotificationStore } from '@/stores/notification.store'
@@ -28,17 +30,33 @@ const currentLayout = computed(() => layouts[route.meta.layout ?? 'default'])
 const settingsStore = useSettingsStore()
 const auth          = useAuthStore()
 const notifStore    = useNotificationStore()
-const ui            = useUiStore()
+const uiStore       = useUiStore()
 const { settings, theme } = storeToRefs(settingsStore)
 useSiteHead(settings)
 
-const { init, applyFromSettings } = useTheme()
+const { applyFromSettings } = useTheme()
 watch(theme, (t) => { if (t) applyFromSettings(t) }, { immediate: true })
+
+// ── Splash gate: wait for auth init + settings, enforce minimum display time ──
+// Minimum 1.6 s ensures the full glasses draw animation completes before hiding.
+watch(
+  () => auth.initialized,
+  async (initialized) => {
+    if (!initialized) return
+    await Promise.all([
+      settingsStore.fetchSettings(),
+      new Promise((r) => setTimeout(r, 1600)),
+    ])
+    uiStore.markAppReady()
+    logger.info('App: initialisation complete — splash dismissed', {}, CTX)
+  },
+  { immediate: true },
+)
 
 // ── Real-time notification handler ────────────────────────────────────────────
 function onNotification(notif) {
   notifStore.addIncoming(notif)
-  ui.addToast(`${notif.title}: ${notif.body}`, 'info', 5000)
+  uiStore.addToast(`${notif.title}: ${notif.body}`, 'info', 5000)
   logger.info('App: real-time notification shown as toast', { title: notif.title }, CTX)
 }
 
@@ -65,8 +83,6 @@ onUnmounted(() => {
 })
 
 onMounted(() => {
-  settingsStore.fetchSettings()
-  // initAuth() is called by the router guard on every first navigation —
-  // no need to call it here again (the initialized guard makes it a no-op anyway)
+  // settings are fetched in the splash watcher above (after auth.initialized)
 })
 </script>
