@@ -144,26 +144,46 @@
           <template v-else>ناموجود</template>
         </BaseButton>
 
-        <button
-          @click="handleWishlist"
-          :class="[
-            'w-full py-3 rounded-xl border-2 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200',
-            isWishlisted
-              ? 'border-red-200 bg-red-50 text-red-500'
-              : 'border-surface-border text-text-secondary hover:border-brand/50',
-          ]"
-        >
-          <svg
-            class="w-5 h-5"
-            :fill="isWishlisted ? 'currentColor' : 'none'"
-            :stroke="isWishlisted ? 'none' : 'currentColor'"
-            stroke-width="2"
-            viewBox="0 0 24 24"
+        <div class="flex gap-3">
+          <button
+            @click="handleWishlist"
+            :class="[
+              'flex-1 py-3 rounded-xl border-2 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200',
+              isWishlisted
+                ? 'border-red-200 bg-red-50 text-red-500'
+                : 'border-surface-border text-text-secondary hover:border-brand/50',
+            ]"
           >
-            <path stroke-linecap="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
-          </svg>
-          {{ isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها' }}
-        </button>
+            <svg
+              class="w-5 h-5 flex-shrink-0"
+              :fill="isWishlisted ? 'currentColor' : 'none'"
+              :stroke="isWishlisted ? 'none' : 'currentColor'"
+              stroke-width="2"
+              viewBox="0 0 24 24"
+            >
+              <path stroke-linecap="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
+            </svg>
+            <span class="hidden sm:inline">{{ isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'علاقه‌مندی‌ها' }}</span>
+          </button>
+
+          <button
+            @click="handleShare"
+            :class="[
+              'flex-1 py-3 rounded-xl border-2 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200',
+              shareCopied
+                ? 'border-success/40 bg-success/5 text-success'
+                : 'border-surface-border text-text-secondary hover:border-brand/50',
+            ]"
+          >
+            <svg v-if="!shareCopied" class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z"/>
+            </svg>
+            <svg v-else class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M5 13l4 4L19 7"/>
+            </svg>
+            <span class="hidden sm:inline">{{ shareCopied ? 'کپی شد!' : 'اشتراک‌گذاری' }}</span>
+          </button>
+        </div>
       </div>
 
       <!-- ⑦ Guarantees -->
@@ -207,6 +227,7 @@ const ui            = useUiStore()
 
 const addingToCart  = ref(false)
 const cartButtonRef = ref(null)
+const shareCopied   = ref(false)
 
 // ── Variants ──────────────────────────────────────────────────────
 const colorVariants  = computed(() => props.product?.variants ?? [])
@@ -244,6 +265,30 @@ const isWishlisted = computed(() =>
 async function handleWishlist() {
   if (!props.product) return
   await wishlistStore.toggle(props.product._id)
+}
+
+// ── Share ─────────────────────────────────────────────────────────
+async function handleShare() {
+  const url  = window.location.href
+  const name = props.product?.name || ''
+
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: name, url })
+    } catch {
+      // user cancelled — no action needed
+    }
+    return
+  }
+
+  try {
+    await navigator.clipboard.writeText(url)
+    shareCopied.value = true
+    ui.addToast('لینک محصول کپی شد ✓', 'success')
+    setTimeout(() => { shareCopied.value = false }, 2500)
+  } catch {
+    ui.addToast('کپی لینک ممکن نشد', 'error')
+  }
 }
 
 // ── Add to cart ───────────────────────────────────────────────────
