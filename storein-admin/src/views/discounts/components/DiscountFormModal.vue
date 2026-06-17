@@ -259,7 +259,7 @@ async function submit() {
       description:    form.description.trim() || undefined,
       type:           form.type,
       value:          Number(form.value),
-      maxDiscount:    form.maxDiscount    ? Number(form.maxDiscount)    : null,
+      maxDiscountAmount: form.maxDiscount ? Number(form.maxDiscount) : null,
       minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
       usageLimit:     form.usageLimit     ? Number(form.usageLimit)     : null,
       startDate:      form.startDate || null,
