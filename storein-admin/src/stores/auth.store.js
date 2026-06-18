@@ -119,10 +119,12 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
-    try { await authService.logout() } catch { /* ignore — cookie may already be expired */ }
+    logger.info('admin-auth: logging out', {}, 'AuthStore')
+    try { await authService.logout() } catch { /* cookie may already be expired — ignore */ }
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
+    initialized.value  = false   // force guard to re-run initAuth on next navigation
     const { socketService } = await import('@/services/socket.service')
     socketService.disconnect()
     logger.info('admin-auth: logout complete', {}, 'AuthStore')

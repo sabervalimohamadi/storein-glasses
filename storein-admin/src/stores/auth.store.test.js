@@ -8,6 +8,7 @@ vi.mock('@/services/auth.service', () => ({
     adminLogin: vi.fn(),
     refresh:    vi.fn(),
     getProfile: vi.fn(),
+    logout:     vi.fn(),
   },
 }))
 
@@ -327,14 +328,77 @@ describe('useAuthStore', () => {
   })
 
   describe('logout', () => {
-    it('clears user and token from memory — no localStorage involved', async () => {
+    async function loggedInStore() {
       const store = useAuthStore()
-      store.user  = adminProfile
-      store.token = 'tok'
+      store.user        = adminProfile
+      store.token       = 'tok'
+      store.initialized = true
+      return store
+    }
+
+    it('clears user and token from memory — no localStorage involved', async () => {
+      authService.logout.mockResolvedValue({})
+      const store = await loggedInStore()
       await store.logout()
       expect(store.user).toBeNull()
       expect(store.token).toBeNull()
       expect(localStorage.getItem('admin_refresh_token')).toBeNull()
+    })
+
+    it('calls POST /auth/logout to invalidate the refresh token cookie on the server', async () => {
+      authService.logout.mockResolvedValue({})
+      const store = await loggedInStore()
+      await store.logout()
+      expect(authService.logout).toHaveBeenCalledTimes(1)
+    })
+
+    it('resets initialized to false so the guard re-runs initAuth on next navigation', async () => {
+      // ROOT CAUSE FIX: without this, router.push fires before state is cleared
+      // and the guard sees isLoggedIn=true, blocking navigation to /login
+      authService.logout.mockResolvedValue({})
+      const store = await loggedInStore()
+      expect(store.initialized).toBe(true)
+      await store.logout()
+      expect(store.initialized).toBe(false)
+    })
+
+    it('isLoggedIn is false immediately after logout resolves', async () => {
+      authService.logout.mockResolvedValue({})
+      const store = await loggedInStore()
+      await store.logout()
+      expect(store.isLoggedIn).toBe(false)
+    })
+
+    it('still clears all state even when the server call fails', async () => {
+      authService.logout.mockRejectedValue(new Error('network'))
+      const store = await loggedInStore()
+      await store.logout()
+      expect(store.user).toBeNull()
+      expect(store.token).toBeNull()
+      expect(store.initialized).toBe(false)
+      expect(store.isLoggedIn).toBe(false)
+    })
+
+    it('logs info at start and completion', async () => {
+      authService.logout.mockResolvedValue({})
+      const store = await loggedInStore()
+      await store.logout()
+      expect(logger.info).toHaveBeenCalledWith('admin-auth: logging out',  {}, 'AuthStore')
+      expect(logger.info).toHaveBeenCalledWith('admin-auth: logout complete', {}, 'AuthStore')
+    })
+
+    it('allows initAuth to run again after logout (initialized was reset)', async () => {
+      authService.logout.mockResolvedValue({})
+      authService.refresh.mockResolvedValue({ data: { accessToken: 'new-tok' } })
+      authService.getProfile.mockResolvedValue({ data: adminProfile })
+
+      const store = await loggedInStore()
+      await store.logout()
+      expect(store.initialized).toBe(false)
+
+      await store.initAuth()
+      expect(authService.refresh).toHaveBeenCalledTimes(1)
+      expect(store.initialized).toBe(true)
     })
   })
 

@@ -180,6 +180,7 @@ import { useUiStore }       from '@/stores/ui.store'
 import { useAuthStore }     from '@/stores/auth.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { useAdminTheme }    from '@/composables/useAdminTheme'
+import { logger }           from '@/utils/logger'
 
 const route  = useRoute()
 const router = useRouter()
@@ -266,8 +267,10 @@ function isActive(item) {
 
 const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000'
 
-function logout() {
-  auth.logout()
+async function logout() {
+  logger.info('sidebar: logout initiated', {}, 'AdminSidebar')
+  await auth.logout()
+  logger.debug('sidebar: state cleared, navigating to login', {}, 'AdminSidebar')
   router.push({ name: 'login' })
 }
 </script>
