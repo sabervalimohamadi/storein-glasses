@@ -2,8 +2,9 @@
 
 > **Stack:** NestJS (backend) · Vue 3 (storein-front) · Vue 3 (storein-admin)  
 > **Database:** MongoDB + Redis · **Auth:** JWT (access + refresh) + HttpOnly cookie  
-> **Tests:** 353 backend (Jest) · 107 storein-front (Vitest) · 63 storein-admin (Vitest)  
-> **Pre-existing failures:** 12 (category.service × 10, review.service × 2) — unchanged throughout
+> **Deployed:** Railway (3 services — backend, storefront, admin)  
+> **Tests:** 408 backend (Jest) · 367 storein-front (Vitest) · 273 storein-admin (Vitest)  
+> **Pre-existing failures:** 14 backend (category.service × 10, review.service × 2, + 2 new) · 17 storein-front (AppSplash × 17)
 
 ---
 
@@ -11,11 +12,12 @@
 
 | Project | Framework | Files | Tests | Pass | Fail |
 |---------|-----------|-------|-------|------|------|
-| `storein` (backend) | Jest | 28 | 353 | 341 | 12 ¹ |
-| `storein-front` | Vitest | 10 | 107 | 107 | 0 |
-| `storein-admin` | Vitest | 4 | 63 | 63 | 0 |
+| `storein` (backend) | Jest | 29 | 408 | 394 | 14 ¹ |
+| `storein-front` | Vitest | 24 | 367 | 350 | 17 ² |
+| `storein-admin` | Vitest | 12 | 273 | 273 | 0 |
 
-> ¹ Pre-existing in `category.service.spec.ts` (10) and `review.service.spec.ts` (2)
+> ¹ Pre-existing: `category.service.spec.ts` (10), `review.service.spec.ts` (2) + 2 new  
+> ² `AppSplash.test.js` (17) — splash component was redesigned after tests written; tests need update
 
 ---
 
@@ -695,11 +697,11 @@ Pinia setup stores unwrap refs — `store.page` is a number, not a Ref. Setting 
 ## Architecture Overview
 
 ```
-storein/                     NestJS backend
+storein/                     NestJS backend (deployed: Railway Nixpacks)
 ├── src/modules/
-│   ├── auth/                OTP login, JWT (access+refresh), bcrypt RT, Redis brute-force
+│   ├── auth/                OTP login + password login, JWT, bcrypt RT, Redis brute-force
 │   ├── user/                Profile, addresses, RBAC (isAdmin, role)
-│   ├── product/             CRUD, variants, stock, slug, bulk discount, related
+│   ├── product/             CRUD, variants, stock, slug, bulk discount, related, mostViewed
 │   ├── category/            Tree structure (ancestors array), slug, gender filter
 │   ├── brand/               CRUD with public list
 │   ├── color/               Color swatches with hex codes
@@ -708,43 +710,52 @@ storein/                     NestJS backend
 │   ├── payment/             Wallet, gateway (ZarinPal), mixed, verify callback
 │   ├── discount/            Coupon validate, usage tracking, date/limit guards
 │   ├── review/              Verified purchase check, admin approve/reject
-│   ├── search/              Full-text search, suggestions, user history
+│   ├── search/              Full-text, suggestions, user history, mostViewed sort
 │   ├── wishlist/            Toggle, check, clear
 │   ├── banner/              Active/promo filter, position
 │   ├── blog/                Published/draft, tags, slug
-│   ├── settings/            Site-wide config (name, theme, trust items, socials)
-│   ├── notification/        SMS/email events via EventEmitter2
+│   ├── settings/            Site config: name, theme, socials, mobiles[], addresses[]
+│   ├── notification/        Broadcast, SMS, EventEmitter2 hooks, WebSocket gateway
 │   ├── upload/              File upload service
 │   ├── health/              MongoDB ping via @nestjs/terminus
-│   └── admin/               Admin-specific aggregates
+│   ├── page/                Static pages (slug-based)
+│   ├── popup/               Popup banners
+│   ├── frame-attribute/     Eyewear attribute catalogue
+│   └── admin/               Admin aggregates + change-password
 │
-storein-front/               Vue 3 customer storefront
-├── src/services/            Axios wrappers + 401 refresh queue
-├── src/stores/              Pinia: auth (initAuth), cart, wishlist, product, settings, ui
-└── src/views/               Home, Products, ProductDetail, Cart, Checkout, Auth, User dashboard
+storein-front/               Vue 3 customer storefront (deployed: Railway Nixpacks + proxy)
+├── src/services/            Axios wrappers + 401 refresh queue, withCredentials
+├── src/stores/              Pinia: auth (initAuth), cart, wishlist, product, settings, ui, notification
+├── src/components/layout/   AppHeader, AppFooter, AppSplash, AppHeaderActions (bell dropdown)
+└── src/views/               Home (7 sections), Products, ProductDetail, Cart, Checkout,
+                             Auth (OTP), User (dashboard, orders, notifications, wishlist)
 │
-storein-admin/               Vue 3 admin panel
-├── src/services/            Axios with withCredentials (HttpOnly cookie)
-├── src/stores/              Pinia: auth (cookie-based), ui
+storein-admin/               Vue 3 admin panel (deployed: Railway Nixpacks)
+├── src/services/            Axios with withCredentials (HttpOnly cookie refresh)
+├── src/stores/              Pinia: auth (cookie-based, memory token), ui
 └── src/views/               Dashboard, Products, Categories, Brands, Colors, Orders,
-                             Users, Discounts, Reviews, Banners, Blog, Settings
+                             Users, Discounts, Reviews, Banners, Blog, Settings,
+                             Notifications (broadcast + history), ChangePassword
 ```
 
 ## Security Posture
 
 | Layer | Implementation |
 |-------|---------------|
-| CORS | `ALLOWED_ORIGINS` env var, strict whitelist |
+| CORS | `ALLOWED_ORIGINS` env var, strict whitelist, `crossOriginResourcePolicy: 'cross-origin'` |
 | HTTP headers | Helmet (X-Frame, CSP, HSTS, X-Content-Type-Options) |
-| Auth | OTP-only (no passwords), JWT access (memory) + refresh (HttpOnly cookie) |
+| Auth | OTP login (customers) + password login (admin), JWT access (memory) + refresh (HttpOnly cookie) |
 | OTP | CSPRNG (`crypto.randomInt`), rate-limit 3/10min, brute-force 5/5min |
-| Refresh tokens | bcrypt-hashed in DB, rotated on every use |
+| Admin password | bcrypt hash stored in DB, separate from OTP flow |
+| Refresh tokens | bcrypt-hashed in DB, rotated on every use, SameSite=None;Secure on Railway |
 | Rate limiting | ThrottlerModule: 100 req/60s global |
-| WebSocket | CORS enforced at handshake, JWT verified on connect |
+| WebSocket | CORS enforced at handshake via callback, JWT verified on connect |
 | XSS | DOMPurify on all `v-html` content |
 | Injection | Mongoose typed queries, Joi input validation |
 | Stock updates | Atomic `bulkWrite` (no race on concurrent orders) |
 | Session | `initAuth()` silently restores on reload; 401 interceptor auto-refreshes |
+| Logout | `POST /auth/logout` clears HttpOnly cookie server-side (not just client state) |
+| Cross-origin cookies | Reverse-proxy server bundled with frontends for Safari/Firefox compatibility |
 
 ## Environment Variables
 
@@ -761,6 +772,9 @@ JWT_REFRESH_EXPIRES_IN=7d
 ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3001   # required
 PAYMENT_CALLBACK_URL=https://yourdomain.com/api/v1/payments/verify  # required
 SMS_PROVIDER=console  # or kavenegar / ghasedak
+COOKIE_SAMESITE=strict       # 'none' on Railway (cross-origin)
+COOKIE_SECURE=false          # 'true' on Railway (HTTPS)
+COOKIE_DOMAIN=               # set to shared parent domain if needed
 
 # storein-front/.env
 VITE_API_BASE_URL=http://localhost:3000/api/v1
@@ -768,3 +782,559 @@ VITE_API_BASE_URL=http://localhost:3000/api/v1
 # storein-admin/.env
 VITE_API_BASE_URL=http://localhost:3000/api/v1
 ```
+
+---
+
+## Session 15 — E2E Tests + Post-Audit Cleanup (2026-06-14–15)
+
+**Commits:** `e54c8ec`, `a9dbaa5`, `90f9de7`, `790b200`
+
+### Install Missing Packages
+
+`cookie-parser`, `@nestjs/terminus`, `@types/cookie-parser` were imported in code but not in `package.json`.
+
+### AppFooter quickLinks Fix
+
+`quickLinks` in settings pointed to route `{ name: 'page', slug }` but `router` expected `{ name: 'page', params: { slug } }`. Fixed path parameter shape.
+
+### Comprehensive E2E Tests
+
+Added 3-layer E2E flow tests using MongoMemoryServer:
+
+```ts
+// auth.e2e.spec.ts — full OTP → token → profile → logout cycle
+// cart.e2e.spec.ts — add items → place order → stock decremented
+// wishlist.e2e.spec.ts — toggle, list, clear
+```
+
+Fixed 3 real bugs discovered by E2E:
+- Auth: refresh endpoint was not rotating the cookie on every call (missing `res.clearCookie`)
+- Cart: empty cart was returning `200 { items: [] }` instead of preserving empty state after order
+- OTP brute-force counter: Redis key was namespaced differently than the guard checked
+
+### Post-Audit 6-Task Fix
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1 | MongoMemoryServer not in dev dependencies | `npm i -D mongodb-memory-server` |
+| 2 | Cookie auth broke admin auth.store tests | Rewrote assertions: token in Pinia ref, not localStorage |
+| 3 | Test isolation: shared Pinia state between tests | `beforeEach: setActivePinia(createPinia())` |
+| 4 | CI/CD config: no `.github/workflows` | Added `ci.yml` running tests on push to master |
+| 5 | `e9aa69b` Redirect loop: `App.vue` called `router.push('/')` inside `onMounted` unconditionally | Added `if (route.path !== '/')` guard |
+| 6 | `a9dbaa5` Footer quickLinks wrong param shape | Fixed `{ name: 'page', slug }` → `{ name: 'page', params: { slug } }` |
+
+---
+
+## Session 16 — Railway Deployment (2026-06-15)
+
+**Commits:** `3b5775b`, `40c2be4`, `6ad9b4e`, `9462abf`, `71ddf5d`, `7111fc1`, `8adb9a3`
+
+### Railway Config (3 services)
+
+```toml
+# railway.toml (backend)
+[build]
+builder = "NIXPACKS"
+
+[deploy]
+startCommand = "node dist/main"
+healthcheckPath = "/api/v1/health"
+healthcheckTimeout = 30
+```
+
+Three Railway services: `storein-api`, `storein-front`, `storein-admin`.
+
+### Nixpacks Migration
+
+- Backend: switched from Dockerfile to Nixpacks (`e913753` in same timeframe)
+- Frontends: removed Docker entirely, Nixpacks uses `npx serve -s dist` as start command
+- Node 20 engine pinned in `package.json` (`engines: { node: ">=20" }`) — Nixpacks respects this
+
+### Logger Crash Fix
+
+`AppLoggerService` used `winston.transports.File` for `combined.log` — Railway filesystem is read-only.
+
+```ts
+// Before
+transports: [
+  new winston.transports.Console(),
+  new winston.transports.File({ filename: 'combined.log' }),  // crash
+]
+
+// After
+const transports: winston.transport[] = [new winston.transports.Console()]
+if (process.env.NODE_ENV !== 'production') {
+  transports.push(new winston.transports.File({ filename: 'combined.log' }))
+}
+```
+
+### Temp SeedModule
+
+Added a `SeedModule` with a single `POST /seed/import` endpoint to load MongoDB dump into Railway DB over HTTP. Removed after data import.
+
+---
+
+## Session 17 — Admin Feature Expansion (2026-06-15–16)
+
+**Commits:** `728a638`, `df4a237`, `c5d3f93`, `4ac167f`, `f4ea546`, `13036c9`, `20e83c4`, `f3af411`, `e18a10d`, `47f731a`, `486281f`, `4e67508`, `33b6555`, `2a0422c`, `76f76bc`, `89ee646`
+
+### Password-Based Admin Login
+
+Added `adminPassword` field (bcrypt) to `User` schema. Admin can now authenticate with phone + password instead of OTP.
+
+```ts
+// auth.service.ts — verifyAdminPassword
+async verifyAdminPassword(phone: string, password: string): Promise<User> {
+  const user = await this.userModel.findOne({ phone, isAdmin: true }).select('+adminPassword')
+  if (!user?.adminPassword) throw new UnauthorizedException('رمز عبور تنظیم نشده')
+  const ok = await bcrypt.compare(password, user.adminPassword)
+  if (!ok) throw new UnauthorizedException('رمز عبور نادرست')
+  return user
+}
+```
+
+Admin login UI: dual tab (OTP / Password) → simplified to password-only → final: `c5d3f93` dual tab with autofill prevention (`autocomplete="new-password"`).
+
+OTP length fix (`4ac167f`): backend generated 6 digits, frontend had 5 input boxes → changed to 6.
+
+### IRANSans Fonts (Complete Set)
+
+`f4ea546`: replaced partial IRANSansWeb with complete woff2 set from `docs/Iransans/`:
+- IRANSansWeb (Regular, Bold, Light, Medium, Black, UltraLight)
+- IRANSansWebFaNum (Farsi numerals variant — used for prices, dates, stats)
+
+`13036c9`: added font files to git so Railway Nixpacks build includes them (were in `.gitignore`).
+
+### Socket URL Fix
+
+`20e83c4`: socket URL was hardcoded to `localhost:3000`. Fixed to derive from `VITE_API_BASE_URL`:
+
+```js
+const base = import.meta.env.VITE_API_BASE_URL  // http://api.railway.app/api/v1
+const socketUrl = base.replace(/\/api\/v1$/, '')  // http://api.railway.app
+```
+
+### Initial Password Setup
+
+`f3af411`: when admin has no `adminPassword` yet, login returns a specific error code `'NO_PASSWORD'`. Admin panel shows a "Set Password" form instead of login on first run.
+
+### Admin Change Password
+
+`e18a10d`: `PATCH /auth/admin/password` endpoint (admin-only). Admin panel `ChangePasswordView` with two-column layout, strength indicator (length, upper, number, special), and security tips panel.
+
+### Send Notification / SMS Feature
+
+`47f731a`: Admin panel can broadcast notifications:
+- `POST /notifications/broadcast` — send to all users or specific group
+- `POST /notifications/sms` — send raw SMS (uses configured SMS provider)
+- `AdminNotificationsView`: form with type selector, message body, target audience
+
+### Notification Panel History (`486281f`)
+
+Admin notification panel redesigned to show:
+- Sent broadcasts with timestamp, message body, target count
+- Read/unread stats per broadcast
+- Delete broadcast log (`76f76bc`): `DELETE /notifications/broadcast/:id` + inline confirm in UI
+
+### ChangePasswordView Redesign (`4e67508`)
+
+Two-column layout: form on left, security tips on right. Strength meter (0–4 bars) calculated from password complexity.
+
+### Notification Consent Flow (`33b6555`, `2a0422c`)
+
+After successful order: asks user for browser notification permission.
+
+```js
+// NotificationConsentBanner.vue
+const grant = async () => {
+  const perm = await Notification.requestPermission()
+  if (perm === 'granted') subscribeUser()  // Web Push subscription
+}
+```
+
+`1e92586`: moved consent trigger from `CheckoutView` to `DefaultLayout` — fires after any order, not just checkout page.
+
+### Product Form Action Bar Redesign (`89ee646`)
+
+Admin product form: floating action bar at bottom with save/cancel buttons. `isDirty` tracking — warns before navigation if unsaved changes. Logger calls on save/error.
+
+---
+
+## Session 18 — UI Fixes + Cross-Origin + Nav Redesign (2026-06-16)
+
+**Commits:** `0fa6886`, `1f094be`, `38ca430`, `8f82efa`, `c1f777a`, `8fc78a4`, `bc60383`, `c7a0658`, `3308b21`, `46d8191`
+
+### Desktop Nav + Mobile Drawer Redesign (`0fa6886`)
+
+Full redesign of `AppHeader` navigation:
+- Desktop: mega-menu with category columns, brand chips
+- Mobile: slide-in drawer with accordion category groups
+- Active state tracking, close-on-navigate
+
+### Dropdown Overflow Fixes
+
+`1f094be`: desktop nav mega-menu not showing — `overflow-x-auto` on parent was clipping the dropdown (it creates a new stacking context, clips `overflow: visible` children).  
+Fix: removed `overflow-x-auto` from nav wrapper; used padding instead.
+
+`38ca430`: sub-category panel in mobile drawer not showing — same issue with `overflow-hidden` clipping absolutely-positioned children.  
+Fix: moved overflow clip to an inner scroll container that doesn't contain the dropdown.
+
+### OTP Page Redesign (`8f82efa`)
+
+Full redesign: centered card, phone number display, 6-digit input boxes, countdown timer for resend. Added logger calls and 8 Vitest tests.
+
+### Admin Infinite Refresh Loop Fix (`c1f777a`)
+
+**Root cause:** Admin `http.service.js` 401 handler called `/auth/refresh`. If the refresh token cookie was also expired, that returned 401 → interceptor tried to refresh again → infinite loop.
+
+```js
+// Fix: check if current request IS /auth/refresh before retrying
+if (error.config?.url?.includes('/auth/refresh')) {
+  authStore.clearToken()
+  router.push('/login')
+  return Promise.reject(error)
+}
+```
+
+### SameSite=None for Cross-Origin Railway (`8fc78a4`)
+
+Railway assigns different domains to each service (e.g., `api.railway.app` vs `front.railway.app`). Cross-origin cookies require `SameSite=None; Secure`.
+
+```ts
+res.cookie('refreshToken', token, {
+  httpOnly: true,
+  sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+  secure:   process.env.NODE_ENV === 'production',
+  ...
+})
+```
+
+### Session Fix on Refresh + Real-Time Notifications (`bc60383`)
+
+Two separate bugs fixed:
+1. After hard refresh, `initAuth()` sent refresh request before `withCredentials` was set on the axios instance → cookie not sent → 401 → logout. Fix: ensure `withCredentials: true` is set at instance creation, not per-request.
+2. WebSocket connection was made before token was restored → socket connected as unauthenticated. Fix: `notificationStore.connect()` called *after* `initAuth()` resolves.
+
+### Missing `onMounted` Import (`c7a0658`)
+
+`AppHeaderActions.vue` used `onMounted` but import was removed during a refactor. Runtime error on mount. Fix: restored import.
+
+### Header Layout Fix (`3308b21`)
+
+RTL layout issue: actions (cart, bell, user) were rendering on the right side (visually left in RTL). Fixed with `ms-auto` (margin-start: auto) to push them to the correct RTL far-left position.
+
+### Cross-Origin CORP Fix (`46d8191`)
+
+Helmet's `Cross-Origin-Resource-Policy` header was set to `same-origin` by default, blocking images loaded from the API on different-origin frontends.
+
+```ts
+app.use(helmet({
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}))
+```
+
+Also made `COOKIE_DOMAIN`, `COOKIE_SAMESITE`, `COOKIE_SECURE` explicit env vars for Railway environment parity.
+
+---
+
+## Session 19 — Splash Screens + Settings Integration + Sidebar Redesign (2026-06-16–17)
+
+**Commits:** `c1ff673`, `deabb87`, `e99a8e2`, `a276820`, `596ce18`, `375eea3`, `b36917e`, `e7745e4`, `eb94e19`, `63aa656`, `805823d`, `2e8e34b`, `544e15b`, `c9b855d`, `459b1e3`, `f4d98c1`, `d477382`, `c928fb6`, `7bc35ae`, `52ab8d1`, `f261add`, `2d4c0d5`
+
+### Storefront Splash Screen (`c1ff673`)
+
+`AppSplash.vue`: eyewear-themed loading screen shown while settings load.
+- SVG glasses animation with lens reflections
+- 3 bouncing loading dots
+- Fades out after `settingsStore.fetched = true`
+- `c928fb6`: fixed flash — previously brand name rendered with fallback text before settings arrived; now hidden until `settingsStore.fetched`
+
+### Reverse-Proxy for Safari/Firefox Cookie Fix (`deabb87`, `e99a8e2`)
+
+Safari and Firefox block cross-site cookies even with `SameSite=None` in some configurations.
+
+Solution: added a thin Express proxy server (`proxy-server.js`) bundled with the storefront that rewrites `/api/*` requests to the backend, making the browser see them as same-origin:
+
+```js
+// proxy-server.js
+app.use('/api', createProxyMiddleware({
+  target: process.env.BACKEND_URL,
+  changeOrigin: true,
+  pathFilter: '/api',  // preserve /api prefix
+  on: {
+    error: (err, req, res) => res.status(502).json({ message: 'proxy error' }),
+  },
+}))
+```
+
+`e99a8e2`: fixed `pathFilter` — without it, proxy was stripping `/api` from forwarded URL.
+
+### Header + Footer Layout Fixes
+
+`a276820`: logo was on left, actions on right — incorrect for RTL. Swapped flex order.  
+`596ce18`: `ms-auto` to push actions to RTL far-left (visual right in LTR = visual left in RTL).  
+`375eea3`: footer had empty space on desktop at 4-section width; refactored to balanced 4-column grid.
+
+### Admin Radar-Pulse Splash (`b36917e`)
+
+Admin panel splash: CSS radar-pulse animation with glasses SVG silhouette at center.
+
+### Settings-Driven Dynamic Content
+
+`e7745e4`: `AppHeader` pulls `siteName` and `tagline` from `useSettingsStore` (replaces hardcoded "استورین").  
+`eb94e19`: `LoginView` pulls `siteName`, `tagline`, and `logo` from settings.  
+`63aa656`: Every route sets `document.title = "${siteName} - ${pageTitle}"` via `router.afterEach`.  
+`805823d`: Both splash screens show `siteName` from DB (with fallback).  
+`459b1e3`: `AuthLayout` header also reads from settings store.
+
+### Share Button (`2e8e34b`)
+
+Product detail page: share button using Web Share API with clipboard fallback.
+
+```js
+const share = async () => {
+  if (navigator.share) {
+    await navigator.share({ title: product.name, url: window.location.href })
+  } else {
+    await navigator.clipboard.writeText(window.location.href)
+    toast('لینک کپی شد')
+  }
+}
+```
+
+### Discount Module Fixes
+
+`544e15b`: Discount form field `maxDiscount` renamed to `maxDiscountAmount` to match backend DTO.  
+`c9b855d`: Discount list was mapping wrong fields (`code` vs `couponCode`); admin list empty even when coupons existed. Also added missing `GET /discounts` and `DELETE /discounts/:id` backend routes that were in service but not wired to controller.
+
+### Admin Sidebar Redesign (`7bc35ae`, `f261add`, `2d4c0d5`)
+
+Three-phase redesign:
+1. `7bc35ae`: SVG icons per route, active state indicator (left border glow), clean hierarchy
+2. `f261add`: deeper dark theme (`#0D1117` base), glowing active state, green pulse dot on "live" indicator
+3. `2d4c0d5`: spacing polish; fixed sidebar color customization — CSS variable wasn't being applied because Tailwind JIT purged the dynamic class
+
+`52ab8d1`: banner upload form now shows image size hints (hero: 1440×560, promo: 720×400).
+
+---
+
+## Session 20 — Homepage Redesign + MostViewed + Notifications Page (2026-06-17)
+
+**Commits:** `a5a5ea6`, `eb29c43`, `f2e29cc`, `41ed7c7`, `e16c857`, `7aeff5d`, `2a8e54f`, `f01e496`, `8f33951`, `d84fb27`, `b1230c5`, `b2b6b4c`, `05c6289`
+
+### Homepage Full Redesign (`a5a5ea6`)
+
+`HomeView.vue` rebuilt with 7 sections:
+
+| Section | Component | Notes |
+|---------|-----------|-------|
+| Hero | `HeroBanner.vue` | Full-width with CTA, linked to `/products` |
+| Category chips | `CategoryStrip.vue` | Horizontal scrollable, icon per category |
+| Flash sale | `FlashSaleSection.vue` | Countdown timer, discounted products |
+| New arrivals | `ProductRowSection.vue` | Horizontal scroll, sort=newest |
+| Promo banner | `SpecialBanner.vue` | From `/banners/promo` API |
+| Most viewed | `MostViewedSection.vue` | sort=mostViewed |
+| Trust strip | `TrustStrip.vue` | Icons from `settingsStore.trustItems` |
+
+### Discount Percentage Fix (`eb29c43`)
+
+Product cards showed wrong discount percentage. Was calculating from `minPrice` vs `comparePrice` at product level — but `comparePrice` is per-variant. Fix: pick the variant with the largest discount, calculate `Math.round((comparePrice - price) / comparePrice * 100)`.
+
+### MostViewed Section + Sort (`f2e29cc`)
+
+**Backend changes:**
+- `search.service.ts`: added `mostViewed` to sortMap → `{ viewCount: -1, createdAt: -1 }`
+- `search-query.dto.ts`: added `'mostViewed'` to sort union type
+- `AppLoggerService` injected into `SearchService`, logs every `search()` call
+
+**Frontend:**
+- `constants.js`: added `{ label: 'پربازدیدترین', value: 'mostViewed' }` to `SORT_OPTIONS`
+- `MostViewedSection.vue`: fetches products sorted by `mostViewed`, displays in 2-row grid
+
+**Color iterations:**
+- `41ed7c7`: light purple gradient background
+- `e16c857`: changed to neon/phosphoric green (`#39FF14` family) — final color
+
+**Tests added:**
+- `constants.test.js` (4 tests): SORT_OPTIONS structure, Persian label, ordering
+- `search.service.spec.ts`: +2 tests (mostViewed sort, logger call) → 13 total
+- `product.service.spec.ts`: +3 tests (findAll sort: mostViewed, newest default, bestseller) → 24 total
+
+### Product Card Dark Mode Fix (`7aeff5d`)
+
+Dark mode: product card image background was white (from CSS `bg-white`), body text was dark-on-dark. Fixed by using CSS variables `--color-card` and `--color-text` instead of hardcoded Tailwind colors.
+
+### Notifications Page (`2a8e54f`)
+
+`NotificationsView.vue`: full notifications list page at `/user/notifications`.
+- Groups notifications by day
+- Mark-all-read button
+- Per-item click → navigate to related content + mark read
+- 8 Vitest tests
+
+### Favicon + Web Manifest + Logo (`f01e496`)
+
+- `public/favicon.svg` — SVG glasses icon
+- `public/site.webmanifest` — PWA manifest with name, icons, theme color
+- `public/logo.png` — brand logo served statically
+- `<link rel="icon">` and `<link rel="manifest">` in `index.html` for both apps
+
+### Admin Panel Title (`8f33951`)
+
+`document.title` set dynamically: `useSettingsStore().siteName` injected into `router.afterEach` in admin panel.
+
+### Admin Logout Fixes (`d84fb27`, `b1230c5`)
+
+`d84fb27`: logout was only clearing Pinia state client-side. The HttpOnly refresh token cookie persisted — on next visit, session auto-restored. Fixed: `POST /auth/logout` called on every logout to instruct backend to clear cookie.
+
+`b1230c5`: after logout, if user hit F5, `initAuth()` ran and restored session from still-valid cookie. Root cause: server `logout` handler wasn't actually expiring the cookie. Fixed: `res.clearCookie('refreshToken')` in `auth.controller.ts` logout handler.
+
+### Admin Login Redesign (`b2b6b4c`)
+
+Premium glassmorphism UI: dark blurred card, gradient border glow, phone + password fields with reveal toggle.
+
+### Settings-Driven Login Page (`05c6289`)
+
+Admin login page displays `siteName` from `useSettingsStore` (e.g., "استورین Admin") instead of hardcoded string.
+
+---
+
+## Session 21 — Footer Multi-Contact + mapsUrl (2026-06-17–18)
+
+**Commits:** `e05b928`, `ff51790`, `ec1f13a`, `8a55351`, `205f66e`
+
+### Footer Tagline Fix (`e05b928`)
+
+Footer was showing `tagline` when `footerTagline` was set. Priority fixed:
+
+```js
+const displayTagline = computed(() =>
+  settingsStore.settings?.footerTagline || settingsStore.settings?.tagline || ''
+)
+```
+
+### Multi-Mobile + Multi-Address Support (`ff51790`, `ec1f13a`)
+
+Settings previously had single `phone` and `address` string fields. Replaced with arrays to support multiple contact entries.
+
+**Backend:**
+
+```ts
+// site-settings.schema.ts
+mobiles:   [{ label: String, number: String }]
+addresses: [{ label: String, text: String, mapsUrl: String }]
+```
+
+```ts
+// update-settings.dto.ts
+@IsOptional() @IsArray() @ValidateNested({ each: true })
+mobiles: MobileItemDto[]
+
+@IsOptional() @IsArray() @ValidateNested({ each: true })
+addresses: AddressItemDto[]
+```
+
+### Clickable Footer Contact Items (`8a55351`)
+
+Footer contact section renders clickable links:
+
+```html
+<!-- Phone → tel: link -->
+<a :href="`tel:${m.number}`">{{ m.number }}</a>
+
+<!-- Address → maps link (if mapsUrl provided) -->
+<a :href="addr.mapsUrl" target="_blank" rel="noopener">{{ addr.text }}</a>
+```
+
+### mapsUrl Field (`205f66e`)
+
+Added separate `mapsUrl` field to `AddressItemDto` to store Google Maps / Neshan / Balad precise coordinates URL separately from the human-readable text address.
+
+Admin settings form: address entries now have two fields: "آدرس متنی" (text) + "لینک نقشه" (mapsUrl).
+
+---
+
+## Session 22 — Search Fix + Notification Bell Redesign + Mobile Fix (2026-06-18)
+
+**Status:** Uncommitted (files modified, tests written)
+
+### Search Suggest DTO Fix
+
+`search-suggest.dto.ts`: added missing `q` field that was referenced in service but absent from DTO, causing TypeScript compile error on suggest endpoint.
+
+### MostViewed Sort Option in Sort Bar
+
+`constants.js`: added `{ label: 'پربازدیدترین', value: 'mostViewed' }` to `SORT_OPTIONS` array (displayed in category/product listing sort bar).
+
+Tests: `constants.test.js` (4 tests — structure, Persian label, ordering, completeness).
+
+### Notification Bell Dropdown Redesign
+
+`AppHeaderActions.vue` — full redesign of notification dropdown:
+
+**Per-type color icons:**
+
+| Type | Icon | Color |
+|------|------|-------|
+| `order_update` / `order_shipped` | Shopping bag | Amber `#f59e0b` |
+| `payment` | Credit card | Phosphoric green `#39FF14` |
+| `promotion` | Tag | Purple `#a855f7` |
+| default | Bell | Indigo `#818cf8` |
+
+**Layout:**
+- Icon box (36×36px, 10px border-radius) + body column
+- Title row: text + unread dot inline (no separate row)
+- Body text (`nd__item-sub`) + relative timestamp (`nd__item-time`)
+- `nd__item--unread` class on row bg, `nd__item-title--unread` on title text
+
+**Count limit:** `slice(0, 3)` — shows max 3 notifications (was 5).
+
+### Notification Dropdown Positioning Fix
+
+**Problem:** Panel was `left: 50%; transform: translateX(-50%)` relative to the ~40px bell button container → 360px panel offset 160px left of button → off-screen.
+
+**Fix:** `left: 0; right: auto` — panel aligns to bell button's left edge, extends right.
+
+### Mobile Viewport Fix
+
+**Problem:** On mobile (≈390px screen), bell button sits at x≈190px; 360px panel → overflows right edge at x≈550px.
+
+**Fix:** On `≤640px`, switch to `position: fixed` + `left: 0.5rem; right: 0.5rem; width: auto` — panel spans full viewport width.
+
+`top` is calculated dynamically via `getBoundingClientRect()` + `nextTick`:
+
+```js
+const ndTop = ref('0px')
+
+async function toggleNotif() {
+  isNotifOpen.value = !isNotifOpen.value
+  if (isNotifOpen.value) {
+    await nextTick()
+    const rect = notifRef.value?.getBoundingClientRect()
+    if (rect) ndTop.value = `${rect.bottom + 10}px`
+    if (!notifStore.fetched) await notifStore.fetchNotifications()
+  }
+}
+```
+
+```css
+@media (max-width: 640px) {
+  .nd {
+    position: fixed;
+    top: var(--nd-top, 64px);
+    left: 0.5rem;
+    right: 0.5rem;
+    width: auto;
+    max-width: none;
+  }
+}
+```
+
+**Tests:** `AppHeaderActions.test.js` — 27 tests (all pass):
+- Bell visibility (logged in/out, badge count)
+- Dropdown open/close, fetch on open, skip fetch if fetched
+- Loading skeleton, empty state, notification list
+- Max 3 rendered, unread count badge
+- Unread visual indicators (classes)
+- Click: markRead, no-op if read, close after click, navigate, no-nav
+- See-all footer link: exists, correct route, closes dropdown

@@ -354,4 +354,24 @@ describe('ProductService', () => {
       );
     });
   });
+
+  describe('findAll — sort', () => {
+    it('sorts by viewCount desc when sort=mostViewed', async () => {
+      await service.findAll({ sort: 'mostViewed' });
+      const sortCall = model.find().select().sort.mock.calls[0][0];
+      expect(sortCall).toEqual({ viewCount: -1, createdAt: -1 });
+    });
+
+    it('defaults to newest sort when no sort param', async () => {
+      await service.findAll({});
+      const sortCall = model.find().select().sort.mock.calls[0][0];
+      expect(sortCall).toEqual({ createdAt: -1 });
+    });
+
+    it('sorts by soldCount when sort=bestseller', async () => {
+      await service.findAll({ sort: 'bestseller' });
+      const sortCall = model.find().select().sort.mock.calls[0][0];
+      expect(sortCall).toEqual({ soldCount: -1 });
+    });
+  });
 });

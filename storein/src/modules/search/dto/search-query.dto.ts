@@ -25,7 +25,7 @@ export class SearchQueryDto {
   attrs?: string;
 
   @IsOptional() @IsString()
-  sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular' | 'relevant';
+  sort?: 'newest' | 'price_asc' | 'price_desc' | 'popular' | 'relevant' | 'mostViewed';
 
   @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
   page?: number = 1;

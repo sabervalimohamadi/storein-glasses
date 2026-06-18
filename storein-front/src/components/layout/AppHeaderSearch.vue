@@ -152,6 +152,7 @@ import { ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { onClickOutside, useDebounceFn } from '@vueuse/core'
 import http from '@/services/http.service'
+import { logger } from '@/utils/logger'
 
 const router    = useRouter()
 const wrapper   = ref(null)
@@ -184,7 +185,9 @@ const fetchSuggestions = useDebounceFn(async (q) => {
   try {
     const { data } = await http.get('/search/suggest', { params: { q } })
     suggestions.value = data || { products: [], categories: [] }
-  } catch {
+    logger.info('search: suggestions fetched', { q, products: suggestions.value.products?.length ?? 0, categories: suggestions.value.categories?.length ?? 0 }, 'AppHeaderSearch')
+  } catch (err) {
+    logger.error('search: suggest request failed', { q, err }, 'AppHeaderSearch')
     suggestions.value = { products: [], categories: [] }
   } finally {
     loading.value = false

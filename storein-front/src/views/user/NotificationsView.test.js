@@ -18,10 +18,10 @@ import NotificationsView from './NotificationsView.vue'
 const router = createRouter({
   history: createMemoryHistory(),
   routes: [
-    { path: '/', name: 'home', component: { template: '<div/>' } },
-    { path: '/user/notifications', name: 'user-notifications', component: NotificationsView },
-    { path: '/user/orders', name: 'user-orders', component: { template: '<div/>' } },
-    { path: '/user/orders/:id', name: 'user-order-detail', component: { template: '<div/>' } },
+    { path: '/',                        name: 'home',              component: { template: '<div/>' } },
+    { path: '/user/notifications',      name: 'user-notifications',component: NotificationsView },
+    { path: '/user/orders',             name: 'user-orders',       component: { template: '<div/>' } },
+    { path: '/user/orders/:id',         name: 'user-order-detail', component: { template: '<div/>' } },
   ],
 })
 
@@ -36,15 +36,16 @@ const makeNotif = (overrides = {}) => ({
   ...overrides,
 })
 
+// Plain object mock — no storeToRefs in component so plain values are fine
 function makeStore(overrides = {}) {
   return {
-    notifications: [],
-    loading:       false,
-    unreadCount:   0,
-    fetched:       false,
+    notifications:     [],
+    loading:           false,
+    unreadCount:       0,
+    fetched:           false,
     fetchNotifications: vi.fn().mockResolvedValue(undefined),
-    markRead:           vi.fn().mockResolvedValue(undefined),
-    markAllRead:        vi.fn().mockResolvedValue(undefined),
+    markRead:          vi.fn().mockResolvedValue(undefined),
+    markAllRead:       vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -54,7 +55,7 @@ function mountView(store) {
   return mount(NotificationsView, {
     global: {
       plugins: [createPinia(), router],
-      stubs: { RouterLink: { template: '<a><slot/></a>' } },
+      stubs:   { RouterLink: { template: '<a><slot /></a>' } },
     },
   })
 }
@@ -65,8 +66,7 @@ describe('NotificationsView', () => {
     vi.clearAllMocks()
   })
 
-  // ── mount + fetch ─────────────────────────────────────────────────────────────
-
+  // ── mount / fetch ──────────────────────────────────────────────
   describe('on mount', () => {
     it('calls fetchNotifications when not yet fetched', async () => {
       const store = makeStore({ fetched: false })
@@ -83,47 +83,46 @@ describe('NotificationsView', () => {
     })
 
     it('logs info on mount', async () => {
-      const store = makeStore()
-      mountView(store)
+      mountView(makeStore())
       await flushPromises()
-      expect(logger.info).toHaveBeenCalledWith('notifications page mounted', {}, 'NotificationsView')
+      expect(logger.info).toHaveBeenCalledWith(
+        'notifications page mounted', {}, 'NotificationsView',
+      )
     })
   })
 
-  // ── loading state ─────────────────────────────────────────────────────────────
-
+  // ── loading state ──────────────────────────────────────────────
   describe('loading state', () => {
     it('renders skeleton items while loading', () => {
-      const store = makeStore({ loading: true })
-      const wrapper = mountView(store)
+      const wrapper = mountView(makeStore({ loading: true }))
       expect(wrapper.findAll('.nv__skeleton').length).toBeGreaterThan(0)
     })
 
     it('does not render skeleton after loading', () => {
-      const store = makeStore({ loading: false, notifications: [makeNotif()] })
-      const wrapper = mountView(store)
+      const wrapper = mountView(makeStore({ loading: false, notifications: [makeNotif()] }))
       expect(wrapper.findAll('.nv__skeleton')).toHaveLength(0)
     })
   })
 
-  // ── empty state ───────────────────────────────────────────────────────────────
-
+  // ── empty state ────────────────────────────────────────────────
   describe('empty state', () => {
-    it('shows empty message when no notifications', () => {
-      const store = makeStore({ loading: false, notifications: [] })
-      const wrapper = mountView(store)
+    it('shows empty section when no notifications', () => {
+      const wrapper = mountView(makeStore({ loading: false, notifications: [] }))
       expect(wrapper.find('.nv__empty').exists()).toBe(true)
     })
 
-    it('does not show empty state when there are notifications', () => {
-      const store = makeStore({ loading: false, notifications: [makeNotif()] })
-      const wrapper = mountView(store)
+    it('hides empty section when there are notifications', () => {
+      const wrapper = mountView(makeStore({ loading: false, notifications: [makeNotif()] }))
       expect(wrapper.find('.nv__empty').exists()).toBe(false)
+    })
+
+    it('shows title text in empty state', () => {
+      const wrapper = mountView(makeStore({ loading: false, notifications: [] }))
+      expect(wrapper.find('.nv__empty-title').text()).toContain('هیچ اعلانی وجود ندارد')
     })
   })
 
-  // ── notification list ─────────────────────────────────────────────────────────
-
+  // ── notification list ──────────────────────────────────────────
   describe('notification items', () => {
     it('renders one item per notification', () => {
       const store = makeStore({
@@ -133,33 +132,75 @@ describe('NotificationsView', () => {
       expect(wrapper.findAll('.nv__item')).toHaveLength(2)
     })
 
-    it('applies unread class to unread items', () => {
-      const store = makeStore({ notifications: [makeNotif({ isRead: false })] })
-      const wrapper = mountView(store)
+    it('applies nv__item--unread class to unread items', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: false })] }))
       expect(wrapper.find('.nv__item').classes()).toContain('nv__item--unread')
     })
 
-    it('does not apply unread class to read items', () => {
-      const store = makeStore({ notifications: [makeNotif({ isRead: true })] })
-      const wrapper = mountView(store)
+    it('does not apply nv__item--unread class to read items', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: true })] }))
       expect(wrapper.find('.nv__item').classes()).not.toContain('nv__item--unread')
     })
 
     it('renders item title and body', () => {
-      const store = makeStore({
+      const wrapper = mountView(makeStore({
         notifications: [makeNotif({ title: 'عنوان تست', body: 'متن تست' })],
-      })
-      const wrapper = mountView(store)
+      }))
       expect(wrapper.find('.nv__item-title').text()).toBe('عنوان تست')
       expect(wrapper.find('.nv__item-body').text()).toBe('متن تست')
     })
   })
 
-  // ── click handling ────────────────────────────────────────────────────────────
+  // ── phosphor green ── unread visual cues ──────────────────────
+  describe('phosphor green indicators for unread', () => {
+    it('unread dot has nv__dot--unread class', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: false })] }))
+      expect(wrapper.find('.nv__dot').classes()).toContain('nv__dot--unread')
+    })
 
+    it('read dot has nv__dot--read class', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: true })] }))
+      expect(wrapper.find('.nv__dot').classes()).toContain('nv__dot--read')
+    })
+
+    it('unread item title has nv__item-title--unread class', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: false })] }))
+      expect(wrapper.find('.nv__item-title').classes()).toContain('nv__item-title--unread')
+    })
+
+    it('read item title does not have nv__item-title--unread class', () => {
+      const wrapper = mountView(makeStore({ notifications: [makeNotif({ isRead: true })] }))
+      expect(wrapper.find('.nv__item-title').classes()).not.toContain('nv__item-title--unread')
+    })
+
+    it('badge appears on bell when unreadCount > 0', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 3 }))
+      expect(wrapper.find('[data-testid="unread-badge"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="unread-badge"]').text()).toBe('3')
+    })
+
+    it('badge is hidden when unreadCount is 0', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 0 }))
+      expect(wrapper.find('[data-testid="unread-badge"]').exists()).toBe(false)
+    })
+
+    it('header sub text uses phosphor class when unread items exist', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 2 }))
+      expect(wrapper.find('.nv__sub--phosphor').exists()).toBe(true)
+      expect(wrapper.find('.nv__sub--phosphor').text()).toContain('2')
+    })
+
+    it('header sub falls back to all-read message when count is 0', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 0 }))
+      expect(wrapper.find('.nv__sub--phosphor').exists()).toBe(false)
+      expect(wrapper.find('.nv__sub').text()).toContain('همه اعلان‌ها خوانده شده‌اند')
+    })
+  })
+
+  // ── click handling ─────────────────────────────────────────────
   describe('clicking a notification', () => {
     it('calls markRead for an unread notification', async () => {
-      const n = makeNotif({ _id: 'n1', isRead: false })
+      const n     = makeNotif({ _id: 'n1', isRead: false })
       const store = makeStore({ notifications: [n] })
       const wrapper = mountView(store)
       await wrapper.find('.nv__item').trigger('click')
@@ -167,8 +208,8 @@ describe('NotificationsView', () => {
       expect(store.markRead).toHaveBeenCalledWith('n1')
     })
 
-    it('does not call markRead for an already-read notification', async () => {
-      const n = makeNotif({ _id: 'n1', isRead: true })
+    it('does not call markRead for a read notification', async () => {
+      const n     = makeNotif({ _id: 'n1', isRead: true })
       const store = makeStore({ notifications: [n] })
       const wrapper = mountView(store)
       await wrapper.find('.nv__item').trigger('click')
@@ -178,9 +219,8 @@ describe('NotificationsView', () => {
 
     it('logs debug when clicking a notification', async () => {
       const n = makeNotif({ _id: 'n1' })
-      const store = makeStore({ notifications: [n] })
-      const wrapper = mountView(store)
-      await wrapper.find('.nv__item').trigger('click')
+      mountView(makeStore({ notifications: [n] }))
+        .find('.nv__item').trigger('click')
       await flushPromises()
       expect(logger.debug).toHaveBeenCalledWith(
         'notification item clicked',
@@ -190,18 +230,15 @@ describe('NotificationsView', () => {
     })
   })
 
-  // ── mark all read ─────────────────────────────────────────────────────────────
-
+  // ── mark all read button ───────────────────────────────────────
   describe('mark all read button', () => {
-    it('is visible when there are unread notifications', () => {
-      const store = makeStore({ unreadCount: 3 })
-      const wrapper = mountView(store)
+    it('is visible when unreadCount > 0', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 3 }))
       expect(wrapper.find('.nv__mark-all').exists()).toBe(true)
     })
 
     it('is hidden when unreadCount is 0', () => {
-      const store = makeStore({ unreadCount: 0 })
-      const wrapper = mountView(store)
+      const wrapper = mountView(makeStore({ unreadCount: 0 }))
       expect(wrapper.find('.nv__mark-all').exists()).toBe(false)
     })
 
@@ -219,25 +256,20 @@ describe('NotificationsView', () => {
       await wrapper.find('.nv__mark-all').trigger('click')
       await flushPromises()
       expect(logger.info).toHaveBeenCalledWith(
-        'mark all read triggered',
-        { count: 4 },
-        'NotificationsView',
+        'mark all read triggered', { count: 4 }, 'NotificationsView',
       )
     })
   })
 
-  // ── unread count display ──────────────────────────────────────────────────────
-
+  // ── header subtitle ────────────────────────────────────────────
   describe('unread count in header', () => {
-    it('shows unread count subtitle when count > 0', () => {
-      const store = makeStore({ unreadCount: 5 })
-      const wrapper = mountView(store)
+    it('shows unread count when > 0', () => {
+      const wrapper = mountView(makeStore({ unreadCount: 5 }))
       expect(wrapper.find('.nv__sub').text()).toContain('5')
     })
 
     it('shows all-read message when count is 0', () => {
-      const store = makeStore({ unreadCount: 0 })
-      const wrapper = mountView(store)
+      const wrapper = mountView(makeStore({ unreadCount: 0 }))
       expect(wrapper.find('.nv__sub').text()).toContain('همه اعلان‌ها خوانده شده‌اند')
     })
   })

@@ -4,6 +4,12 @@ import { SearchService } from './search.service';
 import { Product } from '../product/entities/product.schema';
 import { Category } from '../category/entities/category.schema';
 import { REDIS_CLIENT } from '../../redis/redis.module';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
+
+const mockLogger = {
+  setContext: jest.fn().mockReturnThis(),
+  log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
 
 const userId = 'user_123';
 
@@ -57,6 +63,7 @@ describe('SearchService', () => {
         { provide: getModelToken(Product.name),  useValue: productModel },
         { provide: getModelToken(Category.name), useValue: categoryModel },
         { provide: REDIS_CLIENT,                 useValue: redis },
+        { provide: AppLoggerService,             useValue: mockLogger },
       ],
     }).compile();
 
@@ -90,24 +97,51 @@ describe('SearchService', () => {
       const callArg = productModel.find.mock.calls[0][0];
       expect(callArg['variants.attributes'].$all).toHaveLength(2);
     });
+
+    it('sorts by viewCount descending when sort=mostViewed', async () => {
+      await service.search({ sort: 'mostViewed' });
+      const sortCall = productModel.find().select().sort.mock.calls[0][0];
+      expect(sortCall).toEqual({ viewCount: -1, createdAt: -1 });
+    });
+
+    it('logs the search call with sort info', async () => {
+      await service.search({ q: 'عینک', sort: 'mostViewed' });
+      expect(mockLogger.log).toHaveBeenCalledWith('search', expect.objectContaining({ sort: 'mostViewed' }));
+    });
   });
 
   describe('suggest', () => {
-    it('returns cached suggestions from Redis', async () => {
-      redis.get.mockResolvedValue(JSON.stringify(['سامسونگ A55']));
+    it('returns cached result from Redis without hitting DB', async () => {
+      const cached = { products: [{ name: 'سامسونگ A55', slug: 'samsung-a55' }], categories: [] };
+      redis.get.mockResolvedValue(JSON.stringify(cached));
       const res = await service.suggest('سامسونگ');
-      expect(res).toEqual(['سامسونگ A55']);
+      expect(res).toEqual(cached);
       expect(productModel.find).not.toHaveBeenCalled();
     });
 
-    it('queries DB when cache miss and caches result', async () => {
+    it('queries DB on cache miss, returns { products, categories } and caches result', async () => {
       redis.get.mockResolvedValue(null);
-      productModel.find.mockReturnValue(leanChain([{ name: 'سامسونگ A55' }]));
-      categoryModel.find.mockReturnValue(leanChain([]));
+      productModel.find.mockReturnValue(leanChain([{ name: 'سامسونگ A55', slug: 'samsung-a55' }]));
+      categoryModel.find.mockReturnValue(leanChain([{ name: 'موبایل', slug: 'mobile' }]));
 
       const res = await service.suggest('سامسونگ');
+      expect(res.products).toEqual([{ name: 'سامسونگ A55', slug: 'samsung-a55' }]);
+      expect(res.categories).toEqual([{ name: 'موبایل', slug: 'mobile' }]);
       expect(redis.setex).toHaveBeenCalled();
-      expect(res).toContain('سامسونگ A55');
+    });
+
+    it('uses v2 cache key to avoid collisions with old string[] cache', async () => {
+      redis.get.mockResolvedValue(null);
+      await service.suggest('test');
+      const cacheKey: string = redis.get.mock.calls[0][0];
+      expect(cacheKey).toContain('v2');
+    });
+
+    it('returns empty products and categories when DB has no matches', async () => {
+      redis.get.mockResolvedValue(null);
+      const res = await service.suggest('xyz_no_match');
+      expect(res.products).toEqual([]);
+      expect(res.categories).toEqual([]);
     });
   });
 

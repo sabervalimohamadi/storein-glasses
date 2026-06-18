@@ -1,27 +1,32 @@
 <template>
-  <div class="container-main py-8">
+  <div class="nv">
 
-    <!-- Header -->
+    <!-- ─── Header ──────────────────────────────────────────────── -->
     <div class="nv__header">
-      <div class="nv__title-wrap">
-        <div class="nv__icon-wrap" aria-hidden="true">
+      <div class="nv__header-start">
+        <div class="nv__bell-wrap" aria-hidden="true">
           <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-               stroke-width="1.5" stroke="currentColor" class="nv__icon-svg">
+               stroke-width="1.5" stroke="currentColor" class="nv__bell-svg">
             <path stroke-linecap="round" stroke-linejoin="round"
-              d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
+              d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0018 9.75v-.7V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"/>
           </svg>
+          <span v-if="notifStore.unreadCount > 0" class="nv__badge font-fanum" data-testid="unread-badge">
+            {{ notifStore.unreadCount }}
+          </span>
         </div>
         <div>
           <h1 class="nv__title">اعلان‌ها</h1>
-          <p v-if="unreadCount > 0" class="nv__sub font-fanum">
-            {{ unreadCount }} اعلان خوانده‌نشده
+          <p class="nv__sub">
+            <span v-if="notifStore.unreadCount > 0" class="nv__sub--phosphor font-fanum">
+              {{ notifStore.unreadCount }} اعلان خوانده‌نشده
+            </span>
+            <span v-else>همه اعلان‌ها خوانده شده‌اند</span>
           </p>
-          <p v-else class="nv__sub">همه اعلان‌ها خوانده شده‌اند</p>
         </div>
       </div>
 
       <button
-        v-if="unreadCount > 0"
+        v-if="notifStore.unreadCount > 0"
         class="nv__mark-all"
         :disabled="markingAll"
         @click="handleMarkAll"
@@ -38,40 +43,52 @@
       </button>
     </div>
 
-    <!-- Loading skeleton -->
-    <div v-if="loading" class="nv__list">
-      <div v-for="i in 6" :key="i" class="nv__skeleton">
-        <div class="nv__skeleton-dot" />
-        <div class="nv__skeleton-body">
-          <div class="nv__skeleton-line" style="width:60%" />
-          <div class="nv__skeleton-line" style="width:85%;margin-top:6px;height:0.7rem;opacity:0.5" />
-          <div class="nv__skeleton-line" style="width:30%;margin-top:6px;height:0.65rem;opacity:0.3" />
+    <!-- ─── Loading skeleton ─────────────────────────────────── -->
+    <div v-if="notifStore.loading" class="nv__list" data-testid="skeleton-list">
+      <div v-for="i in 5" :key="i" class="nv__skeleton">
+        <div class="nv__sk-icon" />
+        <div class="nv__sk-body">
+          <div class="nv__sk-line" style="width:55%" />
+          <div class="nv__sk-line" style="width:82%;margin-top:8px;height:.7rem;opacity:.5" />
+          <div class="nv__sk-line" style="width:30%;margin-top:8px;height:.6rem;opacity:.3" />
         </div>
       </div>
     </div>
 
-    <!-- Empty state -->
-    <div v-else-if="!notifications.length" class="nv__empty">
-      <span class="nv__empty-icon">🔔</span>
+    <!-- ─── Empty state ──────────────────────────────────────── -->
+    <div v-else-if="!notifStore.notifications.length" class="nv__empty">
+      <div class="nv__empty-art" aria-hidden="true">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96" class="nv__empty-svg" fill="none">
+          <circle cx="48" cy="48" r="46" fill="rgba(99,102,241,.06)" stroke="rgba(99,102,241,.14)" stroke-width="1.5"/>
+          <path d="M56.857 65.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0060 57.75v-.7V57A12 12 0 0036 57v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3 3 0 11-5.714 0"
+                stroke="rgba(99,102,241,.45)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="66" cy="33" r="9" fill="rgba(99,102,241,.1)" stroke="rgba(99,102,241,.28)" stroke-width="1.5"/>
+          <path d="M63 33h6M66 30v6" stroke="rgba(99,102,241,.55)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
       <p class="nv__empty-title">هیچ اعلانی وجود ندارد</p>
       <p class="nv__empty-sub">اعلان‌های جدید در اینجا نمایش داده می‌شوند</p>
       <RouterLink :to="{ name: 'home' }" class="nv__back-btn">بازگشت به صفحه اصلی</RouterLink>
     </div>
 
-    <!-- Notification list -->
+    <!-- ─── Notification list ────────────────────────────────── -->
     <div v-else class="nv__list">
       <button
-        v-for="n in notifications"
+        v-for="n in notifStore.notifications"
         :key="n._id"
         class="nv__item"
         :class="{ 'nv__item--unread': !n.isRead }"
         @click="handleClick(n)"
       >
-        <!-- Unread indicator -->
-        <span class="nv__dot" :class="n.isRead ? 'nv__dot--read' : 'nv__dot--unread'" />
+        <!-- Pulsing dot ── phosphor green when unread -->
+        <span
+          class="nv__dot"
+          :class="n.isRead ? 'nv__dot--read' : 'nv__dot--unread'"
+          :data-testid="n.isRead ? 'dot-read' : 'dot-unread'"
+        />
 
-        <!-- Type icon -->
-        <div class="nv__type-icon" :class="typeIconClass(n.type)">
+        <!-- Type icon badge -->
+        <div class="nv__type-icon" :class="typeIconClass(n.type)" aria-hidden="true">
           <svg v-if="n.type === 'order_update'" xmlns="http://www.w3.org/2000/svg"
                fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
             <path stroke-linecap="round" stroke-linejoin="round"
@@ -92,12 +109,12 @@
 
         <!-- Content -->
         <div class="nv__content">
-          <p class="nv__item-title">{{ n.title }}</p>
+          <p class="nv__item-title" :class="{ 'nv__item-title--unread': !n.isRead }">{{ n.title }}</p>
           <p class="nv__item-body">{{ n.body }}</p>
-          <p class="nv__item-time font-fanum">{{ timeAgo(n.createdAt) }}</p>
+          <span class="nv__item-time font-fanum">{{ timeAgo(n.createdAt) }}</span>
         </div>
 
-        <!-- Chevron (only for navigable notifications) -->
+        <!-- Chevron for navigable items -->
         <svg
           v-if="resolveRoute(n)"
           xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
@@ -113,8 +130,7 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRouter }     from 'vue-router'
-import { storeToRefs }   from 'pinia'
+import { useRouter }      from 'vue-router'
 import { useNotificationStore } from '@/stores/notification.store'
 import { logger } from '@/utils/logger'
 
@@ -122,8 +138,6 @@ const CTX = 'NotificationsView'
 
 const router     = useRouter()
 const notifStore = useNotificationStore()
-
-const { notifications, loading, unreadCount } = storeToRefs(notifStore)
 const markingAll = ref(false)
 
 onMounted(async () => {
@@ -131,15 +145,13 @@ onMounted(async () => {
   if (!notifStore.fetched) {
     logger.debug('fetching notifications on mount', {}, CTX)
     await notifStore.fetchNotifications()
-    logger.debug('notifications fetched', { count: notifications.value.length }, CTX)
+    logger.debug('notifications fetched', { count: notifStore.notifications.length }, CTX)
   }
 })
 
 async function handleClick(n) {
   logger.debug('notification item clicked', { id: n._id, type: n.type, isRead: n.isRead }, CTX)
-  if (!n.isRead) {
-    await notifStore.markRead(n._id)
-  }
+  if (!n.isRead) await notifStore.markRead(n._id)
   const dest = resolveRoute(n)
   if (dest) {
     logger.info('navigating from notification', { dest, type: n.type }, CTX)
@@ -148,7 +160,7 @@ async function handleClick(n) {
 }
 
 async function handleMarkAll() {
-  logger.info('mark all read triggered', { count: unreadCount.value }, CTX)
+  logger.info('mark all read triggered', { count: notifStore.unreadCount }, CTX)
   markingAll.value = true
   try {
     await notifStore.markAllRead()
@@ -184,42 +196,82 @@ function timeAgo(iso) {
 </script>
 
 <style scoped>
+/* ── Phosphor green palette ─────────────────────────────────── */
+.nv {
+  --phosphor:        #39FF14;
+  --phosphor-glow:   rgba(57, 255, 20, 0.55);
+  --phosphor-mid:    rgba(57, 255, 20, 0.22);
+  --phosphor-soft:   rgba(57, 255, 20, 0.10);
+  --phosphor-bg:     rgba(57, 255, 20, 0.032);
+  --phosphor-border: rgba(57, 255, 20, 0.22);
+}
+
+.nv {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 2rem 1rem 4rem;
+}
+
 /* ── Header ──────────────────────────────────────────────────── */
 .nv__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 1.5rem;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--color-border);
 }
 
-.nv__title-wrap {
+.nv__header-start {
   display: flex;
   align-items: center;
-  gap: 0.875rem;
+  gap: 1rem;
 }
 
-.nv__icon-wrap {
-  width: 48px;
-  height: 48px;
-  border-radius: 14px;
-  background: rgba(var(--color-brand-rgb, 99 102 241), 0.1);
-  border: 1px solid rgba(var(--color-brand-rgb, 99 102 241), 0.25);
+/* Bell icon wrapper */
+.nv__bell-wrap {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: rgba(var(--color-brand-rgb, 99 102 241), 0.08);
+  border: 1px solid rgba(var(--color-brand-rgb, 99 102 241), 0.2);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
 
-.nv__icon-svg {
-  width: 22px;
-  height: 22px;
+.nv__bell-svg {
+  width: 24px;
+  height: 24px;
   color: var(--color-brand);
 }
 
+/* Unread count badge on bell */
+.nv__badge {
+  position: absolute;
+  top: -6px;
+  left: -6px;
+  min-width: 20px;
+  height: 20px;
+  border-radius: 10px;
+  background: var(--phosphor);
+  color: #000;
+  font-size: 0.65rem;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px;
+  box-shadow: 0 0 8px var(--phosphor-glow);
+  border: 2px solid var(--color-card, #0f172a);
+}
+
 .nv__title {
-  font-size: 1.25rem;
+  font-size: 1.35rem;
   font-weight: 900;
   color: var(--color-text-primary);
   margin: 0;
@@ -227,89 +279,140 @@ function timeAgo(iso) {
 }
 
 .nv__sub {
-  font-size: 0.75rem;
+  font-size: 0.775rem;
   color: var(--color-text-secondary);
-  margin: 3px 0 0;
+  margin: 4px 0 0;
 }
 
+.nv__sub--phosphor {
+  color: var(--phosphor);
+  font-weight: 600;
+  text-shadow: 0 0 10px var(--phosphor-mid);
+}
+
+/* Mark all button */
 .nv__mark-all {
   display: flex;
   align-items: center;
-  gap: 0.375rem;
-  padding: 0.5rem 1rem;
+  gap: 0.4rem;
+  padding: 0.5rem 1.1rem;
   border-radius: 10px;
-  background: rgba(var(--color-brand-rgb, 99 102 241), 0.08);
-  border: 1px solid rgba(var(--color-brand-rgb, 99 102 241), 0.2);
-  color: var(--color-brand);
+  background: var(--phosphor-bg);
+  border: 1px solid var(--phosphor-border);
+  color: var(--phosphor);
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.2s;
+  text-shadow: 0 0 8px var(--phosphor-mid);
 }
 .nv__mark-all:hover:not(:disabled) {
-  background: rgba(var(--color-brand-rgb, 99 102 241), 0.15);
+  background: var(--phosphor-soft);
+  box-shadow: 0 0 12px var(--phosphor-soft);
 }
 .nv__mark-all:disabled {
-  opacity: 0.6;
+  opacity: 0.55;
   cursor: not-allowed;
 }
 
-/* ── List ─────────────────────────────────────────────────────── */
+/* ── List ────────────────────────────────────────────────────── */
 .nv__list {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 0.625rem;
 }
 
-/* ── Item ─────────────────────────────────────────────────────── */
+/* ── Notification card ───────────────────────────────────────── */
 .nv__item {
+  position: relative;
   display: flex;
   align-items: flex-start;
   gap: 0.875rem;
   padding: 1rem 1.125rem;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid var(--color-border);
   background-color: var(--color-card);
   text-align: right;
   width: 100%;
   cursor: pointer;
-  transition: border-color 0.2s, box-shadow 0.2s, background-color 0.15s;
-}
-.nv__item:hover {
-  border-color: var(--color-brand);
-  box-shadow: 0 2px 12px rgba(var(--color-brand-rgb, 99 102 241), 0.1);
-}
-.nv__item--unread {
-  background-color: rgba(var(--color-brand-rgb, 99 102 241), 0.05);
-  border-color: rgba(var(--color-brand-rgb, 99 102 241), 0.2);
+  transition: border-color 0.2s, box-shadow 0.2s, transform 0.15s;
+  overflow: hidden;
 }
 
-/* ── Unread dot ───────────────────────────────────────────────── */
+.nv__item:hover {
+  border-color: rgba(var(--color-brand-rgb, 99 102 241), 0.4);
+  box-shadow: 0 4px 20px rgba(var(--color-brand-rgb, 99 102 241), 0.08);
+  transform: translateY(-1px);
+}
+
+.nv__item:active {
+  transform: translateY(0);
+}
+
+/* ── Unread state ── phosphor green ──────────────────────────── */
+.nv__item--unread {
+  background: var(--phosphor-bg);
+  border-color: var(--phosphor-border);
+  border-right-width: 3px;
+}
+
+.nv__item--unread::after {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background: var(--phosphor);
+  box-shadow: 0 0 14px var(--phosphor-glow), 0 0 4px var(--phosphor);
+  border-radius: 0 16px 16px 0;
+}
+
+.nv__item--unread:hover {
+  border-color: rgba(57, 255, 20, 0.35);
+  box-shadow: 0 4px 24px rgba(57, 255, 20, 0.08), 0 0 0 1px rgba(57, 255, 20, 0.06);
+}
+
+/* ── Unread pulsing dot ──────────────────────────────────────── */
 .nv__dot {
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   flex-shrink: 0;
-  margin-top: 6px;
+  margin-top: 5px;
 }
-.nv__dot--unread { background-color: var(--color-brand); }
-.nv__dot--read   { background-color: transparent; }
 
-/* ── Type icon ────────────────────────────────────────────────── */
+.nv__dot--unread {
+  background: var(--phosphor);
+  box-shadow: 0 0 0 3px var(--phosphor-soft), 0 0 10px var(--phosphor-glow);
+  animation: phosphor-pulse 2.2s ease-in-out infinite;
+}
+
+.nv__dot--read {
+  background: transparent;
+}
+
+@keyframes phosphor-pulse {
+  0%,100% { box-shadow: 0 0 0 3px var(--phosphor-soft), 0 0 10px var(--phosphor-glow); }
+  50%     { box-shadow: 0 0 0 5px rgba(57,255,20,.06), 0 0 18px rgba(57,255,20,.75); }
+}
+
+/* ── Type icon badge ─────────────────────────────────────────── */
 .nv__type-icon {
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
 }
-.nv__type-icon--order { background: rgba(59,130,246,0.12); color: #3b82f6; }
-.nv__type-icon--promo { background: rgba(245,158,11,0.12); color: #f59e0b; }
-.nv__type-icon--info  { background: rgba(99,102,241,0.12); color: #6366f1; }
 
-/* ── Content ──────────────────────────────────────────────────── */
+.nv__type-icon--order { background: rgba(59,130,246,.12); color: #3b82f6; }
+.nv__type-icon--promo { background: rgba(245,158,11,.12); color: #f59e0b; }
+.nv__type-icon--info  { background: rgba(99,102,241,.12); color: #6366f1; }
+
+/* ── Content ─────────────────────────────────────────────────── */
 .nv__content {
   flex: 1;
   min-width: 0;
@@ -319,75 +422,87 @@ function timeAgo(iso) {
 .nv__item-title {
   font-size: 0.875rem;
   font-weight: 600;
-  color: var(--color-text-primary);
+  color: var(--color-text-secondary);
   line-height: 1.4;
+  transition: color 0.2s;
+}
+
+.nv__item-title--unread {
+  color: var(--color-text-primary);
+  font-weight: 700;
 }
 
 .nv__item-body {
   font-size: 0.8rem;
   color: var(--color-text-secondary);
   margin-top: 3px;
-  line-height: 1.5;
+  line-height: 1.55;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  opacity: 0.85;
 }
 
 .nv__item-time {
+  display: inline-block;
   font-size: 0.7rem;
   color: var(--color-text-disabled, var(--color-text-secondary));
-  margin-top: 6px;
+  margin-top: 7px;
+  opacity: 0.7;
 }
 
-/* ── Chevron ──────────────────────────────────────────────────── */
+/* ── Chevron ─────────────────────────────────────────────────── */
 .nv__chevron {
   width: 16px;
   height: 16px;
   color: var(--color-text-secondary);
   flex-shrink: 0;
   margin-top: 4px;
-  opacity: 0.5;
-  transition: opacity 0.15s;
+  opacity: 0.35;
+  transition: opacity 0.15s, transform 0.15s;
 }
-.nv__item:hover .nv__chevron { opacity: 1; }
 
-/* ── Skeleton ─────────────────────────────────────────────────── */
+.nv__item:hover .nv__chevron {
+  opacity: 0.8;
+  transform: translateX(-2px);
+}
+
+/* ── Loading skeleton ────────────────────────────────────────── */
 .nv__skeleton {
   display: flex;
   align-items: flex-start;
   gap: 0.875rem;
   padding: 1rem 1.125rem;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid var(--color-border);
   background-color: var(--color-card);
 }
 
-.nv__skeleton-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
+.nv__sk-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
   background: var(--color-border);
   flex-shrink: 0;
-  margin-top: 6px;
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: sk-pulse 1.5s ease-in-out infinite;
 }
 
-.nv__skeleton-body { flex: 1; }
+.nv__sk-body { flex: 1; }
 
-.nv__skeleton-line {
+.nv__sk-line {
   height: 0.875rem;
   border-radius: 6px;
   background: var(--color-border);
-  animation: pulse 1.5s ease-in-out infinite;
+  animation: sk-pulse 1.5s ease-in-out infinite;
 }
 
-@keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.45; }
+@keyframes sk-pulse {
+  0%,100% { opacity: 1; }
+  50%     { opacity: 0.4; }
 }
 
-/* ── Empty state ──────────────────────────────────────────────── */
+/* ── Empty state ─────────────────────────────────────────────── */
 .nv__empty {
   text-align: center;
   padding: 5rem 1rem;
@@ -397,28 +512,39 @@ function timeAgo(iso) {
   gap: 0.5rem;
 }
 
-.nv__empty-icon { font-size: 3rem; }
+.nv__empty-svg {
+  width: 96px;
+  height: 96px;
+  margin-bottom: 0.5rem;
+}
+
 .nv__empty-title {
   font-size: 1rem;
   font-weight: 700;
   color: var(--color-text-primary);
-  margin-top: 0.5rem;
+  margin-top: 0.25rem;
 }
+
 .nv__empty-sub {
   font-size: 0.825rem;
   color: var(--color-text-secondary);
+  opacity: 0.75;
 }
 
 .nv__back-btn {
-  margin-top: 1.25rem;
-  padding: 0.6rem 1.5rem;
-  border-radius: 10px;
+  margin-top: 1.5rem;
+  padding: 0.625rem 1.75rem;
+  border-radius: 12px;
   background: var(--color-brand);
-  color: white;
+  color: #fff;
   font-size: 0.875rem;
   font-weight: 600;
   text-decoration: none;
-  transition: opacity 0.2s;
+  transition: opacity 0.2s, transform 0.15s;
 }
-.nv__back-btn:hover { opacity: 0.85; }
+
+.nv__back-btn:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
 </style>

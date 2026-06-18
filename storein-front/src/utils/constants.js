@@ -4,6 +4,7 @@ export const SORT_OPTIONS = [
   { label: 'ارزان‌ترین',    value: 'price_asc'  },
   { label: 'گران‌ترین',     value: 'price_desc' },
   { label: 'پرفروش‌ترین',   value: 'bestseller' },
+  { label: 'پربازدیدترین',  value: 'mostViewed' },
   { label: 'بیشترین تخفیف', value: 'discount'   },
 ]
 

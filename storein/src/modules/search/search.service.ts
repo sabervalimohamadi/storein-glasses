@@ -6,6 +6,7 @@ import { REDIS_CLIENT } from '../../redis/redis.module';
 import { Product, ProductDocument, ProductStatus } from '../product/entities/product.schema';
 import { Category, CategoryDocument } from '../category/entities/category.schema';
 import { SearchQueryDto } from './dto/search-query.dto';
+import { AppLoggerService } from '../../common/logger/app-logger.service';
 
 const HISTORY_KEY = (uid: string) => `search:history:${uid}`;
 const HISTORY_MAX = 10;
@@ -17,7 +18,10 @@ export class SearchService {
     @InjectModel(Product.name)  private productModel: Model<ProductDocument>,
     @InjectModel(Category.name) private categoryModel: Model<CategoryDocument>,
     @Inject(REDIS_CLIENT)       private redis: Redis,
-  ) {}
+    private readonly logger: AppLoggerService,
+  ) {
+    this.logger.setContext('SearchService');
+  }
 
   // ── Main Search ───────────────────────────────────────────────
   async search(dto: SearchQueryDto): Promise<{
@@ -64,9 +68,12 @@ export class SearchService {
       price_asc:  { minPrice: 1 },
       price_desc: { minPrice: -1 },
       popular:    { soldCount: -1 },
+      mostViewed: { viewCount: -1, createdAt: -1 },
       relevant:   q ? { score: { $meta: 'textScore' } } : { createdAt: -1 },
     };
-    const sortStage = sortMap[sort ?? (q ? 'relevant' : 'newest')];
+    const resolvedSort = sort ?? (q ? 'relevant' : 'newest');
+    const sortStage = sortMap[resolvedSort];
+    this.logger.log('search', { q, sort: resolvedSort, page, limit });
 
     const skip = (page - 1) * limit;
 
@@ -102,33 +109,36 @@ export class SearchService {
   }
 
   // ── Autocomplete Suggestions ──────────────────────────────────
-  async suggest(q: string): Promise<string[]> {
-    const cacheKey = `search:suggest:${q.toLowerCase().trim()}`;
+  async suggest(q: string): Promise<{
+    products:   { name: string; slug: string }[];
+    categories: { name: string; slug: string }[];
+  }> {
+    const cacheKey = `search:suggest:v2:${q.toLowerCase().trim()}`;
     const cached = await this.redis.get(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const regex = new RegExp(q.trim(), 'i');
 
-    const [products, categories] = await Promise.all([
+    const [productDocs, categoryDocs] = await Promise.all([
       this.productModel
         .find({ name: regex, status: ProductStatus.ACTIVE })
-        .select('name')
+        .select('name slug')
         .limit(5)
         .lean(),
       this.categoryModel
         .find({ name: regex, isActive: true })
-        .select('name')
+        .select('name slug')
         .limit(3)
         .lean(),
     ]);
 
-    const suggestions = [
-      ...categories.map((c) => c.name),
-      ...products.map((p) => p.name),
-    ].slice(0, 8);
+    const result = {
+      products:   productDocs.map((p) => ({ name: p.name, slug: p.slug })),
+      categories: categoryDocs.map((c) => ({ name: c.name, slug: c.slug })),
+    };
 
-    await this.redis.setex(cacheKey, SUGGEST_TTL, JSON.stringify(suggestions));
-    return suggestions;
+    await this.redis.setex(cacheKey, SUGGEST_TTL, JSON.stringify(result));
+    return result;
   }
 
   // ── User Search History ───────────────────────────────────────
