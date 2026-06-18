@@ -61,7 +61,8 @@ const baseSettings = {
   description: '', keywords: '', ogImage: '',
   social: { instagram: '', telegram: '', twitter: '', whatsapp: '', linkedin: '', youtube: '' },
   footerTagline: '', footerCopyright: '', footerLinks: [],
-  phone: '08733177189', mobiles: [], email: 'test@storein.ir', addresses: [],
+  phone: '08733177189', mobiles: [], email: 'test@storein.ir',
+  addresses: [],  // [{ text, mapsUrl }]
   payment: { gateway: 'mock', zarinpalMerchantId: '', zarinpalSandbox: true },
   sms: { provider: 'mock', kavenegarApiKey: '', kavenegarSender: '', kavenegarOtpTemplate: '' },
   trustItems: [], announcementBar: { isActive: false, text: '', bgColor: '#3b82f6', textColor: '#ffffff', link: '' },
@@ -93,16 +94,23 @@ describe('SettingsView — contact tab', () => {
       expect(wrapper.vm.form.mobiles[1].value).toBe('09122222222')
     })
 
-    it('populates form.addresses from API array', async () => {
-      const wrapper = await mountView({ addresses: ['تهران، ولیعصر', 'مشهد، احمدآباد'] })
+    it('populates form.addresses from API array of objects', async () => {
+      const wrapper = await mountView({
+        addresses: [
+          { text: 'تهران، ولیعصر', mapsUrl: 'https://maps.google.com/?q=35,51' },
+          { text: 'مشهد، احمدآباد', mapsUrl: '' },
+        ],
+      })
       expect(wrapper.vm.form.addresses).toHaveLength(2)
-      expect(wrapper.vm.form.addresses[0].value).toBe('تهران، ولیعصر')
+      expect(wrapper.vm.form.addresses[0].text).toBe('تهران، ولیعصر')
+      expect(wrapper.vm.form.addresses[0].mapsUrl).toBe('https://maps.google.com/?q=35,51')
     })
 
     it('migrates legacy address string to addresses array', async () => {
       const wrapper = await mountView({ addresses: undefined, address: 'سنندج - بازار روز' })
       expect(wrapper.vm.form.addresses).toHaveLength(1)
-      expect(wrapper.vm.form.addresses[0].value).toBe('سنندج - بازار روز')
+      expect(wrapper.vm.form.addresses[0].text).toBe('سنندج - بازار روز')
+      expect(wrapper.vm.form.addresses[0].mapsUrl).toBe('')
     })
 
     it('starts with empty mobiles when API returns empty array', async () => {
@@ -166,11 +174,12 @@ describe('SettingsView — contact tab', () => {
 
   // ── addAddress / removeAddress ────────────────────────────────
   describe('addAddress', () => {
-    it('appends an empty address entry', async () => {
+    it('appends an empty address entry with text and mapsUrl', async () => {
       const wrapper = await mountView()
       wrapper.vm.addAddress()
       expect(wrapper.vm.form.addresses).toHaveLength(1)
-      expect(wrapper.vm.form.addresses[0].value).toBe('')
+      expect(wrapper.vm.form.addresses[0].text).toBe('')
+      expect(wrapper.vm.form.addresses[0].mapsUrl).toBe('')
     })
 
     it('logs debug when address is added', async () => {
@@ -186,10 +195,13 @@ describe('SettingsView — contact tab', () => {
 
   describe('removeAddress', () => {
     it('removes address at given index', async () => {
-      const wrapper = await mountView({ addresses: ['آدرس اول', 'آدرس دوم'] })
+      const wrapper = await mountView({ addresses: [
+        { text: 'آدرس اول', mapsUrl: '' },
+        { text: 'آدرس دوم', mapsUrl: '' },
+      ]})
       wrapper.vm.removeAddress(0)
       expect(wrapper.vm.form.addresses).toHaveLength(1)
-      expect(wrapper.vm.form.addresses[0].value).toBe('آدرس دوم')
+      expect(wrapper.vm.form.addresses[0].text).toBe('آدرس دوم')
     })
   })
 
@@ -204,20 +216,41 @@ describe('SettingsView — contact tab', () => {
       expect(dto.mobiles).toEqual(['09121111111', '09122222222'])
     })
 
-    it('sends addresses as trimmed string array (empty entries filtered)', async () => {
+    it('sends addresses as object array (empty text entries filtered)', async () => {
       settingsService.update.mockResolvedValue({ data: baseSettings })
       const wrapper = await mountView()
-      wrapper.vm.form.addresses = [{ value: 'تهران، ولیعصر' }, { value: '' }]
+      wrapper.vm.form.addresses = [
+        { text: 'تهران، ولیعصر', mapsUrl: '35.328,47.002' },
+        { text: '', mapsUrl: '' },
+      ]
       await wrapper.vm.saveAll()
       const dto = settingsService.update.mock.calls[0][0]
-      expect(dto.addresses).toEqual(['تهران، ولیعصر'])
+      expect(dto.addresses).toHaveLength(1)
+      expect(dto.addresses[0].text).toBe('تهران، ولیعصر')
+      expect(dto.addresses[0].mapsUrl).toBe('https://maps.google.com/?q=35.328,47.002')
+    })
+
+    it('normalizeMapsUrl converts bare coords to google maps URL', async () => {
+      const wrapper = await mountView()
+      expect(wrapper.vm.normalizeMapsUrl('35.32869, 47.002226')).toBe('https://maps.google.com/?q=35.32869,47.002226')
+    })
+
+    it('normalizeMapsUrl passes through full URLs unchanged', async () => {
+      const wrapper = await mountView()
+      const url = 'https://maps.google.com/?q=35,47'
+      expect(wrapper.vm.normalizeMapsUrl(url)).toBe(url)
+    })
+
+    it('normalizeMapsUrl returns empty string for empty input', async () => {
+      const wrapper = await mountView()
+      expect(wrapper.vm.normalizeMapsUrl('')).toBe('')
     })
 
     it('logs save info with mobiles/addresses counts', async () => {
       settingsService.update.mockResolvedValue({ data: baseSettings })
       const wrapper = await mountView()
       wrapper.vm.form.mobiles   = [{ value: '09121111111' }]
-      wrapper.vm.form.addresses = [{ value: 'تهران' }, { value: 'مشهد' }]
+      wrapper.vm.form.addresses = [{ text: 'تهران', mapsUrl: '' }, { text: 'مشهد', mapsUrl: '' }]
       await wrapper.vm.saveAll()
       expect(logger.info).toHaveBeenCalledWith(
         'settings: saving site settings',

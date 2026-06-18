@@ -172,8 +172,8 @@ export class SiteSettings {
   @Prop({ default: '' })
   address: string;
 
-  @Prop({ type: [String], default: [] })
-  addresses: string[];
+  @Prop({ type: [{ _id: false, text: String, mapsUrl: String }], default: [] })
+  addresses: { text: string; mapsUrl: string }[];
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);

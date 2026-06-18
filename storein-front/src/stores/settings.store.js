@@ -21,7 +21,7 @@ export const useSettingsStore = defineStore('settings', () => {
   // addresses: prefer new array field, fall back to legacy single address string
   const addresses = computed(() => {
     if (settings.value?.addresses?.length) return settings.value.addresses
-    if (settings.value?.address)           return [settings.value.address]
+    if (settings.value?.address) return [{ text: settings.value.address, mapsUrl: '' }]
     return []
   })
   const address   = computed(() => settings.value?.address ?? '')

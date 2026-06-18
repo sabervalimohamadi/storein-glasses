@@ -162,7 +162,7 @@
             <template v-if="store.addresses.length">
               <li v-for="(addr, idx) in store.addresses" :key="`a-${idx}`"
                   class="items-start" :data-testid="`contact-address-${idx}`">
-                <a :href="`https://maps.google.com/?q=${encodeURIComponent(addr)}`"
+                <a :href="addr.mapsUrl || `https://maps.google.com/?q=${encodeURIComponent(addr.text)}`"
                    target="_blank" rel="noopener"
                    class="contact-item items-start contact-item--link">
                   <span class="contact-icon mt-0.5">
@@ -171,7 +171,7 @@
                       <path stroke-linecap="round" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
                     </svg>
                   </span>
-                  <span class="footer-muted text-sm leading-relaxed transition-colors">{{ addr }}</span>
+                  <span class="footer-muted text-sm leading-relaxed transition-colors">{{ addr.text }}</span>
                 </a>
               </li>
             </template>

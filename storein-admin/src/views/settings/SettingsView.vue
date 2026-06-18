@@ -269,14 +269,22 @@
                  class="py-6 text-center text-text-disabled text-sm border border-dashed border-border rounded-xl">
               آدرسی ثبت نشده — دکمه بالا را بزنید
             </div>
-            <div v-else class="space-y-2">
-              <div v-for="(addr, idx) in form.addresses" :key="idx" class="flex items-start gap-2">
-                <AdminTextarea
-                  v-model="addr.value"
-                  :placeholder="`تهران، خیابان ...`"
-                  :rows="2"
-                  class="flex-1"
-                />
+            <div v-else class="space-y-3">
+              <div v-for="(addr, idx) in form.addresses" :key="idx"
+                   class="flex items-start gap-2 p-3 bg-surface rounded-xl border border-border">
+                <div class="flex-1 space-y-2">
+                  <AdminTextarea
+                    v-model="addr.text"
+                    placeholder="تهران، خیابان ..."
+                    :rows="2"
+                  />
+                  <AdminInput
+                    v-model="addr.mapsUrl"
+                    placeholder="مختصات GPS: 35.328, 47.002  یا  لینک گوگل مپس"
+                    dir="ltr"
+                    hint="با کلیک روی آدرس در سایت، کاربر به این موقعیت هدایت می‌شود"
+                  />
+                </div>
                 <button
                   @click="removeAddress(idx)"
                   class="w-9 h-9 flex-shrink-0 rounded-lg text-error hover:bg-error/10 flex items-center justify-center transition-colors mt-1"
@@ -836,7 +844,7 @@ const emptyForm = () => ({
   phone:     '',
   mobiles:   [],
   email:     '',
-  addresses: [],
+  addresses: [],  // [{ text: string, mapsUrl: string }]
   payment: {
     gateway:             'mock',
     zarinpalMerchantId:  '',
@@ -897,9 +905,12 @@ function applyData(data) {
     email:     data.email ?? '',
     addresses: (
       data.addresses?.length ? data.addresses
-      : data.address         ? [data.address]
+      : data.address         ? [{ text: data.address, mapsUrl: '' }]
       : []
-    ).map(v => ({ value: typeof v === 'string' ? v : '' })),
+    ).map(v => typeof v === 'string'
+      ? { text: v, mapsUrl: '' }
+      : { text: v.text ?? '', mapsUrl: v.mapsUrl ?? '' }
+    ),
     payment: {
       gateway:            data.payment?.gateway            ?? 'mock',
       zarinpalMerchantId: data.payment?.zarinpalMerchantId ?? '',
@@ -972,7 +983,9 @@ async function saveAll() {
       phone:     form.phone.trim(),
       mobiles:   form.mobiles.filter(m => m.value.trim()).map(m => m.value.trim()),
       email:     form.email.trim(),
-      addresses: form.addresses.filter(a => a.value.trim()).map(a => a.value.trim()),
+      addresses: form.addresses
+        .filter(a => a.text.trim())
+        .map(a => ({ text: a.text.trim(), mapsUrl: normalizeMapsUrl(a.mapsUrl) })),
       payment: {
         gateway:            form.payment.gateway,
         zarinpalMerchantId: form.payment.zarinpalMerchantId.trim(),
@@ -1047,12 +1060,24 @@ function removeMobile(idx) {
 
 // ── Contact: addresses ────────────────────────────────────
 function addAddress() {
-  form.addresses.push({ value: '' })
+  form.addresses.push({ text: '', mapsUrl: '' })
   logger.debug('settings: address field added', { count: form.addresses.length }, 'SettingsView')
 }
 function removeAddress(idx) {
   form.addresses.splice(idx, 1)
   logger.debug('settings: address field removed', { idx }, 'SettingsView')
+}
+
+function normalizeMapsUrl(input) {
+  const s = (input ?? '').trim()
+  if (!s) return ''
+  // already a URL
+  if (s.startsWith('http')) return s
+  // bare coordinates: "35.328, 47.002" or "35.328,47.002"
+  const coordRe = /^(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)$/
+  const m = s.match(coordRe)
+  if (m) return `https://maps.google.com/?q=${m[1]},${m[2]}`
+  return s
 }
 
 // ── Image upload ──────────────────────────────────────────

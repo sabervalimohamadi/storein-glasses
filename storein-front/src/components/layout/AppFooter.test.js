@@ -165,17 +165,33 @@ describe('AppFooter', () => {
       expect(wrapper.find('[data-testid="contact-phone"]').text()).toContain('08733177189')
     })
 
-    it('shows single address via addresses array', () => {
-      const wrapper = factory({ addresses: ['کردستان - سنندج'] })
+    it('shows single address text', () => {
+      const wrapper = factory({ addresses: [{ text: 'کردستان - سنندج', mapsUrl: '' }] })
       expect(wrapper.find('[data-testid="contact-address-0"]').exists()).toBe(true)
       expect(wrapper.find('[data-testid="contact-address-0"]').text()).toContain('کردستان - سنندج')
     })
 
-    it('shows multiple addresses when addresses array has several items', () => {
-      const wrapper = factory({ addresses: ['آدرس اول', 'آدرس دوم', 'آدرس سوم'] })
+    it('uses mapsUrl as href when provided', () => {
+      const mapsUrl = 'https://maps.google.com/?q=35.328,47.002'
+      const wrapper = factory({ addresses: [{ text: 'سنندج', mapsUrl }] })
+      const link = wrapper.find('[data-testid="contact-address-0"] a')
+      expect(link.attributes('href')).toBe(mapsUrl)
+    })
+
+    it('falls back to text-based google maps link when mapsUrl is empty', () => {
+      const wrapper = factory({ addresses: [{ text: 'سنندج', mapsUrl: '' }] })
+      const link = wrapper.find('[data-testid="contact-address-0"] a')
+      expect(link.attributes('href')).toContain('maps.google.com')
+      expect(link.attributes('href')).toContain(encodeURIComponent('سنندج'))
+    })
+
+    it('shows multiple addresses', () => {
+      const wrapper = factory({ addresses: [
+        { text: 'آدرس اول', mapsUrl: '' },
+        { text: 'آدرس دوم', mapsUrl: '' },
+      ]})
       expect(wrapper.find('[data-testid="contact-address-0"]').text()).toContain('آدرس اول')
       expect(wrapper.find('[data-testid="contact-address-1"]').text()).toContain('آدرس دوم')
-      expect(wrapper.find('[data-testid="contact-address-2"]').text()).toContain('آدرس سوم')
     })
 
     it('hides address items when addresses array is empty', () => {

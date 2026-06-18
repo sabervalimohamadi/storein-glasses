@@ -13,6 +13,11 @@ class SocialLinksDto {
   @IsOptional() @IsString() youtube?:   string;
 }
 
+class AddressDto {
+  @IsString() @MaxLength(300) text: string;
+  @IsOptional() @IsString() @MaxLength(300) mapsUrl?: string;
+}
+
 class FooterLinkDto {
   @IsString() @MaxLength(60)  label: string;
   @IsString() @MaxLength(200) url:   string;
@@ -115,8 +120,8 @@ export class UpdateSettingsDto {
   mobiles?: string[];
   @IsOptional() @IsEmail()                  email?:   string;
   @IsOptional() @IsString() @MaxLength(200) address?: string;
-  @IsOptional() @IsArray() @IsString({ each: true }) @MaxLength(300, { each: true })
-  addresses?: string[];
+  @IsOptional() @IsArray() @ValidateNested({ each: true }) @Type(() => AddressDto)
+  addresses?: AddressDto[];
 
   // Theme
   @IsOptional() @ValidateNested() @Type(() => ThemeDto)
