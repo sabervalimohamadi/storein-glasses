@@ -21,7 +21,7 @@
             </div>
 
             <p class="footer-muted text-sm leading-relaxed max-w-xs">
-              {{ store.tagline || store.footerTagline || 'فروشگاه تخصصی عینک‌های طبی و آفتابی' }}
+              {{ store.footerTagline || store.tagline || 'فروشگاه تخصصی عینک‌های طبی و آفتابی' }}
             </p>
           </div>
 

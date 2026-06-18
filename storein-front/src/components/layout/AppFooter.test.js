@@ -71,14 +71,14 @@ describe('AppFooter', () => {
       expect(img.attributes('src')).toBe('https://cdn.test/logo.png')
     })
 
-    it('shows tagline from store', () => {
-      const wrapper = factory({ tagline: 'فروشگاه عینک طبی و آفتابی' })
-      expect(wrapper.text()).toContain('فروشگاه عینک طبی و آفتابی')
+    it('shows footerTagline when set (takes priority over tagline)', () => {
+      const wrapper = factory({ tagline: 'شعار اصلی', footerTagline: 'شعار فوتر خاص' })
+      expect(wrapper.text()).toContain('شعار فوتر خاص')
     })
 
-    it('falls back to footerTagline when tagline is empty', () => {
-      const wrapper = factory({ tagline: '', footerTagline: 'tagline از footer' })
-      expect(wrapper.text()).toContain('tagline از footer')
+    it('falls back to tagline when footerTagline is empty', () => {
+      const wrapper = factory({ tagline: 'فروشگاه عینک طبی و آفتابی', footerTagline: '' })
+      expect(wrapper.text()).toContain('فروشگاه عینک طبی و آفتابی')
     })
   })
 
