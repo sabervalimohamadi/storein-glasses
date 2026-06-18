@@ -1,8 +1,8 @@
 <template>
-  <div class="pb-4">
+  <div class="home">
 
     <!-- ① Hero Banner — full width, outside container -->
-    <HeroBanner class="mt-4" />
+    <HeroBanner />
 
     <div class="container-main">
 
@@ -10,7 +10,7 @@
       <CategoryBar />
 
       <!-- ③ Flash Sale -->
-      <FlashSale class="mb-6" />
+      <FlashSale class="home__section" />
 
       <!-- ④ New Arrivals -->
       <ProductRow
@@ -18,11 +18,11 @@
         link="/products?sort=newest"
         :products="newArrivals"
         :loading="loadingNew"
-        class="mb-6"
+        class="home__section"
       />
 
       <!-- ⑤ Special Banners -->
-      <SpecialBanner class="mb-6" />
+      <SpecialBanner class="home__section" />
 
       <!-- ⑥ Bestsellers -->
       <ProductRow
@@ -31,7 +31,7 @@
         link="/products?sort=bestseller"
         :products="bestsellers"
         :loading="loadingBest"
-        class="mb-6"
+        class="home__section"
       />
 
       <!-- ⑦ Sunglasses Row -->
@@ -40,11 +40,11 @@
         link="/category/sunglasses"
         :products="sunglasses"
         :loading="loadingSun"
-        class="mb-6"
+        class="home__section"
       />
 
       <!-- ⑧ Trust Strip -->
-      <TrustStrip />
+      <TrustStrip class="home__section" />
 
     </div>
   </div>
@@ -66,7 +66,6 @@ import TrustStrip    from './components/TrustStrip.vue'
 const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
 
-// ── State ────────────────────────────────────────────
 const newArrivals = ref([])
 const bestsellers = ref([])
 const sunglasses  = ref([])
@@ -75,7 +74,6 @@ const loadingNew  = ref(true)
 const loadingBest = ref(true)
 const loadingSun  = ref(true)
 
-// ── Helpers ──────────────────────────────────────────
 async function fetchSection(params, target, loadingRef) {
   loadingRef.value = true
   try {
@@ -89,7 +87,6 @@ async function fetchSection(params, target, loadingRef) {
   }
 }
 
-// ── Lifecycle ─────────────────────────────────────────
 onMounted(() => {
   Promise.allSettled([
     fetchSection({ sort: 'newest' },                           newArrivals, loadingNew),
@@ -99,3 +96,12 @@ onMounted(() => {
   ])
 })
 </script>
+
+<style scoped>
+.home {
+  padding-bottom: 2rem;
+}
+.home__section {
+  margin-bottom: 1.75rem;
+}
+</style>

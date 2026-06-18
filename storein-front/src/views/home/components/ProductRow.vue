@@ -1,17 +1,15 @@
 <template>
-  <section class="py-2">
-    <!-- Row header -->
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-lg font-bold text-text-primary flex items-center gap-2">
-        <span class="w-1 h-5 bg-brand rounded-full inline-block"></span>
-        {{ title }}
-      </h2>
-      <RouterLink
-        :to="link"
-        class="text-brand text-sm font-medium flex items-center gap-1 hover:gap-2 transition-all duration-200"
-      >
+  <section class="prow">
+    <!-- Section header -->
+    <div class="prow__head">
+      <div class="prow__title-wrap">
+        <span class="prow__accent" aria-hidden="true" />
+        <h2 class="prow__title">{{ title }}</h2>
+      </div>
+      <RouterLink :to="link" class="prow__all">
         مشاهده همه
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 rtl:rotate-180">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke-width="2" stroke="currentColor" class="w-4 h-4 rtl:rotate-180">
           <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
         </svg>
       </RouterLink>
@@ -19,30 +17,24 @@
 
     <!-- Scrollable row + arrows -->
     <div class="relative group">
-      <!-- Right arrow (scroll toward start in RTL) -->
+      <!-- Right arrow -->
       <button
-        class="hidden md:flex absolute right-0 top-1/2 -translate-y-1/2 -translate-x-3 z-10 w-10 h-10 shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0" style="background-color: var(--color-card);"
+        class="prow__arr prow__arr--r"
         :disabled="atStart"
         @click="scrollToStart"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-text-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
           <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
         </svg>
       </button>
 
       <!-- Scrollable container -->
-      <div
-        ref="scrollEl"
-        class="flex gap-3 overflow-x-auto scrollbar-hide pt-2 pb-2"
-        @scroll="onScroll"
-      >
-        <!-- Skeleton state -->
+      <div ref="scrollEl" class="prow__scroll" @scroll="onScroll">
+        <!-- Skeleton -->
         <template v-if="loading">
-          <div
-            v-for="i in skeletonCount"
-            :key="i"
-            class="min-w-[200px] max-w-[200px] rounded-xl flex-shrink-0 overflow-hidden" style="background-color: var(--color-card);"
-          >
+          <div v-for="i in skeletonCount" :key="i" class="prow__skel"
+               :style="featured ? 'min-width:295px;max-width:295px' : 'min-width:200px;max-width:200px'">
             <BaseSkeleton height="160px" class="rounded-none" />
             <div class="p-3 space-y-2">
               <BaseSkeleton height="0.875rem" />
@@ -58,7 +50,7 @@
           <div
             v-for="product in products"
             :key="product._id"
-            :class="featured ? 'min-w-[300px] max-w-[300px]' : 'min-w-[200px] max-w-[200px]'"
+            :class="featured ? 'min-w-[295px] max-w-[295px]' : 'min-w-[200px] max-w-[200px]'"
             class="flex-shrink-0"
           >
             <BaseFeaturedCard
@@ -75,22 +67,18 @@
               @toggle-wish="wishlistStore.toggle(product._id)"
             />
           </div>
-          <BaseEmpty
-            v-if="products.length === 0"
-            title="محصولی یافت نشد"
-            icon="👓"
-            class="min-w-full"
-          />
+          <BaseEmpty v-if="products.length === 0" title="محصولی یافت نشد" icon="👓" class="min-w-full" />
         </template>
       </div>
 
-      <!-- Left arrow (scroll toward end in RTL) -->
+      <!-- Left arrow -->
       <button
-        class="hidden md:flex absolute left-0 top-1/2 -translate-y-1/2 translate-x-3 z-10 w-10 h-10 shadow-dropdown rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200 disabled:!opacity-0" style="background-color: var(--color-card);"
+        class="prow__arr prow__arr--l"
         :disabled="atEnd"
         @click="scrollToEnd"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-4 h-4 text-text-primary">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+             stroke-width="2.5" stroke="currentColor" class="w-4 h-4">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
         </svg>
       </button>
@@ -100,9 +88,9 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useCartStore } from '@/stores/cart.store'
+import { useCartStore }    from '@/stores/cart.store'
 import { useWishlistStore } from '@/stores/wishlist.store'
-import { useUiStore } from '@/stores/ui.store'
+import { useUiStore }      from '@/stores/ui.store'
 import BaseProductCard  from '@/components/common/BaseProductCard.vue'
 import BaseFeaturedCard from '@/components/common/BaseFeaturedCard.vue'
 import BaseSkeleton     from '@/components/common/BaseSkeleton.vue'
@@ -126,7 +114,6 @@ const atStart  = ref(true)
 const atEnd    = ref(false)
 
 function getAbsScrollLeft(el) {
-  // RTL: Chrome gives negative scrollLeft, Firefox gives positive decreasing to 0
   return Math.abs(el.scrollLeft)
 }
 
@@ -140,21 +127,16 @@ function onScroll() {
 }
 
 function scrollToStart() {
-  // In RTL, positive scrollBy.left moves toward start (right side)
   scrollEl.value?.scrollBy({ left: 600, behavior: 'smooth' })
 }
 
 function scrollToEnd() {
-  // In RTL, negative scrollBy.left moves toward end (left side)
   scrollEl.value?.scrollBy({ left: -600, behavior: 'smooth' })
 }
 
 async function handleAddToCart(product) {
   const variant = product.variants?.find(v => v.stock > 0 && v.isActive !== false) ?? product.variants?.[0]
-  if (!variant?._id) {
-    ui.addToast('این محصول در حال حاضر قابل سفارش نیست', 'error')
-    return
-  }
+  if (!variant?._id) { ui.addToast('این محصول در حال حاضر قابل سفارش نیست', 'error'); return }
   try {
     await cartStore.addItem(product._id, variant._id, 1)
     ui.addToast('محصول به سبد خرید افزوده شد', 'success')
@@ -163,7 +145,102 @@ async function handleAddToCart(product) {
   }
 }
 
-onMounted(() => {
-  onScroll()
-})
+onMounted(() => onScroll())
 </script>
+
+<style scoped>
+/* ── Section ──────────────────────────────────────── */
+.prow {
+  padding: 0.25rem 0;
+}
+
+/* ── Header ───────────────────────────────────────── */
+.prow__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.prow__title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.prow__accent {
+  display: block;
+  width: 4px;
+  height: 22px;
+  background: linear-gradient(180deg, rgb(var(--color-brand-light-rgb)) 0%, rgb(var(--color-brand-rgb)) 100%);
+  border-radius: 99px;
+  flex-shrink: 0;
+}
+
+.prow__title {
+  font-size: 1.0625rem;
+  font-weight: 800;
+  color: var(--color-text-primary);
+  letter-spacing: 0.01em;
+}
+
+.prow__all {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: rgb(var(--color-brand-rgb));
+  text-decoration: none;
+  transition: gap 0.2s ease, opacity 0.2s ease;
+}
+.prow__all:hover { gap: 8px; opacity: 0.8; }
+
+/* ── Scroll area ──────────────────────────────────── */
+.prow__scroll {
+  display: flex;
+  gap: 0.75rem;
+  overflow-x: auto;
+  padding: 0.5rem 0.125rem 0.75rem;
+  scrollbar-width: none;
+}
+.prow__scroll::-webkit-scrollbar { display: none; }
+
+.prow__skel {
+  border-radius: 14px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background-color: var(--color-card);
+}
+
+/* ── Arrows ───────────────────────────────────────── */
+.prow__arr {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 10;
+  width: 38px; height: 38px;
+  border-radius: 50%;
+  background-color: var(--color-card);
+  border: 1px solid var(--color-border);
+  color: var(--color-text-primary);
+  cursor: pointer;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  transition: box-shadow 0.2s ease, opacity 0.2s ease;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+  opacity: 0;
+}
+
+.relative:hover .prow__arr:not(:disabled) { opacity: 1; }
+.prow__arr:disabled { opacity: 0 !important; pointer-events: none; }
+.prow__arr:hover { box-shadow: 0 4px 16px rgba(0,0,0,0.15); }
+
+@media (min-width: 768px) {
+  .prow__arr { display: flex; }
+}
+
+.prow__arr--r { right: 0; transform: translateY(-50%) translateX(50%); }
+.prow__arr--l { left: 0;  transform: translateY(-50%) translateX(-50%); }
+</style>
