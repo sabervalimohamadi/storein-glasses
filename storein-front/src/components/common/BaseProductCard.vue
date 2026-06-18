@@ -21,7 +21,7 @@
     <div
       class="aspect-square relative shrink-0 overflow-hidden"
       :class="featured ? '' : 'p-3'"
-      :style="featured ? 'background-color: #fff;' : 'background-color: var(--color-bg);'"
+      :style="featured ? 'background-color: #fff;' : 'background-color: var(--color-card);'"
     >
 
       <!-- Wishlist: top-end (physically left in RTL) -->
