@@ -29,17 +29,24 @@
 </template>
 
 <script setup>
-import { onMounted }  from 'vue'
-import { useRoute }   from 'vue-router'
-import { useUiStore } from '@/stores/ui.store'
+import { computed, onMounted } from 'vue'
+import { useRoute }            from 'vue-router'
+import { storeToRefs }         from 'pinia'
+import { useUiStore }          from '@/stores/ui.store'
+import { useSettingsStore }    from '@/stores/settings.store'
 import AdminSidebar   from '@/components/layout/AdminSidebar.vue'
 import AdminHeader    from '@/components/layout/AdminHeader.vue'
 import { useRealtimeNotifications } from '@/composables/useRealtimeNotifications'
 import { useAdminTheme }             from '@/composables/useAdminTheme'
+import { useAdminHead }              from '@/composables/useHead'
 
-const route = useRoute()
-const ui    = useUiStore()
+const route          = useRoute()
+const ui             = useUiStore()
+const settingsStore  = useSettingsStore()
+const { settings }   = storeToRefs(settingsStore)
+const routeTitle     = computed(() => route.meta.title ?? '')
 
+useAdminHead(settings, routeTitle)
 useRealtimeNotifications()
 const { init: initTheme } = useAdminTheme()
 onMounted(initTheme)
