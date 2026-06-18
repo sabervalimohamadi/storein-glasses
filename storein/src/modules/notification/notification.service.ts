@@ -199,6 +199,20 @@ export class NotificationService {
 
       if (docs.length > 0) {
         await this.notifModel.insertMany(docs, { ordered: false });
+        // Emit a single WebSocket event to the `broadcast` room so all connected
+        // users see the notification in real-time without polling the DB.
+        try {
+          this.gateway.emitBroadcast({
+            type:      dto.type,
+            title:     dto.title,
+            body:      dto.body,
+            data:      dto.data ?? null,
+            createdAt: new Date().toISOString(),
+          });
+          this.logger.log(`Broadcast real-time event emitted to ${sent} connected users`);
+        } catch (err: any) {
+          this.logger.warn(`Broadcast real-time emit failed (non-critical): ${err?.message}`);
+        }
       }
       sent = docs.length;
     }
@@ -212,7 +226,7 @@ export class NotificationService {
       sent,
     });
 
-    this.logger.log(`Broadcast sent to ${sent} users`);
+    this.logger.log(`Broadcast complete — saved ${sent} notifications to DB`);
     return { sent };
   }
 

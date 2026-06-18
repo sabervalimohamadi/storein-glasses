@@ -20,9 +20,17 @@ if (!process.env.API_INTERNAL_URL && !process.env.VITE_API_BASE_URL) {
   console.warn('[storein-admin] WARNING: API_INTERNAL_URL is not set — proxy will target localhost:3001')
 }
 
+// Shared error handler for both HTTP and WebSocket proxy errors.
+// For WebSocket upgrades, `res` is a net.Socket (no writeHead/headersSent).
+// Calling writeHead on a socket causes TypeError and corrupts the proxy state.
 function onProxyError(label) {
   return function (err, req, res) {
-    console.error(`[storein-admin] ${label} proxy error: ${req.method} ${req.url} → ${err.message}`)
+    console.error(`[storein-admin] ${label} proxy error: ${req.method ?? 'WS'} ${req.url} → ${err.message}`)
+    if (typeof res.writeHead !== 'function') {
+      // WebSocket upgrade failure — destroy the socket cleanly
+      res.destroy()
+      return
+    }
     if (res.headersSent) return
     res.writeHead(502, { 'Content-Type': 'application/json' })
     res.end(JSON.stringify({

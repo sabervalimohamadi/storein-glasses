@@ -1,63 +1,26 @@
-import { onMounted, onUnmounted } from 'vue'
-import { socketService }  from '@/services/socket.service'
-import { useUiStore }     from '@/stores/ui.store'
-import { useAuthStore }   from '@/stores/auth.store'
+// Socket management (connect / disconnect / event registration) is handled
+// globally in App.vue via watch(isLoggedIn, ...). This composable only
+// provides the playPing audio effect so AdminLayout can import it without
+// pulling in socket logic that would create duplicate event handlers.
 
 let audioCtx = null
 
-function playPing() {
+export function playPing() {
   try {
     audioCtx = audioCtx ?? new (window.AudioContext || window.webkitAudioContext)()
     const osc  = audioCtx.createOscillator()
     const gain = audioCtx.createGain()
     osc.connect(gain)
     gain.connect(audioCtx.destination)
-    osc.type      = 'sine'
+    osc.type = 'sine'
     osc.frequency.setValueAtTime(880, audioCtx.currentTime)
     gain.gain.setValueAtTime(0.12, audioCtx.currentTime)
     gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.4)
     osc.start()
     osc.stop(audioCtx.currentTime + 0.4)
-  } catch { /* non-critical */ }
+  } catch { /* non-critical — AudioContext may be blocked or unavailable */ }
 }
 
-export function useRealtimeNotifications() {
-  const ui   = useUiStore()
-  const auth = useAuthStore()
-
-  function handleNewOrder(payload) {
-    ui.addNotification({
-      id:        payload.orderId,
-      type:      'order',
-      title:     'سفارش جدید',
-      body:      `${payload.customerName} — ${Number(payload.total).toLocaleString('fa')} تومان`,
-      orderId:   payload.orderId,
-      createdAt: payload.createdAt,
-    })
-    playPing()
-  }
-
-  function handleNewReview(payload) {
-    ui.addNotification({
-      id:        payload.reviewId,
-      type:      'review',
-      title:     'نظر جدید',
-      body:      `${payload.userName} برای "${payload.productName}" — ${payload.rating}★`,
-      reviewId:  payload.reviewId,
-      createdAt: payload.createdAt,
-    })
-    playPing()
-  }
-
-  onMounted(() => {
-    if (!auth.token) return
-    socketService.connect(auth.token)
-    socketService.on('new_order',  handleNewOrder)
-    socketService.on('new_review', handleNewReview)
-  })
-
-  onUnmounted(() => {
-    socketService.off('new_order',  handleNewOrder)
-    socketService.off('new_review', handleNewReview)
-  })
-}
+// No-op composable kept for backwards compatibility with AdminLayout import.
+// Event handlers for new_order / new_review live in App.vue (single source of truth).
+export function useRealtimeNotifications() {}

@@ -34,6 +34,7 @@ describe('NotificationService', () => {
   let smsLogModel: any;
   let smsChannel: jest.Mocked<SmsNotificationChannel>;
   let pushChannel: jest.Mocked<PushNotificationChannel>;
+  let gateway: { emitToUser: jest.Mock; emitBroadcast: jest.Mock };
 
   const leanChain = (val: any) => ({ lean: jest.fn().mockResolvedValue(val) });
 
@@ -87,6 +88,7 @@ describe('NotificationService', () => {
 
     smsChannel  = { send: jest.fn().mockResolvedValue(undefined) } as any;
     pushChannel = { send: jest.fn().mockResolvedValue(undefined) } as any;
+    gateway     = { emitToUser: jest.fn(), emitBroadcast: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -96,7 +98,7 @@ describe('NotificationService', () => {
         { provide: getModelToken(SmsLog.name),        useValue: smsLogModel },
         { provide: SmsNotificationChannel,            useValue: smsChannel },
         { provide: PushNotificationChannel,           useValue: pushChannel },
-        { provide: NotificationsGateway,              useValue: { emitToUser: jest.fn() } },
+        { provide: NotificationsGateway,              useValue: gateway },
       ],
     }).compile();
 
@@ -272,6 +274,37 @@ describe('NotificationService', () => {
       expect(broadcastLogModel.create).toHaveBeenCalledWith(
         expect.objectContaining({ target: 'all', sent: 1 }),
       );
+    });
+
+    it('calls gateway.emitBroadcast after all-users insertMany so clients get real-time event', async () => {
+      const users = [{ _id: new Types.ObjectId() }, { _id: new Types.ObjectId() }];
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain(users)),
+        }),
+      });
+
+      await service.adminBroadcast({
+        type: NotificationType.PROMO, title: 'تخفیف ویژه', body: 'همه کاربران',
+      });
+
+      expect(gateway.emitBroadcast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'تخفیف ویژه', type: NotificationType.PROMO }),
+      );
+    });
+
+    it('does NOT call emitBroadcast for targeted single-user send (emitToUser handles it)', async () => {
+      notifModel.create.mockResolvedValue({
+        ...mockNotif(), toObject: () => mockNotif(),
+      });
+
+      await service.adminBroadcast({
+        type: NotificationType.ORDER_UPDATE, title: 'سفارش', body: 'تایید شد',
+        targetUserId: userId,
+      });
+
+      expect(gateway.emitBroadcast).not.toHaveBeenCalled();
+      expect(gateway.emitToUser).toHaveBeenCalled();
     });
   });
 

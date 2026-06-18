@@ -76,14 +76,17 @@ export class NotificationsGateway
 
       if (user.isAdmin || user.role === 'manager') {
         client.join('admins');
-        client.data.userId = payload.sub;
+        client.data.userId  = payload.sub;
+        client.data.isAdmin = true;
         this.logger.log(`Admin WS connected: ${client.id}`);
       } else {
-        // Regular users join a per-user room so they receive targeted notifications
+        // Regular users join a per-user room (targeted) AND the broadcast room (all-users)
         const room = `user:${payload.sub}`;
         client.join(room);
-        client.data.userId = payload.sub;
-        this.logger.log(`User WS connected: ${client.id} → room ${room}`);
+        client.join('broadcast');
+        client.data.userId  = payload.sub;
+        client.data.isAdmin = false;
+        this.logger.log(`User WS connected: ${client.id} → rooms ${room}, broadcast`);
       }
     } catch {
       client.disconnect();
@@ -127,5 +130,24 @@ export class NotificationsGateway
   }) {
     this.server.to(`user:${userId}`).emit('notification', payload);
     this.logger.debug(`Emitted notification to user:${userId} — ${payload.title}`);
+  }
+
+  // Emits a single real-time event to ALL connected regular users (broadcast room).
+  // Called after adminBroadcast insertMany so clients see the toast without polling.
+  emitBroadcast(payload: {
+    type:      string;
+    title:     string;
+    body:      string;
+    data:      Record<string, any> | null;
+    createdAt: string;
+  }) {
+    const event = {
+      // Use a synthetic ID — client uses it for display only; real IDs are in DB.
+      _id:       `broadcast:${Date.now()}`,
+      isRead:    false,
+      ...payload,
+    };
+    this.server.to('broadcast').emit('notification', event);
+    this.logger.log(`emitBroadcast → broadcast room: "${payload.title}"`);
   }
 }

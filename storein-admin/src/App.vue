@@ -18,6 +18,7 @@ import { useAuthStore }     from '@/stores/auth.store'
 import { useSettingsStore } from '@/stores/settings.store'
 import { useUiStore }       from '@/stores/ui.store'
 import { socketService }    from '@/services/socket.service'
+import { playPing }         from '@/composables/useRealtimeNotifications'
 import { logger }           from '@/utils/logger'
 
 const CTX = 'App'
@@ -52,6 +53,8 @@ watch(
 )
 
 // ── Real-time event handlers ──────────────────────────────────────────────────
+// These are the ONLY registrations for new_order and new_review.
+// useRealtimeNotifications composable is now a no-op to prevent duplicate handlers.
 function onNewOrder(payload) {
   ui.addNotification({
     id:      payload.orderId,
@@ -61,6 +64,7 @@ function onNewOrder(payload) {
     time:    payload.createdAt,
   })
   ui.addToast(`سفارش جدید #${payload.orderNumber} از ${payload.customerName}`, 'info', 6000)
+  playPing()
   logger.info('App: new_order event received', { orderNumber: payload.orderNumber }, CTX)
 }
 
@@ -73,6 +77,7 @@ function onNewReview(payload) {
     time:    payload.createdAt,
   })
   ui.addToast(`دیدگاه جدید از ${payload.userName}`, 'info', 5000)
+  playPing()
   logger.info('App: new_review event received', { product: payload.productName }, CTX)
 }
 

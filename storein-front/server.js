@@ -20,29 +20,43 @@ if (!process.env.API_INTERNAL_URL && !process.env.VITE_API_BASE_URL) {
   console.warn('[storein-front] WARNING: API_INTERNAL_URL is not set — proxy will target localhost:3001')
 }
 
-const proxyOpts = (extra = {}) => ({
-  target:       API_TARGET,
-  changeOrigin: true,
-  ...extra,
-  on: {
-    error(err, req, res) {
-      console.error(`[storein-front] proxy error: ${req.method} ${req.url} → ${err.message}`)
-      if (res.headersSent) return
-      res.writeHead(502, { 'Content-Type': 'application/json' })
-      res.end(JSON.stringify({
-        statusCode: 502,
-        message:    'پروکسی نتوانست به سرور متصل شود. لطفاً بعداً دوباره امتحان کنید.',
-      }))
-    },
-  },
-})
+// Shared error handler for both HTTP and WebSocket proxy errors.
+// For WebSocket upgrades, `res` is a net.Socket (no writeHead/headersSent).
+// Calling writeHead on a socket causes TypeError and corrupts the proxy state.
+function makeProxyErrorHandler(label) {
+  return function onError(err, req, res) {
+    console.error(`[storein-front] ${label} proxy error: ${req.method ?? 'WS'} ${req.url} → ${err.message}`)
+    if (typeof res.writeHead !== 'function') {
+      // WebSocket upgrade failure — destroy the socket cleanly
+      res.destroy()
+      return
+    }
+    if (res.headersSent) return
+    res.writeHead(502, { 'Content-Type': 'application/json' })
+    res.end(JSON.stringify({
+      statusCode: 502,
+      message:    'پروکسی نتوانست به سرور متصل شود. لطفاً بعداً دوباره امتحان کنید.',
+    }))
+  }
+}
 
 // IMPORTANT: use pathFilter (NOT app.use('/api', proxy)).
 // app.use('/api', proxy) strips the /api prefix before forwarding →
 // backend sees /v1/products instead of /api/v1/products → 404.
-app.use(createProxyMiddleware({ ...proxyOpts(), pathFilter: '/api' }))
+app.use(createProxyMiddleware({
+  target:       API_TARGET,
+  changeOrigin: true,
+  pathFilter:   '/api',
+  on: { error: makeProxyErrorHandler('api') },
+}))
 
-const socketProxy = createProxyMiddleware({ ...proxyOpts({ ws: true }), pathFilter: '/socket.io' })
+const socketProxy = createProxyMiddleware({
+  target:       API_TARGET,
+  changeOrigin: true,
+  pathFilter:   '/socket.io',
+  ws:           true,
+  on: { error: makeProxyErrorHandler('socket.io') },
+})
 app.use(socketProxy)
 
 const distPath = path.join(__dirname, 'dist')
