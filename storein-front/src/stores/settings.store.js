@@ -15,9 +15,16 @@ export const useSettingsStore = defineStore('settings', () => {
   const faviconUrl      = computed(() => settings.value?.faviconUrl      ?? '')
   const ogImage         = computed(() => settings.value?.ogImage         ?? '')
   const social          = computed(() => settings.value?.social          ?? {})
-  const phone           = computed(() => settings.value?.phone           ?? '')
-  const email           = computed(() => settings.value?.email           ?? '')
-  const address         = computed(() => settings.value?.address         ?? '')
+  const phone     = computed(() => settings.value?.phone ?? '')
+  const mobiles   = computed(() => settings.value?.mobiles ?? [])
+  const email     = computed(() => settings.value?.email ?? '')
+  // addresses: prefer new array field, fall back to legacy single address string
+  const addresses = computed(() => {
+    if (settings.value?.addresses?.length) return settings.value.addresses
+    if (settings.value?.address)           return [settings.value.address]
+    return []
+  })
+  const address   = computed(() => settings.value?.address ?? '')
   const footerTagline   = computed(() => settings.value?.footerTagline   ?? '')
   const footerCopyright = computed(() => settings.value?.footerCopyright ?? 'تمامی حقوق برای استورین محفوظ است')
   const footerLinks     = computed(() => settings.value?.footerLinks     ?? [])
@@ -50,7 +57,7 @@ export const useSettingsStore = defineStore('settings', () => {
     settings, loading,
     siteName, tagline, description, keywords,
     logoUrl, faviconUrl, ogImage, social,
-    phone, email, address,
+    phone, mobiles, email, addresses, address,
     footerTagline, footerCopyright, footerLinks,
     theme, trustItems,
     fetchSettings,

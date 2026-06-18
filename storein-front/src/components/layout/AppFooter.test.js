@@ -27,9 +27,11 @@ vi.mock('@/stores/settings.store', async () => {
         footerTagline:   '',
         footerCopyright: 'تمامی حقوق محفوظ است',
         footerLinks:     [],
-        email:           'test@storein.ir',
-        phone:           '09123456789',
-        address:         '',
+        email:     'test@storein.ir',
+        phone:     '09123456789',
+        mobiles:   [],
+        address:   '',
+        addresses: [],
         social: {
           instagram: '',
           telegram:  '',
@@ -163,15 +165,39 @@ describe('AppFooter', () => {
       expect(wrapper.find('[data-testid="contact-phone"]').text()).toContain('08733177189')
     })
 
-    it('shows address when set', () => {
-      const wrapper = factory({ address: 'کردستان - سنندج' })
-      expect(wrapper.find('[data-testid="contact-address"]').exists()).toBe(true)
-      expect(wrapper.find('[data-testid="contact-address"]').text()).toContain('کردستان - سنندج')
+    it('shows single address via addresses array', () => {
+      const wrapper = factory({ addresses: ['کردستان - سنندج'] })
+      expect(wrapper.find('[data-testid="contact-address-0"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="contact-address-0"]').text()).toContain('کردستان - سنندج')
     })
 
-    it('hides address element when address is empty', () => {
-      const wrapper = factory({ address: '' })
-      expect(wrapper.find('[data-testid="contact-address"]').exists()).toBe(false)
+    it('shows multiple addresses when addresses array has several items', () => {
+      const wrapper = factory({ addresses: ['آدرس اول', 'آدرس دوم', 'آدرس سوم'] })
+      expect(wrapper.find('[data-testid="contact-address-0"]').text()).toContain('آدرس اول')
+      expect(wrapper.find('[data-testid="contact-address-1"]').text()).toContain('آدرس دوم')
+      expect(wrapper.find('[data-testid="contact-address-2"]').text()).toContain('آدرس سوم')
+    })
+
+    it('hides address items when addresses array is empty', () => {
+      const wrapper = factory({ addresses: [] })
+      expect(wrapper.find('[data-testid="contact-address-0"]').exists()).toBe(false)
+    })
+
+    it('shows single mobile via mobiles array', () => {
+      const wrapper = factory({ mobiles: ['09121234567'] })
+      expect(wrapper.find('[data-testid="contact-mobile-0"]').exists()).toBe(true)
+      expect(wrapper.find('[data-testid="contact-mobile-0"]').text()).toContain('09121234567')
+    })
+
+    it('shows multiple mobiles when mobiles array has several items', () => {
+      const wrapper = factory({ mobiles: ['09121111111', '09122222222'] })
+      expect(wrapper.find('[data-testid="contact-mobile-0"]').text()).toContain('09121111111')
+      expect(wrapper.find('[data-testid="contact-mobile-1"]').text()).toContain('09122222222')
+    })
+
+    it('hides mobile items when mobiles array is empty', () => {
+      const wrapper = factory({ mobiles: [] })
+      expect(wrapper.find('[data-testid="contact-mobile-0"]').exists()).toBe(false)
     })
   })
 

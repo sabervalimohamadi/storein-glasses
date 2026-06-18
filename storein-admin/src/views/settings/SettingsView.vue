@@ -226,14 +226,65 @@
 
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <AdminInput v-model="form.phone"
-              label="شماره تلفن" placeholder="۰۲۱-۱۲۳۴۵۶۷۸" dir="ltr"
+              label="شماره تلفن ثابت" placeholder="۰۸۷-۳۳۱۷۷۱۸۹" dir="ltr"
               hint="در فوتر سایت نمایش داده می‌شود" />
             <AdminInput v-model="form.email"
               label="ایمیل پشتیبانی" placeholder="support@storein.ir" dir="ltr" />
           </div>
 
-          <AdminTextarea v-model="form.address"
-            label="آدرس" placeholder="تهران، خیابان ..." :rows="2" />
+          <!-- Mobile numbers (multi) -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <label class="field-label mb-0">شماره موبایل</label>
+              <AdminButton variant="ghost" size="sm" @click="addMobile">+ افزودن شماره</AdminButton>
+            </div>
+            <div v-if="!form.mobiles.length"
+                 class="py-6 text-center text-text-disabled text-sm border border-dashed border-border rounded-xl">
+              شماره موبایلی ثبت نشده — دکمه بالا را بزنید
+            </div>
+            <div v-else class="space-y-2">
+              <div v-for="(mob, idx) in form.mobiles" :key="idx" class="flex items-center gap-2">
+                <AdminInput
+                  v-model="mob.value"
+                  placeholder="۰۹۱۲-۳۴۵-۶۷۸۹"
+                  dir="ltr"
+                  class="flex-1"
+                />
+                <button
+                  @click="removeMobile(idx)"
+                  class="w-9 h-9 flex-shrink-0 rounded-lg text-error hover:bg-error/10 flex items-center justify-center transition-colors"
+                  title="حذف"
+                >✕</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Addresses (multi) -->
+          <div>
+            <div class="flex items-center justify-between mb-3">
+              <label class="field-label mb-0">آدرس</label>
+              <AdminButton variant="ghost" size="sm" @click="addAddress">+ افزودن آدرس</AdminButton>
+            </div>
+            <div v-if="!form.addresses.length"
+                 class="py-6 text-center text-text-disabled text-sm border border-dashed border-border rounded-xl">
+              آدرسی ثبت نشده — دکمه بالا را بزنید
+            </div>
+            <div v-else class="space-y-2">
+              <div v-for="(addr, idx) in form.addresses" :key="idx" class="flex items-start gap-2">
+                <AdminTextarea
+                  v-model="addr.value"
+                  :placeholder="`تهران، خیابان ...`"
+                  :rows="2"
+                  class="flex-1"
+                />
+                <button
+                  @click="removeAddress(idx)"
+                  class="w-9 h-9 flex-shrink-0 rounded-lg text-error hover:bg-error/10 flex items-center justify-center transition-colors mt-1"
+                  title="حذف"
+                >✕</button>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -724,6 +775,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { settingsService } from '@/services/settings.service'
 import { uploadService }   from '@/services/upload.service'
 import { useUiStore }      from '@/stores/ui.store'
+import { logger }          from '@/utils/logger'
 import AdminButton   from '@/components/common/AdminButton.vue'
 import AdminInput    from '@/components/common/AdminInput.vue'
 import AdminTextarea from '@/components/common/AdminTextarea.vue'
@@ -781,9 +833,10 @@ const emptyForm = () => ({
   footerTagline:   '',
   footerCopyright: '',
   footerLinks:     [],
-  phone:           '',
-  email:           '',
-  address:         '',
+  phone:     '',
+  mobiles:   [],
+  email:     '',
+  addresses: [],
   payment: {
     gateway:             'mock',
     zarinpalMerchantId:  '',
@@ -839,9 +892,14 @@ function applyData(data) {
     footerTagline:   data.footerTagline   ?? '',
     footerCopyright: data.footerCopyright ?? '',
     footerLinks:     (data.footerLinks ?? []).map(l => ({ label: l.label ?? '', url: l.url ?? '' })),
-    phone:           data.phone           ?? '',
-    email:           data.email           ?? '',
-    address:         data.address         ?? '',
+    phone:     data.phone ?? '',
+    mobiles:   (data.mobiles ?? []).map(v => ({ value: typeof v === 'string' ? v : '' })),
+    email:     data.email ?? '',
+    addresses: (
+      data.addresses?.length ? data.addresses
+      : data.address         ? [data.address]
+      : []
+    ).map(v => ({ value: typeof v === 'string' ? v : '' })),
     payment: {
       gateway:            data.payment?.gateway            ?? 'mock',
       zarinpalMerchantId: data.payment?.zarinpalMerchantId ?? '',
@@ -879,10 +937,13 @@ function resetForm() {
 // ── Load ──────────────────────────────────────────────────
 onMounted(async () => {
   loading.value = true
+  logger.info('settings: loading site settings', {}, 'SettingsView')
   try {
     const { data } = await settingsService.get()
     applyData(data)
+    logger.debug('settings: settings loaded', { mobiles: data.mobiles?.length ?? 0, addresses: data.addresses?.length ?? 0 }, 'SettingsView')
   } catch {
+    logger.error('settings: failed to load settings', {}, 'SettingsView')
     ui.addToast('خطا در بارگذاری تنظیمات', 'error')
   } finally {
     loading.value = false
@@ -892,6 +953,7 @@ onMounted(async () => {
 // ── Save ──────────────────────────────────────────────────
 async function saveAll() {
   saving.value = true
+  logger.info('settings: saving site settings', { mobiles: form.mobiles.length, addresses: form.addresses.length }, 'SettingsView')
   try {
     const dto = {
       siteName:        form.siteName.trim(),
@@ -907,9 +969,10 @@ async function saveAll() {
       footerLinks:     form.footerLinks
         .filter(l => l.label.trim() && l.url.trim())
         .map(l => ({ label: l.label.trim(), url: l.url.trim() })),
-      phone:   form.phone.trim(),
-      email:   form.email.trim(),
-      address: form.address.trim(),
+      phone:     form.phone.trim(),
+      mobiles:   form.mobiles.filter(m => m.value.trim()).map(m => m.value.trim()),
+      email:     form.email.trim(),
+      addresses: form.addresses.filter(a => a.value.trim()).map(a => a.value.trim()),
       payment: {
         gateway:            form.payment.gateway,
         zarinpalMerchantId: form.payment.zarinpalMerchantId.trim(),
@@ -937,9 +1000,11 @@ async function saveAll() {
     }
     const { data } = await settingsService.update(dto)
     applyData(data)
+    logger.info('settings: settings saved successfully', {}, 'SettingsView')
     ui.addToast('تنظیمات ذخیره شد ✓', 'success')
   } catch (err) {
     const msg = err.response?.data?.message
+    logger.error('settings: failed to save settings', { msg }, 'SettingsView')
     if (Array.isArray(msg)) msg.forEach(m => ui.addToast(m, 'error'))
     else ui.addToast(msg ?? 'خطا در ذخیره تنظیمات', 'error')
   } finally {
@@ -968,6 +1033,26 @@ function addFooterLink() {
 
 function removeFooterLink(idx) {
   form.footerLinks.splice(idx, 1)
+}
+
+// ── Contact: mobiles ──────────────────────────────────────
+function addMobile() {
+  form.mobiles.push({ value: '' })
+  logger.debug('settings: mobile field added', { count: form.mobiles.length }, 'SettingsView')
+}
+function removeMobile(idx) {
+  form.mobiles.splice(idx, 1)
+  logger.debug('settings: mobile field removed', { idx }, 'SettingsView')
+}
+
+// ── Contact: addresses ────────────────────────────────────
+function addAddress() {
+  form.addresses.push({ value: '' })
+  logger.debug('settings: address field added', { count: form.addresses.length }, 'SettingsView')
+}
+function removeAddress(idx) {
+  form.addresses.splice(idx, 1)
+  logger.debug('settings: address field removed', { idx }, 'SettingsView')
 }
 
 // ── Image upload ──────────────────────────────────────────
