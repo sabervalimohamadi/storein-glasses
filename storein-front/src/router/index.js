@@ -120,6 +120,12 @@ const routes = [
         component: () => import('@/views/user/AddressesView.vue'),
         meta: { title: 'آدرس‌ها' },
       },
+      {
+        path: 'notifications',
+        name: 'user-notifications',
+        component: () => import('@/views/user/NotificationsView.vue'),
+        meta: { title: 'اعلان‌ها' },
+      },
     ],
   },
   // ── 404 ─────────────────────────────────────────────────────
