@@ -119,12 +119,13 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function logout() {
+    try { await authService.logout() } catch { /* ignore — cookie may already be expired */ }
     user.value         = null
     token.value        = null
     pendingPhone.value = ''
-    // Cookie is cleared by the server on POST /auth/logout
     const { socketService } = await import('@/services/socket.service')
     socketService.disconnect()
+    logger.info('admin-auth: logout complete', {}, 'AuthStore')
   }
 
   return { user, token, loading, pendingPhone, initialized, initializing, isLoggedIn, isAdmin, isManager, permissions, hasPermission, sendOtp, adminLogin, verifyOtp, fetchProfile, initAuth, logout }
