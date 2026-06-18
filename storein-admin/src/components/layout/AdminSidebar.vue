@@ -9,11 +9,7 @@
     <!-- ── Logo ── -->
     <div class="sb-head">
       <div class="sb-head__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" class="w-[19px] h-[19px] text-white">
-          <circle cx="7"  cy="12" r="3.4"/>
-          <circle cx="17" cy="12" r="3.4"/>
-          <path stroke-linecap="round" d="M10.4 12h3.2M3.2 11.5V10M20.8 11.5V10"/>
-        </svg>
+        <img src="/favicon.svg" alt="لوگو استورین" class="w-[22px] h-[22px]" draggable="false" />
       </div>
       <Transition name="ft">
         <div v-if="!ui.sidebarCollapsed" class="sb-head__text">
@@ -108,11 +104,7 @@
 
     <div class="sb-head">
       <div class="sb-head__icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" class="w-[19px] h-[19px] text-white">
-          <circle cx="7"  cy="12" r="3.4"/>
-          <circle cx="17" cy="12" r="3.4"/>
-          <path stroke-linecap="round" d="M10.4 12h3.2M3.2 11.5V10M20.8 11.5V10"/>
-        </svg>
+        <img src="/favicon.svg" alt="لوگو استورین" class="w-[22px] h-[22px]" draggable="false" />
       </div>
       <div class="sb-head__text">
         <span class="sb-head__name">{{ settingsStore.siteName }}</span>

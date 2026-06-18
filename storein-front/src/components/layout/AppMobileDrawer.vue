@@ -24,12 +24,7 @@
         <div class="flex items-center justify-between px-4 py-4 flex-shrink-0"
              style="border-bottom: 1px solid var(--color-border);">
           <RouterLink :to="{ name: 'home' }" @click="close" class="flex items-center gap-3">
-            <div class="w-9 h-9 rounded-xl bg-brand flex items-center justify-center flex-shrink-0 shadow-sm">
-              <svg viewBox="0 0 24 24" fill="none" class="w-5 h-5 text-white" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="3"/>
-                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7S2 12 2 12z"/>
-              </svg>
-            </div>
+            <img src="/favicon.svg" alt="لوگو استورین" class="w-9 h-9 shrink-0" draggable="false" />
             <div class="flex flex-col leading-tight">
               <span class="text-brand font-bold text-[17px] tracking-tight">استورین</span>
               <span class="text-[11px]" style="color: var(--color-text-disabled);">فروشگاه تخصصی عینک</span>

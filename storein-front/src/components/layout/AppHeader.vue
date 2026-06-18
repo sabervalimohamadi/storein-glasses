@@ -18,9 +18,12 @@
       </button>
 
       <!-- Logo — rightmost on desktop (order-3) -->
-      <RouterLink :to="{ name: 'home' }" class="flex flex-col items-start shrink-0 leading-tight md:order-1">
-        <span class="text-brand font-bold text-xl tracking-tight">{{ settingsStore.siteName }}</span>
-        <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
+      <RouterLink :to="{ name: 'home' }" class="flex items-center gap-2 shrink-0 leading-tight md:order-1">
+        <img src="/favicon.svg" alt="لوگو استورین" class="w-8 h-8 shrink-0" draggable="false" />
+        <div class="flex flex-col items-start">
+          <span class="text-brand font-bold text-xl tracking-tight">{{ settingsStore.siteName }}</span>
+          <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
+        </div>
       </RouterLink>
 
       <!-- Search (desktop) — middle (order-2) -->
