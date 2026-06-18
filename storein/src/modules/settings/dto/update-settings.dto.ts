@@ -111,8 +111,12 @@ export class UpdateSettingsDto {
 
   // Contact
   @IsOptional() @IsString() @MaxLength(20)  phone?:   string;
+  @IsOptional() @IsArray() @IsString({ each: true }) @MaxLength(20, { each: true })
+  mobiles?: string[];
   @IsOptional() @IsEmail()                  email?:   string;
   @IsOptional() @IsString() @MaxLength(200) address?: string;
+  @IsOptional() @IsArray() @IsString({ each: true }) @MaxLength(300, { each: true })
+  addresses?: string[];
 
   // Theme
   @IsOptional() @ValidateNested() @Type(() => ThemeDto)

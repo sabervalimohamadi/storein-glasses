@@ -163,11 +163,17 @@ export class SiteSettings {
   @Prop({ default: '' })
   phone: string;
 
+  @Prop({ type: [String], default: [] })
+  mobiles: string[];
+
   @Prop({ default: '' })
   email: string;
 
   @Prop({ default: '' })
   address: string;
+
+  @Prop({ type: [String], default: [] })
+  addresses: string[];
 }
 
 export const SiteSettingsSchema = SchemaFactory.createForClass(SiteSettings);
