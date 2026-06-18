@@ -4,11 +4,19 @@ import { logger } from '@/utils/logger'
 const CTX = 'SocketService'
 
 export function resolveSocketUrl() {
+  // Explicit override wins — useful for debugging specific environments.
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
-  // When VITE_API_BASE_URL is unset the proxy server handles /socket.io,
-  // so an empty string tells Socket.IO to connect to the current origin.
-  if (!import.meta.env.VITE_API_BASE_URL) return ''
-  return import.meta.env.VITE_API_BASE_URL.replace(/\/api(\/v\d+)?\/?$/, '')
+
+  // Production: always connect to the frontend's own origin.
+  // server.js proxies /socket.io → backend, so the WebSocket stays same-origin.
+  // This avoids cross-origin WebSocket CORS rejection and Safari/Firefox cookie issues.
+  if (import.meta.env.PROD) {
+    return typeof window !== 'undefined' ? window.location.origin : ''
+  }
+
+  // Local dev: connect directly to the running backend.
+  const api = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1'
+  return api.replace(/\/api(\/v\d+)?\/?$/, '')
 }
 
 const SOCKET_URL = resolveSocketUrl() + '/notifications'

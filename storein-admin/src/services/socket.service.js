@@ -2,8 +2,17 @@ import { io } from 'socket.io-client'
 import { logger } from '@/utils/logger'
 
 export function resolveSocketUrl() {
+  // Explicit override wins — useful for debugging specific environments.
   if (import.meta.env.VITE_SOCKET_URL) return import.meta.env.VITE_SOCKET_URL
-  // Derive from API base URL — strip /api/v1 suffix
+
+  // Production: always connect to the admin panel's own origin.
+  // server.js proxies /socket.io → backend, so the WebSocket stays same-origin.
+  // This avoids cross-origin WebSocket CORS rejection and Safari/Firefox cookie issues.
+  if (import.meta.env.PROD) {
+    return typeof window !== 'undefined' ? window.location.origin : ''
+  }
+
+  // Local dev: connect directly to the running backend.
   const api = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3000/api/v1'
   return api.replace(/\/api(\/v\d+)?\/?$/, '')
 }
