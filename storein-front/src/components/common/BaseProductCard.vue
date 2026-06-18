@@ -182,19 +182,27 @@ const colorVariants = computed(() => {
   return result
 })
 
-const maxComparePrice = computed(() => {
-  return Math.max(
-    0,
-    ...(props.product.variants ?? [])
-      .filter(v => v.comparePrice > 0 && v.isActive !== false)
-      .map(v => v.comparePrice),
+// Find the variant whose price equals minPrice — use its own comparePrice
+// to avoid mixing prices from different variants (which inflates the discount).
+const discountVariant = computed(() => {
+  const variants = (props.product.variants ?? []).filter(
+    v => v.isActive !== false && v.price > 0 && v.comparePrice > v.price,
+  )
+  if (!variants.length) return null
+  // Prefer the variant matching minPrice; fall back to the one with the highest % off
+  const minP = props.product.minPrice
+  const match = minP ? variants.find(v => v.price === minP) : null
+  return match ?? variants.reduce((best, v) =>
+    (1 - v.price / v.comparePrice) > (1 - best.price / best.comparePrice) ? v : best,
   )
 })
 
+const maxComparePrice = computed(() => discountVariant.value?.comparePrice ?? 0)
+
 const discount = computed(() => {
-  const { minPrice } = props.product
-  if (!minPrice || maxComparePrice.value <= minPrice) return 0
-  return Math.round((1 - minPrice / maxComparePrice.value) * 100)
+  const dv = discountVariant.value
+  if (!dv) return 0
+  return Math.round((1 - dv.price / dv.comparePrice) * 100)
 })
 
 function handleClick() {

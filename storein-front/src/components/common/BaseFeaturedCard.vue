@@ -311,19 +311,19 @@ function getVariantImage(idx) {
 }
 
 // ── Discount ──────────────────────────────────────────────────────
-const maxComparePrice = computed(() =>
-  Math.max(
-    0,
-    ...(props.product.variants ?? [])
-      .filter(v => v.comparePrice > 0 && v.isActive !== false)
-      .map(v => v.comparePrice),
-  )
-)
-
+// Use the selected variant's own price/comparePrice for a correct per-variant discount.
+// Falls back to the variant with the highest % off when no variant is selected.
 const discount = computed(() => {
-  const { minPrice } = props.product
-  if (!minPrice || maxComparePrice.value <= minPrice) return 0
-  return Math.round((1 - minPrice / maxComparePrice.value) * 100)
+  const dv = currentVariant.value
+  if (dv?.comparePrice > 0 && dv.price > 0 && dv.comparePrice > dv.price) {
+    return Math.round((1 - dv.price / dv.comparePrice) * 100)
+  }
+  // Fallback: highest discount among all active variants
+  const variants = (props.product.variants ?? []).filter(
+    v => v.isActive !== false && v.price > 0 && v.comparePrice > v.price,
+  )
+  if (!variants.length) return 0
+  return Math.max(...variants.map(v => Math.round((1 - v.price / v.comparePrice) * 100)))
 })
 
 // ── Helpers ───────────────────────────────────────────────────────
