@@ -138,12 +138,13 @@ export class ProductService {
     }
 
     const sortMap: Record<string, any> = {
-      newest:     { createdAt: -1 },
-      price_asc:  { minPrice: 1 },
-      price_desc: { minPrice: -1 },
-      popular:    { soldCount: -1, viewCount: -1 },
-      bestseller: { soldCount: -1 },
-      discount:   { maxComparePrice: -1, minPrice: 1 },
+      newest:      { createdAt: -1 },
+      price_asc:   { minPrice: 1 },
+      price_desc:  { minPrice: -1 },
+      popular:     { soldCount: -1, viewCount: -1 },
+      bestseller:  { soldCount: -1 },
+      discount:    { maxComparePrice: -1, minPrice: 1 },
+      mostViewed:  { viewCount: -1, createdAt: -1 },
     };
     const sortObj = sortMap[sort ?? 'newest'] ?? { createdAt: -1 };
 

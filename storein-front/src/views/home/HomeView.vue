@@ -43,7 +43,10 @@
         class="home__section"
       />
 
-      <!-- ⑧ Trust Strip -->
+      <!-- ⑧ Most Viewed -->
+      <MostViewed class="home__section" />
+
+      <!-- ⑨ Trust Strip -->
       <TrustStrip class="home__section" />
 
     </div>
@@ -61,6 +64,7 @@ import CategoryBar   from './components/CategoryBar.vue'
 import FlashSale     from './components/FlashSale.vue'
 import ProductRow    from './components/ProductRow.vue'
 import SpecialBanner from './components/SpecialBanner.vue'
+import MostViewed    from './components/MostViewed.vue'
 import TrustStrip    from './components/TrustStrip.vue'
 
 const wishlistStore = useWishlistStore()
