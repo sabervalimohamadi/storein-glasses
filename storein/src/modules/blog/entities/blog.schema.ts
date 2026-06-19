@@ -45,6 +45,12 @@ export class Blog {
 
   @Prop({ type: Date, index: true })
   publishedAt: Date;
+
+  @Prop({ trim: true, maxlength: 70 })
+  metaTitle?: string;
+
+  @Prop({ trim: true, maxlength: 160 })
+  metaDescription?: string;
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);

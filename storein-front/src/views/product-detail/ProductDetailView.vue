@@ -99,6 +99,9 @@
     </Transition>
 
   </div>
+
+  <JsonLd v-if="productSchema"    :schema="productSchema" />
+  <JsonLd v-if="breadcrumbSchema" :schema="breadcrumbSchema" />
 </template>
 
 <script setup>
@@ -112,18 +115,22 @@ import { useWishlistStore }  from '@/stores/wishlist.store'
 import { useUiStore }        from '@/stores/ui.store'
 import { useSettingsStore }  from '@/stores/settings.store'
 import { formatPrice }      from '@/utils/formatters'
+import { useSeoHead }       from '@/composables/useSeoHead'
 
 import ProductGallery  from './components/ProductGallery.vue'
 import ProductInfo     from './components/ProductInfo.vue'
 import ProductTabs     from './components/ProductTabs.vue'
 import RelatedProducts from './components/RelatedProducts.vue'
 import BaseButton      from '@/components/common/BaseButton.vue'
+import JsonLd          from '@/components/seo/JsonLd.vue'
 
 const route         = useRoute()
 const cartStore     = useCartStore()
 const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
 const settingsStore = useSettingsStore()
+
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://storein.ir'
 
 const product         = ref(null)
 const loading         = ref(true)
@@ -134,6 +141,60 @@ const selectedVariant = ref(null)
 const addingToCart    = ref(false)
 const galleryRef      = ref(null)
 const infoRef         = ref(null)
+
+// ── SEO ──────────────────────────────────────────────────────────
+useSeoHead({
+  title:         computed(() => product.value?.metaTitle || product.value?.name),
+  description:   computed(() => product.value?.metaDescription || product.value?.shortDescription),
+  image:         computed(() => product.value?.images?.[0]),
+  canonicalPath: computed(() => product.value ? `/product/${route.params.slug}` : null),
+  type:          'product',
+})
+
+const productSchema = computed(() => {
+  const p = product.value
+  if (!p) return null
+  return {
+    '@context': 'https://schema.org',
+    '@type':    'Product',
+    name:        p.name,
+    description: p.shortDescription || p.description,
+    sku:         p.variants?.[0]?.sku || p._id,
+    image:       (p.images || []).map(img => img.startsWith('http') ? img : `${BASE_URL}${img}`),
+    ...(p.brand?.name ? { brand: { '@type': 'Brand', name: p.brand.name } } : {}),
+    offers: {
+      '@type':       'Offer',
+      url:           `${BASE_URL}/product/${p.slug}`,
+      priceCurrency: 'IRR',
+      price:          p.minPrice,
+      availability:   p.totalStock > 0 ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock',
+      seller: { '@type': 'Organization', name: settingsStore.siteName },
+    },
+    ...(p.avgRating && p.reviewCount ? {
+      aggregateRating: {
+        '@type':      'AggregateRating',
+        ratingValue:   p.avgRating.toFixed(1),
+        reviewCount:   p.reviewCount,
+        bestRating:   '5',
+        worstRating:  '1',
+      },
+    } : {}),
+  }
+})
+
+const breadcrumbSchema = computed(() => {
+  const p = product.value
+  if (!p) return null
+  const items = [
+    { '@type': 'ListItem', position: 1, name: 'خانه',    item: BASE_URL },
+    { '@type': 'ListItem', position: 2, name: 'محصولات', item: `${BASE_URL}/products` },
+  ]
+  if (p.category?.name) {
+    items.push({ '@type': 'ListItem', position: 3, name: p.category.name, item: `${BASE_URL}/category/${p.category.slug}` })
+  }
+  items.push({ '@type': 'ListItem', position: items.length + 1, name: p.name })
+  return { '@context': 'https://schema.org', '@type': 'BreadcrumbList', itemListElement: items }
+})
 
 // ── Sticky bar ────────────────────────────────────────────────────
 const showStickyBar = ref(false)
@@ -165,7 +226,6 @@ async function fetchProduct() {
     const { data } = await productService.getBySlug(slug)
     product.value = data
     if (data.variants?.length) selectedVariant.value = data.variants[0]
-    document.title = `${settingsStore.siteName} - ${data.name}`
 
     // Fetch initial review stats for the tab badge
     try {
@@ -216,7 +276,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
   stopObserver?.()
-  document.title = settingsStore.siteName
 })
 
 // Re-fetch on slug change (nav between products)

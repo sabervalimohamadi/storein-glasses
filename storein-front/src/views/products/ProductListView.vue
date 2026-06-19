@@ -85,6 +85,7 @@ import { useDebounceFn } from '@vueuse/core'
 import { useProductStore }  from '@/stores/product.store'
 import { useCategoryStore } from '@/stores/category.store'
 import { useWishlistStore } from '@/stores/wishlist.store'
+import { useSeoHead } from '@/composables/useSeoHead'
 
 import FilterSidebar      from './components/FilterSidebar.vue'
 import FilterMobileDrawer from './components/FilterMobileDrawer.vue'
@@ -100,6 +101,13 @@ const categoryStore = useCategoryStore()
 const wishlistStore = useWishlistStore()
 
 const mobileFilterOpen = ref(false)
+
+// ── SEO ──────────────────────────────────────────────────────────
+useSeoHead({
+  title:         computed(() => currentCategory.value?.name || 'همه محصولات'),
+  description:   computed(() => currentCategory.value?.description || 'خرید انواع عینک طبی، آفتابی و لنز با بهترین قیمت'),
+  canonicalPath: computed(() => route.params.slug ? `/category/${route.params.slug}` : '/products'),
+})
 
 // ── Current category from route params or store filter ─────────
 const currentCategory = computed(() => {

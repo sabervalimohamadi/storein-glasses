@@ -1,5 +1,6 @@
 import { createApp }   from 'vue'
 import { createPinia } from 'pinia'
+import { createHead }  from '@unhead/vue/client'
 import App    from './App.vue'
 import router from './router'
 import { logger } from '@/utils/logger'
@@ -60,6 +61,7 @@ router.onError((error) => {
   }, 'Router')
 })
 
+app.use(createHead())
 app.use(createPinia())
 app.use(router)
 app.mount('#app')

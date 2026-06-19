@@ -93,6 +93,12 @@ export class Product {
 
   @Prop({ default: 0, min: 0 })
   reviewCount: number;
+
+  @Prop({ trim: true, maxlength: 70 })
+  metaTitle?: string;
+
+  @Prop({ trim: true, maxlength: 160 })
+  metaDescription?: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

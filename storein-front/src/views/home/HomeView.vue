@@ -56,6 +56,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { productService }   from '@/services/product.service'
+import { useSeoHead } from '@/composables/useSeoHead'
+
+useSeoHead({ canonicalPath: '/' })
 import { useWishlistStore } from '@/stores/wishlist.store'
 import { useUiStore }       from '@/stores/ui.store'
 

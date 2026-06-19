@@ -40,6 +40,15 @@ function makeProxyErrorHandler(label) {
   }
 }
 
+// ── sitemap.xml — proxy to backend (/api/v1/sitemap.xml) ────────────────────
+app.use(createProxyMiddleware({
+  target:       API_TARGET,
+  changeOrigin: true,
+  pathFilter:   '/sitemap.xml',
+  pathRewrite:  { '^/sitemap.xml': '/api/v1/sitemap.xml' },
+  on: { error: makeProxyErrorHandler('sitemap') },
+}))
+
 // ── Uploads proxy ─────────────────────────────────────────────────────────────
 // Images live on the backend; /uploads/* must be forwarded so <img src="/uploads/...">
 // works when the frontend SPA is served from a different origin than the API.

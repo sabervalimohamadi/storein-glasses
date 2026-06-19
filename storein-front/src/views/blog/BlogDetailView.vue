@@ -158,18 +158,56 @@
     </article>
 
   </div>
+
+  <JsonLd v-if="blogSchema" :schema="blogSchema" />
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { useBlogStore } from '@/stores/blog.store'
+import { useSettingsStore } from '@/stores/settings.store'
+import { useSeoHead } from '@/composables/useSeoHead'
+import JsonLd from '@/components/seo/JsonLd.vue'
 
-const route = useRoute()
-const store = useBlogStore()
+const route         = useRoute()
+const store         = useBlogStore()
+const settingsStore = useSettingsStore()
+
+const BASE_URL = import.meta.env.VITE_SITE_URL || 'https://storein.ir'
 
 const notFound = ref(false)
 const copied   = ref(false)
+
+useSeoHead({
+  title:         computed(() => post.value?.metaTitle || post.value?.title),
+  description:   computed(() => post.value?.metaDescription || post.value?.excerpt),
+  image:         computed(() => post.value?.featuredImage),
+  canonicalPath: computed(() => post.value ? `/blog/${route.params.slug}` : null),
+  type:          'article',
+})
+
+const blogSchema = computed(() => {
+  const p = post.value
+  if (!p) return null
+  return {
+    '@context':    'https://schema.org',
+    '@type':       'BlogPosting',
+    headline:       p.title,
+    description:    p.excerpt,
+    image:          p.featuredImage || null,
+    datePublished:  p.publishedAt,
+    dateModified:   p.updatedAt,
+    url:           `${BASE_URL}/blog/${p.slug}`,
+    author: { '@type': 'Organization', name: settingsStore.siteName },
+    publisher: {
+      '@type': 'Organization',
+      name:    settingsStore.siteName,
+      logo:    { '@type': 'ImageObject', url: `${BASE_URL}/favicon.svg` },
+    },
+    keywords: (p.tags || []).join(', '),
+  }
+})
 
 const post = computed(() => store.post)
 

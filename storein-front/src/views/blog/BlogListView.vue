@@ -164,6 +164,13 @@
 import { onMounted } from 'vue'
 import { useDebounceFn } from '@vueuse/core'
 import { useBlogStore } from '@/stores/blog.store'
+import { useSeoHead } from '@/composables/useSeoHead'
+
+useSeoHead({
+  title:       'وبلاگ | آخرین مقالات',
+  description: 'مقالات آموزشی در زمینه عینک، سلامت چشم، مد و استایل',
+  canonicalPath: '/blog',
+})
 import BlogCard from './components/BlogCard.vue'
 
 const store = useBlogStore()

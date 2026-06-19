@@ -33,16 +33,20 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, watch } from 'vue'
-import { useRoute }         from 'vue-router'
-import { pageService }      from '@/services/page.service'
-import { useSettingsStore } from '@/stores/settings.store'
+import { ref, computed, onMounted, watch } from 'vue'
+import { useRoute }    from 'vue-router'
+import { pageService } from '@/services/page.service'
+import { useSeoHead }  from '@/composables/useSeoHead'
 
-const route         = useRoute()
-const settingsStore = useSettingsStore()
+const route = useRoute()
 const page    = ref(null)
 const loading = ref(true)
-const prevTitle = document.title
+
+useSeoHead({
+  title:         computed(() => page.value?.metaTitle || page.value?.title),
+  description:   computed(() => page.value?.metaDescription || page.value?.excerpt),
+  canonicalPath: computed(() => page.value ? `/pages/${route.params.slug}` : null),
+})
 
 async function load(slug) {
   loading.value = true
@@ -50,16 +54,12 @@ async function load(slug) {
   try {
     const { data } = await pageService.getBySlug(slug)
     page.value = data
-    const pageTitle = data.metaTitle || data.title || ''
-    document.title = pageTitle ? `${settingsStore.siteName} - ${pageTitle}` : settingsStore.siteName
   } catch {
     // page stays null → shows 404 block
   } finally {
     loading.value = false
   }
 }
-
-onUnmounted(() => { document.title = prevTitle })
 
 onMounted(() => load(route.params.slug))
 watch(() => route.params.slug, (s) => s && load(s))

@@ -1,44 +1,34 @@
+import { useHead } from '@unhead/vue'
 import { watchEffect } from 'vue'
 
-function upsertMeta(attr, attrValue, content) {
-  if (!content) return
-  let el = document.querySelector(`meta[${attr}="${attrValue}"]`)
-  if (!el) {
-    el = document.createElement('meta')
-    el.setAttribute(attr, attrValue)
-    document.head.appendChild(el)
-  }
-  el.setAttribute('content', content)
-}
-
-function upsertFavicon(url) {
-  if (!url) return
-  let link = document.querySelector("link[rel~='icon']")
-  if (!link) {
-    link = document.createElement('link')
-    link.rel = 'icon'
-    document.head.appendChild(link)
-  }
-  link.href = url
-}
-
 /**
- * Reactively syncs site settings to <head> meta tags.
- * @param {import('vue').Ref} settings — reactive ref to settings object
- * @param {import('vue').Ref<string>} [routeTitle] — optional reactive page title
+ * Syncs global site settings (from CMS) to <head> once per app lifecycle.
+ * Called once in App.vue; page-specific overrides come from useSeoHead.js.
  */
 export function useSiteHead(settings, routeTitle) {
   watchEffect(() => {
     const s = settings.value
     if (!s) return
 
-    const page = routeTitle?.value
-    if (s.siteName) document.title = page ? `${s.siteName} - ${page}` : s.siteName
-    upsertMeta('name',     'description',  s.description)
-    upsertMeta('name',     'keywords',     s.keywords)
-    upsertMeta('property', 'og:title',     s.siteName)
-    upsertMeta('property', 'og:description', s.description)
-    upsertMeta('property', 'og:image',     s.ogImage)
-    upsertFavicon(s.faviconUrl)
+    // Update favicon dynamically when CMS overrides it
+    if (s.faviconUrl) {
+      let link = document.querySelector("link[rel~='icon']")
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = 'icon'
+        document.head.appendChild(link)
+      }
+      link.href = s.faviconUrl
+    }
+  })
+
+  useHead({
+    titleTemplate: (title) => {
+      const site = settings.value?.siteName ?? 'استورین'
+      return title ? `${title} | ${site}` : site
+    },
+    meta: [
+      { name: 'application-name', content: () => settings.value?.siteName ?? 'استورین' },
+    ],
   })
 }
