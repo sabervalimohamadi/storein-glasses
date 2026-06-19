@@ -66,10 +66,10 @@ jobs:
         working-directory: storein-admin
         run: npm run lint || true
 
-      - name: Install front deps
-        working-directory: storein-front
+      - name: Install nuxt deps
+        working-directory: storein-nuxt
         run: npm ci
 
-      - name: Lint front
-        working-directory: storein-front
+      - name: Lint nuxt
+        working-directory: storein-nuxt
         run: npm run lint || true

@@ -10,6 +10,15 @@ export const useUiStore = defineStore('ui', () => {
   const notifications = ref([])
   const unreadCount   = computed(() => notifications.value.filter(n => !n.read).length)
 
+  // ── Real-time dashboard counters ──────────────────────────────
+  const pendingOrdersCount  = ref(0)
+  const pendingReviewsCount = ref(0)
+
+  function setPendingOrdersCount(n)  { pendingOrdersCount.value  = n }
+  function setPendingReviewsCount(n) { pendingReviewsCount.value = n }
+  function incrementPendingOrders()  { pendingOrdersCount.value++ }
+  function incrementPendingReviews() { pendingReviewsCount.value++ }
+
   function addNotification(notification) {
     notifications.value.unshift({ ...notification, read: false, id: notification.id ?? (Date.now() + Math.random()) })
     if (notifications.value.length > 50) notifications.value = notifications.value.slice(0, 50)
@@ -70,5 +79,8 @@ export const useUiStore = defineStore('ui', () => {
     isDark, toggleDark,
     notifications, unreadCount,
     addNotification, markRead, markAllRead, clearNotifications,
+    pendingOrdersCount, pendingReviewsCount,
+    setPendingOrdersCount, setPendingReviewsCount,
+    incrementPendingOrders, incrementPendingReviews,
   }
 })

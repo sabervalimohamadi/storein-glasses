@@ -35,8 +35,8 @@
 
     <!-- ② Quick actions -->
     <QuickActions
-      :pending-orders="stats.overview?.pendingOrders ?? 0"
-      :pending-reviews="pendingReviews"
+      :pending-orders="ui.pendingOrdersCount"
+      :pending-reviews="ui.pendingReviewsCount"
     />
 
     <!-- ③ Stat cards -->
@@ -112,9 +112,8 @@ import QuickActions      from './components/QuickActions.vue'
 const auth = useAuthStore()
 const ui   = useUiStore()
 
-const loading        = ref(true)
-const stats          = ref({})
-const pendingReviews = ref(0)
+const loading = ref(true)
+const stats   = ref({})
 
 const adminName = computed(() => auth.user?.firstName || 'مدیر')
 
@@ -142,13 +141,14 @@ async function loadStats() {
   const recent     = recentRes.status     === 'fulfilled' ? (recentRes.value?.data     ?? []) : []
   const top        = topRes.status        === 'fulfilled' ? (topRes.value?.data        ?? []) : []
 
+  const pendingOrders = dash.orders?.pending ?? 0
   stats.value = {
     overview: {
       totalRevenue:  dash.revenue?.allTime   ?? 0,
       monthRevenue:  dash.revenue?.thisMonth ?? 0,
       todayRevenue:  dash.revenue?.today     ?? 0,
       totalOrders:   dash.orders?.total      ?? 0,
-      pendingOrders: dash.orders?.pending    ?? 0,
+      pendingOrders,
       todayOrders:   orderStats.today        ?? 0,
       totalUsers:    dash.users?.total       ?? 0,
       totalProducts: dash.products?.total    ?? 0,
@@ -158,12 +158,13 @@ async function loadStats() {
     recentOrders:     Array.isArray(recent) ? recent : [],
     topProducts:      Array.isArray(top)    ? top    : [],
   }
+  ui.setPendingOrdersCount(pendingOrders)
 }
 
 async function loadPendingReviews() {
   try {
     const res = await reviewService.getAll({ status: 'pending', limit: 1 })
-    pendingReviews.value = (res.data?.total ?? res.data ?? 0)
+    ui.setPendingReviewsCount(res.data?.total ?? res.data ?? 0)
   } catch { /* non-critical */ }
 }
 

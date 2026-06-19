@@ -63,6 +63,7 @@ function onNewOrder(payload) {
     message: `${payload.customerName} — ${Number(payload.total).toLocaleString('fa-IR')} تومان`,
     time:    payload.createdAt,
   })
+  ui.incrementPendingOrders()
   ui.addToast(`سفارش جدید #${payload.orderNumber} از ${payload.customerName}`, 'info', 6000)
   playPing()
   logger.info('App: new_order event received', { orderNumber: payload.orderNumber }, CTX)
@@ -76,6 +77,7 @@ function onNewReview(payload) {
     message: `${payload.userName} برای "${payload.productName}" (${payload.rating}★)`,
     time:    payload.createdAt,
   })
+  ui.incrementPendingReviews()
   ui.addToast(`دیدگاه جدید از ${payload.userName}`, 'info', 5000)
   playPing()
   logger.info('App: new_review event received', { product: payload.productName }, CTX)
