@@ -111,7 +111,7 @@
           @click.self="closeModal"
         >
           <div
-            class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-surface-border flex flex-col max-h-[90dvh] sm:max-h-[85vh]"
+            class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-surface-border flex flex-col max-h-[calc(90dvh-3.5rem)] sm:max-h-[85vh] mb-14 sm:mb-0"
             style="background-color: var(--color-card)"
           >
             <!-- Modal header -->
@@ -165,15 +165,35 @@
                 </div>
               </div>
 
-              <!-- Province + City -->
+              <!-- Province + City dropdowns -->
               <div class="grid grid-cols-2 gap-3">
                 <div class="flex flex-col gap-1.5">
                   <label class="form-label">استان <span class="text-error">*</span></label>
-                  <input v-model="form.province" type="text" class="form-input" placeholder="تهران" maxlength="50" required />
+                  <div class="select-wrapper">
+                    <select
+                      v-model="form.province"
+                      class="form-input form-select"
+                      required
+                      @change="onProvinceChange"
+                    >
+                      <option value="" disabled>انتخاب استان</option>
+                      <option v-for="p in PROVINCE_NAMES" :key="p" :value="p">{{ p }}</option>
+                    </select>
+                  </div>
                 </div>
                 <div class="flex flex-col gap-1.5">
                   <label class="form-label">شهر <span class="text-error">*</span></label>
-                  <input v-model="form.city" type="text" class="form-input" placeholder="تهران" maxlength="50" required />
+                  <div class="select-wrapper">
+                    <select
+                      v-model="form.city"
+                      class="form-input form-select"
+                      required
+                      :disabled="!form.province"
+                    >
+                      <option value="" disabled>{{ form.province ? 'انتخاب شهر' : 'اول استان را انتخاب کنید' }}</option>
+                      <option v-for="c in availableCities" :key="c" :value="c">{{ c }}</option>
+                    </select>
+                  </div>
                 </div>
               </div>
 
@@ -287,11 +307,12 @@
 </template>
 
 <script setup>
-import { ref, onMounted }  from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { userService }     from '@/services/user.service'
 import { useAuthStore }    from '@/stores/auth.store'
 import { useUiStore }      from '@/stores/ui.store'
-import BaseEmpty from '@/components/common/BaseEmpty.vue'
+import BaseEmpty           from '@/components/common/BaseEmpty.vue'
+import { PROVINCE_NAMES, getCities } from '@/data/iran-cities'
 
 const authStore = useAuthStore()
 const ui        = useUiStore()
@@ -315,6 +336,12 @@ const emptyForm = () => ({
 
 const form   = ref(emptyForm())
 const errors = ref({})
+
+const availableCities = computed(() => getCities(form.value.province))
+
+function onProvinceChange() {
+  form.value.city = ''
+}
 
 // ── Fetch ──────────────────────────────────────────────────────
 async function fetchAddresses() {
@@ -459,6 +486,33 @@ onMounted(fetchAddresses)
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-brand) 12%, transparent);
 }
 .dir-ltr { direction: ltr; }
+
+.select-wrapper {
+  position: relative;
+}
+.select-wrapper::after {
+  content: '';
+  position: absolute;
+  left: 0.875rem;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 0;
+  height: 0;
+  border-left: 4px solid transparent;
+  border-right: 4px solid transparent;
+  border-top: 5px solid var(--color-text-secondary);
+  pointer-events: none;
+}
+.form-select {
+  appearance: none;
+  -webkit-appearance: none;
+  padding-left: 2rem;
+  cursor: pointer;
+}
+.form-select:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
 
 /* Modal transition */
 .modal-enter-active, .modal-leave-active { transition: opacity 0.2s; }
