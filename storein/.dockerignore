@@ -5,7 +5,6 @@ coverage/
 .env.*
 !.env.example
 test/
-uploads/
 uploads-test/
 *.log
 .git/
