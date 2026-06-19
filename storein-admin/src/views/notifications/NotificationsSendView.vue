@@ -290,6 +290,12 @@
           </button>
         </div>
 
+        <div v-if="broadcastLogs.error"
+          class="flex items-center gap-3 mx-5 mt-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+          <span class="text-error text-lg flex-shrink-0">⚠</span>
+          <p class="text-error text-sm">{{ broadcastLogs.error }}</p>
+        </div>
+
         <AdminTable
           :columns="broadcastCols"
           :rows="broadcastLogs.items"
@@ -390,6 +396,12 @@
             :class="smsLogs.loading ? 'opacity-50 pointer-events-none' : ''">
             بارگذاری مجدد
           </button>
+        </div>
+
+        <div v-if="smsLogs.error"
+          class="flex items-center gap-3 mx-5 mt-4 px-4 py-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-700 rounded-xl">
+          <span class="text-error text-lg flex-shrink-0">⚠</span>
+          <p class="text-error text-sm">{{ smsLogs.error }}</p>
         </div>
 
         <AdminTable
@@ -582,7 +594,7 @@ async function handleSendSms() {
 }
 
 // ── Broadcast logs ─────────────────────────────────────────────
-const broadcastLogs = reactive({ items: [], total: 0, totalPages: 1, page: 1, loading: false })
+const broadcastLogs = reactive({ items: [], total: 0, totalPages: 1, page: 1, loading: false, error: '' })
 const lastBroadcastLog = ref(null)
 
 const deletingBroadcastId      = ref(null)   // row._id currently in confirm state
@@ -617,22 +629,25 @@ async function handleDeleteBroadcastLog(id) {
 
 async function loadBroadcastLogs(page = 1) {
   broadcastLogs.loading = true
-  broadcastLogs.page = page
+  broadcastLogs.error   = ''
+  broadcastLogs.page    = page
   try {
     const { data } = await notificationService.getBroadcastLogs({ page, limit: 10 })
     broadcastLogs.items      = data.logs
     broadcastLogs.total      = data.total
     broadcastLogs.totalPages = data.totalPages
     if (page === 1 && data.logs.length) lastBroadcastLog.value = data.logs[0]
+    logger.info('Broadcast logs loaded', { page, total: data.total }, 'NotificationsSendView')
   } catch (e) {
-    logger.error('Failed to load broadcast logs', e, {}, 'NotificationsSendView')
+    logger.error('Failed to load broadcast logs', e, { page }, 'NotificationsSendView')
+    broadcastLogs.error = e?.response?.data?.message ?? 'خطا در بارگذاری تاریخچه اعلان‌ها'
   } finally {
     broadcastLogs.loading = false
   }
 }
 
 // ── SMS logs ───────────────────────────────────────────────────
-const smsLogs = reactive({ items: [], total: 0, totalPages: 1, page: 1, loading: false })
+const smsLogs = reactive({ items: [], total: 0, totalPages: 1, page: 1, loading: false, error: '' })
 const lastSmsLog = ref(null)
 
 const smsCols = [
@@ -645,15 +660,18 @@ const smsCols = [
 
 async function loadSmsLogs(page = 1) {
   smsLogs.loading = true
-  smsLogs.page = page
+  smsLogs.error   = ''
+  smsLogs.page    = page
   try {
     const { data } = await notificationService.getSmsLogs({ page, limit: 10 })
     smsLogs.items      = data.logs
     smsLogs.total      = data.total
     smsLogs.totalPages = data.totalPages
     if (page === 1 && data.logs.length) lastSmsLog.value = data.logs[0]
+    logger.info('SMS logs loaded', { page, total: data.total }, 'NotificationsSendView')
   } catch (e) {
-    logger.error('Failed to load SMS logs', e, {}, 'NotificationsSendView')
+    logger.error('Failed to load SMS logs', e, { page }, 'NotificationsSendView')
+    smsLogs.error = e?.response?.data?.message ?? 'خطا در بارگذاری تاریخچه پیامک‌ها'
   } finally {
     smsLogs.loading = false
   }

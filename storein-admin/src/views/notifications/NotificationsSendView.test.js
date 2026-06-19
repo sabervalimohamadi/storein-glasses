@@ -344,6 +344,70 @@ describe('NotificationsSendView', () => {
       await new Promise(r => setTimeout(r, 30))
       expect(logger.error).toHaveBeenCalled()
     })
+
+    it('sets broadcastLogs.error on API failure', async () => {
+      notificationService.getBroadcastLogs.mockRejectedValue(new Error('network'))
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.error).toBeTruthy()
+    })
+
+    it('clears broadcastLogs.error on successful reload', async () => {
+      notificationService.getBroadcastLogs.mockRejectedValueOnce(new Error('net'))
+      notificationService.getBroadcastLogs.mockResolvedValueOnce(emptyLogsResp)
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.error).toBeTruthy()
+      await w.vm.loadBroadcastLogs(1)
+      expect(w.vm.broadcastLogs.error).toBe('')
+    })
+
+    it('sets smsLogs.error on API failure', async () => {
+      notificationService.getSmsLogs.mockRejectedValue(new Error('network'))
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.smsLogs.error).toBeTruthy()
+    })
+
+    it('clears smsLogs.error on successful reload', async () => {
+      notificationService.getSmsLogs.mockRejectedValueOnce(new Error('net'))
+      notificationService.getSmsLogs.mockResolvedValueOnce(emptyLogsResp)
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.smsLogs.error).toBeTruthy()
+      await w.vm.loadSmsLogs(1)
+      expect(w.vm.smsLogs.error).toBe('')
+    })
+
+    it('uses API error message in broadcastLogs.error when available', async () => {
+      const err = Object.assign(new Error(), { response: { data: { message: 'دسترسی مجاز نیست' } } })
+      notificationService.getBroadcastLogs.mockRejectedValue(err)
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(w.vm.broadcastLogs.error).toContain('دسترسی مجاز نیست')
+    })
+
+    it('logs info with page and total on successful broadcast logs load', async () => {
+      notificationService.getBroadcastLogs.mockResolvedValue({ data: { logs: [], total: 5, totalPages: 1 } })
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(logger.info).toHaveBeenCalledWith(
+        'Broadcast logs loaded',
+        expect.objectContaining({ page: 1, total: 5 }),
+        'NotificationsSendView',
+      )
+    })
+
+    it('logs info with page and total on successful SMS logs load', async () => {
+      notificationService.getSmsLogs.mockResolvedValue({ data: { logs: [], total: 3, totalPages: 1 } })
+      const w = mountView()
+      await new Promise(r => setTimeout(r, 30))
+      expect(logger.info).toHaveBeenCalledWith(
+        'SMS logs loaded',
+        expect.objectContaining({ page: 1, total: 3 }),
+        'NotificationsSendView',
+      )
+    })
   })
 
   // ── helpers ───────────────────────────────────────────────────
