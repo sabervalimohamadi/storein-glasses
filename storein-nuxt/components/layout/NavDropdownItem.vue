@@ -1,7 +1,7 @@
 ﻿<template>
   <li class="relative" @mouseenter="onEnter" @mouseleave="onLeave">
-    <RouterLink
-      :to="{ name: 'category', params: { slug: item.slug } }"
+    <NuxtLink
+      :to="`/category/${item.slug}`"
       @click="$emit('close')"
       :class="[
         'flex items-center justify-between gap-2 w-full text-sm px-3 py-2 rounded-lg transition-colors whitespace-nowrap',
@@ -19,7 +19,7 @@
         data-testid="sub-chevron">
         <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
       </svg>
-    </RouterLink>
+    </NuxtLink>
 
     <!-- Recursive sub-panel
          Positioned LEFT of the parent item (right: 100%) so it cascades outward in RTL layout.

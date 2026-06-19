@@ -150,7 +150,7 @@ const isInCart = computed(() =>
 )
 
 function goToCart() {
-  router.push({ name: 'cart' })
+  router.push('/cart')
 }
 
 const imgError = ref(false)
@@ -206,6 +206,6 @@ const discount = computed(() => {
 })
 
 function handleClick() {
-  router.push({ name: 'product-detail', params: { slug: props.product.slug } })
+  if (props.product.slug) router.push(`/product/${props.product.slug}`)
 }
 </script>

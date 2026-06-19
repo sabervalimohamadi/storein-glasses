@@ -6,9 +6,9 @@
       <p class="text-text-secondary text-sm mb-3">
         برای ثبت نظر وارد حساب کاربری خود شوید
       </p>
-      <RouterLink :to="{ name: 'login' }">
+      <NuxtLink to="/auth/login">
         <BaseButton variant="outline" size="sm">ورود / ثبت‌نام</BaseButton>
-      </RouterLink>
+      </NuxtLink>
     </div>
 
     <!-- Form -->

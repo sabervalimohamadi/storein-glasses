@@ -71,15 +71,15 @@
           <h4 class="footer-heading" data-testid="heading-categories">دسته‌بندی‌ها</h4>
           <ul class="space-y-3 mt-4">
             <li v-for="cat in footerCategories" :key="cat.slug">
-              <RouterLink
-                :to="{ name: 'category', params: { slug: cat.slug } }"
+              <NuxtLink
+                :to="`/category/${cat.slug}`"
                 class="footer-link"
               >
                 <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
                 </svg>
                 {{ cat.label }}
-              </RouterLink>
+              </NuxtLink>
             </li>
           </ul>
         </div>
@@ -103,12 +103,12 @@
             <h4 class="footer-heading">دسترسی سریع</h4>
             <ul class="space-y-3 mt-4">
               <li v-for="link in quickLinks" :key="link.name">
-                <RouterLink :to="{ name: link.name, params: link.params }" class="footer-link">
+                <NuxtLink :to="link.to" class="footer-link">
                   <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                     <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
                   </svg>
                   {{ link.label }}
-                </RouterLink>
+                </NuxtLink>
               </li>
             </ul>
           </template>
@@ -227,10 +227,10 @@ const footerCategories = [
 ]
 
 const quickLinks = [
-  { label: 'درباره ما',         name: 'page', params: { slug: 'about' } },
-  { label: 'تماس با ما',        name: 'page', params: { slug: 'contact' } },
-  { label: 'قوانین و مقررات',   name: 'page', params: { slug: 'terms' } },
-  { label: 'سیاست حریم خصوصی', name: 'page', params: { slug: 'privacy' } },
+  { label: 'درباره ما',         to: '/pages/about' },
+  { label: 'تماس با ما',        to: '/pages/contact' },
+  { label: 'قوانین و مقررات',   to: '/pages/terms' },
+  { label: 'سیاست حریم خصوصی', to: '/pages/privacy' },
 ]
 
 const trustBadges = [

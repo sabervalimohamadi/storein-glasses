@@ -10,8 +10,8 @@
       <!-- Indent spacer for sub-items -->
       <span v-if="depth > 0" :style="`width: ${depth * 8}px; flex-shrink: 0;`" />
 
-      <RouterLink
-        :to="{ name: 'category', params: { slug: item.slug } }"
+      <NuxtLink
+        :to="`/category/${item.slug}`"
         @click="$emit('close')"
         class="flex-1 flex items-center gap-2 py-2.5 text-sm transition-colors"
         :class="depth === 0 ? 'px-3 font-semibold' : 'px-2 font-normal'"
@@ -21,7 +21,7 @@
         <span v-else-if="depth > 0" class="w-1.5 h-1.5 rounded-full flex-shrink-0"
               style="background-color: var(--color-text-disabled);" />
         {{ item.name }}
-      </RouterLink>
+      </NuxtLink>
 
       <button
         v-if="item.children?.length"

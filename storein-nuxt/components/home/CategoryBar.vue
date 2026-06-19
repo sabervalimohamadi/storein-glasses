@@ -1,10 +1,10 @@
 <template>
   <section class="cat-bar">
     <div class="cat-bar__scroll">
-      <RouterLink
+      <NuxtLink
         v-for="item in items"
         :key="item.slug"
-        :to="{ name: 'category', params: { slug: item.slug } }"
+        :to="`/category/${item.slug}`"
         class="cat-item"
       >
         <div class="cat-item__ico" :style="{ backgroundColor: item.bg }">
@@ -53,7 +53,7 @@
           </svg>
         </div>
         <span class="cat-item__lbl">{{ item.label }}</span>
-      </RouterLink>
+      </NuxtLink>
     </div>
   </section>
 </template>

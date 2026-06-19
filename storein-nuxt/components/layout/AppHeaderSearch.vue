@@ -198,18 +198,18 @@ watch(query, fetchSuggestions)
 
 function handleSearch() {
   if (!query.value.trim()) return
-  router.push({ name: 'search', query: { q: query.value.trim() } })
+  router.push({ path: '/search', query: { q: query.value.trim() } })
   close()
 }
 
 function goToProduct(item) {
-  router.push({ name: 'product-detail', params: { slug: item.slug } })
+  router.push()
   close()
   query.value = ''
 }
 
 function goToCategory(cat) {
-  router.push({ name: 'category', params: { slug: cat.slug } })
+  router.push()
   close()
   query.value = ''
 }

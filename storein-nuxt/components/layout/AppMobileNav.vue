@@ -2,7 +2,7 @@
   <nav class="md:hidden fixed bottom-0 inset-x-0 z-header shadow-[0_-2px_8px_rgba(0,0,0,0.08)] h-14 transition-colors duration-200"
     style="background-color: var(--color-card); border-top: 1px solid var(--color-border);">
     <div class="flex items-stretch h-full">
-      <RouterLink
+      <NuxtLink
         v-for="item in navItems"
         :key="item.label"
         :to="item.to"
@@ -22,7 +22,7 @@
 
         <component :is="item.icon" class="w-5 h-5" />
         <span class="text-xs font-medium">{{ item.label }}</span>
-      </RouterLink>
+      </NuxtLink>
     </div>
   </nav>
 </template>
@@ -44,15 +44,16 @@ const IconSearch = { render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg
 const IconBag  = { render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', 'stroke-width': '1.6', stroke: 'currentColor' }, [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007Z' })]) }
 const IconUser = { render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', 'stroke-width': '1.6', stroke: 'currentColor' }, [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z' })]) }
 
+// Static items — no auth-dependent `to` so SSR and client render identical HTML
 const navItems = computed(() => [
-  { label: 'خانه',    to: { name: 'home' },     icon: IconHome,   routeNames: ['home'] },
-  { label: 'دسته‌ها', to: { name: 'products' }, icon: IconGrid,   routeNames: ['products', 'category'] },
-  { label: 'جستجو',  to: { name: 'search' },    icon: IconSearch, routeNames: ['search'] },
-  { label: 'سبد',    to: { name: 'cart' },      icon: IconBag,    routeNames: ['cart'],  badge: cartStore.totalItems },
-  { label: 'من',     to: authStore.isLoggedIn ? { name: 'user-profile' } : { name: 'login' }, icon: IconUser, routeNames: ['user-profile', 'user-orders', 'user-favorites', 'user-addresses', 'login', 'otp'] },
+  { label: 'خانه',    to: '/',               icon: IconHome,   routePaths: ['/'] },
+  { label: 'دسته‌ها', to: '/products',       icon: IconGrid,   routePaths: ['/products', '/category'] },
+  { label: 'جستجو',  to: '/search',         icon: IconSearch, routePaths: ['/search'] },
+  { label: 'سبد',    to: '/cart',           icon: IconBag,    routePaths: ['/cart'], badge: cartStore.totalItems },
+  { label: 'من',     to: '/user/profile',   icon: IconUser,   routePaths: ['/user', '/auth/login', '/auth/otp'] },
 ])
 
 function isActive(item) {
-  return item.routeNames?.includes(route.name)
+  return item.routePaths?.some(p => route.path === p || route.path.startsWith(p + '/'))
 }
 </script>

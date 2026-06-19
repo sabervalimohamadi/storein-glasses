@@ -3,7 +3,7 @@
     <div class="container-main flex items-center h-11 gap-1">
 
       <!-- Quick links -->
-      <RouterLink
+      <NuxtLink
         v-for="link in quickLinks"
         :key="link.label"
         :to="link.to"
@@ -16,7 +16,7 @@
         ]"
       >
         {{ link.label }}
-      </RouterLink>
+      </NuxtLink>
 
       <!-- Divider -->
       <div class="mx-1.5 h-4 w-px rounded-full flex-shrink-0" style="background-color: var(--color-border);" />
@@ -33,8 +33,8 @@
           @mouseenter="onEnter(cat._id)"
           @mouseleave="onLeave"
         >
-          <RouterLink
-            :to="{ name: 'category', params: { slug: cat.slug } }"
+          <NuxtLink
+            :to="`/category/${cat.slug}`"
             :class="[
               'flex items-center gap-1.5 px-3.5 py-1.5 text-sm rounded-full whitespace-nowrap transition-all duration-200',
               hoveredId === cat._id
@@ -52,7 +52,7 @@
             >
               <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
             </svg>
-          </RouterLink>
+          </NuxtLink>
 
           <!-- Dropdown -->
           <div
@@ -105,12 +105,12 @@ const hoveredId = ref(null)
 let closeTimer  = null
 
 const quickLinks = [
-  { name: 'home', label: 'صفحه اصلی', to: { name: 'home' } },
-  { name: 'blog', label: 'بلاگ',      to: { name: 'blog' } },
+  { name: 'home', label: 'صفحه اصلی', to: '/' },
+  { name: 'blog', label: 'بلاگ',      to: '/blog' },
 ]
 
 function isLinkActive(link) {
-  if (link.name === 'home') return route.name === 'home'
+  if (link.name === 'home') return route.path === '/'
   if (link.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
   if (link.to?.params?.slug) return route.params?.slug === link.to.params.slug
   return false

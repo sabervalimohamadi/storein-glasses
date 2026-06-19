@@ -26,7 +26,7 @@
       title="سفارش یافت نشد"
       subtitle="این سفارش وجود ندارد یا متعلق به شما نیست"
       action="بازگشت به سفارشات"
-      :to="{ name: 'user-orders' }"
+      :to="'/user/orders'"
     />
 
     <!-- Order detail -->

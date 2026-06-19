@@ -68,7 +68,7 @@
       </div>
       <p class="nv__empty-title">هیچ اعلانی وجود ندارد</p>
       <p class="nv__empty-sub">اعلان‌های جدید در اینجا نمایش داده می‌شوند</p>
-      <NuxtLink :to="{ name: 'home' }" class="nv__back-btn">بازگشت به صفحه اصلی</NuxtLink>
+      <NuxtLink :to="'/'" class="nv__back-btn">بازگشت به صفحه اصلی</NuxtLink>
     </div>
 
     <!-- ─── Notification list ────────────────────────────────── -->

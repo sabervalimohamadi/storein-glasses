@@ -54,7 +54,7 @@
             <span class="hero__eyebrow">{{ slides[current].eyebrow }}</span>
             <h2 class="hero__title">{{ slides[current].title }}</h2>
             <p class="hero__sub">{{ slides[current].subtitle }}</p>
-            <RouterLink :to="slides[current].ctaLink || '/'">
+            <NuxtLink :to="slides[current].ctaLink || '/'">
               <button
                 class="hero__btn"
                 :style="{ backgroundColor: slides[current].accent, color: slides[current].bgFrom }"
@@ -65,7 +65,7 @@
                   <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
                 </svg>
               </button>
-            </RouterLink>
+            </NuxtLink>
           </div>
         </div>
 

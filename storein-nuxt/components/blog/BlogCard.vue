@@ -1,5 +1,5 @@
 <template>
-  <RouterLink :to="{ name: 'blog-detail', params: { slug: post.slug } }" class="group block">
+  <NuxtLink :to="`/blog/${post.slug}`" class="group block">
     <article class="bg-card rounded-2xl overflow-hidden border border-border hover:border-brand/30 hover:shadow-lg transition-all duration-300 h-full flex flex-col">
 
       <!-- Image -->
@@ -55,7 +55,7 @@
         </div>
       </div>
     </article>
-  </RouterLink>
+  </NuxtLink>
 </template>
 
 <script setup>

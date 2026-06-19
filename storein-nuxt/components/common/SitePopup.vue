@@ -57,7 +57,7 @@
               </p>
 
               <!-- CTA Button -->
-              <RouterLink
+              <NuxtLink
                 v-if="popup.buttonText && popup.buttonLink"
                 :to="popup.buttonLink"
                 @click="close"
@@ -73,7 +73,7 @@
                 </span>
                 <!-- shimmer sweep -->
                 <span class="btn-shimmer absolute inset-0 pointer-events-none"/>
-              </RouterLink>
+              </NuxtLink>
 
               <!-- No-thanks -->
               <button

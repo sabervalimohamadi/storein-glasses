@@ -3,7 +3,7 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-text-primary">سفارش‌های من</h1>
-      <NuxtLink :to="{ name: 'products' }" class="text-sm text-brand hover:underline">
+      <NuxtLink :to="'/products'" class="text-sm text-brand hover:underline">
         خرید جدید ←
       </NuxtLink>
     </div>
@@ -36,7 +36,7 @@
       title="سفارشی یافت نشد"
       subtitle="هنوز سفارشی ثبت نکرده‌اید یا در این وضعیت سفارشی ندارید"
       action="شروع خرید"
-      :to="{ name: 'products' }"
+      :to="'/products'"
     />
 
     <!-- Order cards -->
@@ -45,7 +45,7 @@
         v-for="order in orders" :key="order._id"
         class="rounded-2xl border border-surface-border p-5 transition-all hover:border-brand/30 cursor-pointer"
         style="background-color: var(--color-card)"
-        @click="$router.push({ name: 'user-order-detail', params: { id: order._id } })"
+        @click="$router.push('/user/orders/' + order._id)"
       >
         <!-- Order header -->
         <div class="mb-4 pb-4 border-b border-surface-border">

@@ -5,7 +5,7 @@
       <!-- Loading -->
       <div v-if="verifying" class="space-y-4">
         <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" />
-        <p class="text-text-secondary">?? ??? ????? ??????...</p>
+        <p class="text-text-secondary">در حال تأیید پرداخت...</p>
       </div>
 
       <!-- Success -->
@@ -16,31 +16,31 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-text-primary">?????? ????</h1>
-          <p class="text-text-secondary text-sm mt-2">????? ??? ?? ?????? ??? ? ?????? ??</p>
-          <p v-if="refId" class="text-text-disabled text-xs font-fanum mt-1">?? ??????: {{ refId }}</p>
+          <h1 class="text-xl font-bold text-text-primary">پرداخت موفق</h1>
+          <p class="text-text-secondary text-sm mt-2">سفارش شما با موفقیت ثبت و پرداخت شد</p>
+          <p v-if="refId" class="text-text-disabled text-xs font-fanum mt-1">کد پیگیری: {{ refId }}</p>
         </div>
 
         <div class="rounded-2xl border border-surface-border p-5 text-right space-y-3"
              style="background-color: var(--color-card)">
           <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">????? ?????</span>
-            <span class="font-fanum text-text-primary font-medium">{{ orderNumber || '�' }}</span>
+            <span class="text-text-secondary">شماره سفارش</span>
+            <span class="font-fanum text-text-primary font-medium">{{ orderNumber || '—' }}</span>
           </div>
           <div class="flex justify-between text-sm">
-            <span class="text-text-secondary">?????</span>
-            <span class="text-success font-medium">????? ???</span>
+            <span class="text-text-secondary">وضعیت</span>
+            <span class="text-success font-medium">تأیید شده</span>
           </div>
         </div>
 
         <div class="flex flex-col gap-3">
-          <NuxtLink :to="{ name: 'user-order-detail', params: { id: orderId } }"
+          <NuxtLink :to="`/user/orders/${orderId}`"
             class="btn-brand py-3 flex items-center justify-center gap-2 w-full">
-            ?????? ?????? ?????
+            مشاهده جزئیات سفارش
           </NuxtLink>
-          <NuxtLink :to="{ name: 'home' }"
+          <NuxtLink to="/"
             class="py-3 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors w-full flex items-center justify-center">
-            ?????? ?? ???? ????
+            بازگشت به صفحه اصلی
           </NuxtLink>
         </div>
       </div>
@@ -53,18 +53,18 @@
           </svg>
         </div>
         <div>
-          <h1 class="text-xl font-bold text-text-primary">?????? ??????</h1>
-          <p class="text-text-secondary text-sm mt-2">{{ errorMessage || '?????? ????? ??? ?? ??? ??' }}</p>
+          <h1 class="text-xl font-bold text-text-primary">پرداخت ناموفق</h1>
+          <p class="text-text-secondary text-sm mt-2">{{ errorMessage || 'پرداخت انجام نشد یا لغو شد' }}</p>
         </div>
 
         <div class="flex flex-col gap-3">
-          <NuxtLink :to="{ name: 'checkout' }"
+          <NuxtLink to="/checkout"
             class="btn-brand py-3 flex items-center justify-center gap-2 w-full">
-            ???? ????
+            تلاش مجدد
           </NuxtLink>
-          <NuxtLink :to="{ name: 'user-orders' }"
+          <NuxtLink to="/user/orders"
             class="py-3 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors w-full flex items-center justify-center">
-            ?????? ???????
+            مشاهده سفارشات
           </NuxtLink>
         </div>
       </div>
@@ -74,29 +74,23 @@
 </template>
 
 <script setup>
-
-definePageMeta({ layout: 'default', middleware: ['auth'] })
-
-
-import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 import { paymentService } from '~/services/payment.service'
 import { orderService }   from '~/services/order.service'
-import { useCartStore }   from '~/stores/cart.store'
+
+definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'نتیجه پرداخت', robots: 'noindex' })
 
 const route     = useRoute()
-const router    = useRouter()
 const cartStore = useCartStore()
 
 const verifying    = ref(true)
-const result       = ref(null)   // 'success' | 'failed'
+const result       = ref(null)
 const refId        = ref('')
 const errorMessage = ref('')
 const orderId      = ref(route.query.orderId ?? '')
 const orderNumber  = ref('')
 
 onMounted(async () => {
-  // ZarinPal sends capitalized params (Authority, Status); handle both
   const authority = (route.query.authority || route.query.Authority) ?? ''
   const status    = (route.query.status    || route.query.Status)    ?? ''
   const qOrderId  = route.query.orderId ?? ''
@@ -110,7 +104,7 @@ onMounted(async () => {
         orderNumber.value = data.orderNumber ?? ''
       } catch { /* silent */ }
     }
-    result.value   = 'success'
+    result.value    = 'success'
     verifying.value = false
     cartStore.items = []
     return
@@ -118,9 +112,9 @@ onMounted(async () => {
 
   // Gateway callback
   if (!authority) {
-    result.value    = 'failed'
-    errorMessage.value = '??????? ?????? ???? ???'
-    verifying.value = false
+    result.value       = 'failed'
+    errorMessage.value = 'اطلاعات پرداخت یافت نشد'
+    verifying.value    = false
     return
   }
 
@@ -129,7 +123,6 @@ onMounted(async () => {
     if (data.success) {
       refId.value  = data.refId ?? ''
       result.value = 'success'
-      // fetch order number if orderId in query
       if (qOrderId) {
         orderId.value = qOrderId
         try {
@@ -139,15 +132,14 @@ onMounted(async () => {
       }
       await cartStore.fetchCart()
     } else {
-      result.value    = 'failed'
-      errorMessage.value = data.message ?? '?????? ????? ???'
+      result.value       = 'failed'
+      errorMessage.value = data.message ?? 'پرداخت تأیید نشد'
     }
   } catch (err) {
-    result.value    = 'failed'
-    errorMessage.value = err?.response?.data?.message ?? '??? ?? ????? ??????'
+    result.value       = 'failed'
+    errorMessage.value = err?.response?.data?.message ?? 'خطا در تأیید پرداخت'
   } finally {
     verifying.value = false
   }
 })
 </script>
-

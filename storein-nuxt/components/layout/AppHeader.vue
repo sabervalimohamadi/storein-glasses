@@ -18,13 +18,13 @@
       </button>
 
       <!-- Logo — rightmost on desktop (order-3) -->
-      <RouterLink :to="{ name: 'home' }" class="flex items-center gap-2 shrink-0 leading-tight md:order-1">
+      <NuxtLink :to="'/'" class="flex items-center gap-2 shrink-0 leading-tight md:order-1">
         <img src="/favicon.svg" alt="لوگو استورین" class="w-8 h-8 shrink-0" draggable="false" />
         <div class="flex flex-col items-start">
           <span class="text-brand font-bold text-xl tracking-tight">{{ settingsStore.siteName }}</span>
           <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
         </div>
-      </RouterLink>
+      </NuxtLink>
 
       <!-- Search (desktop) — middle (order-2) -->
       <div class="hidden md:flex md:order-2 flex-1 max-w-xl">

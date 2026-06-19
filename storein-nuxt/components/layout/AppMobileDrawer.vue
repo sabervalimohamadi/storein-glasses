@@ -23,13 +23,13 @@
         <!-- Header -->
         <div class="flex items-center justify-between px-4 py-4 flex-shrink-0"
              style="border-bottom: 1px solid var(--color-border);">
-          <RouterLink :to="{ name: 'home' }" @click="close" class="flex items-center gap-3">
+          <NuxtLink :to="'/'" @click="close" class="flex items-center gap-3">
             <img src="/favicon.svg" alt="لوگو استورین" class="w-9 h-9 shrink-0" draggable="false" />
             <div class="flex flex-col leading-tight">
               <span class="text-brand font-bold text-[17px] tracking-tight">استورین</span>
               <span class="text-[11px]" style="color: var(--color-text-disabled);">فروشگاه تخصصی عینک</span>
             </div>
-          </RouterLink>
+          </NuxtLink>
           <button
             @click="close"
             class="w-8 h-8 rounded-xl flex items-center justify-center transition-colors"
@@ -57,18 +57,18 @@
               </div>
             </div>
           </template>
-          <RouterLink v-else :to="{ name: 'login' }" @click="close"
+          <NuxtLink v-else to="/auth/login" @click="close"
             class="flex items-center justify-center gap-2.5 w-full py-3 px-4 rounded-xl font-semibold text-sm transition-opacity hover:opacity-90 bg-brand text-white">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
               <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
             </svg>
             ورود | ثبت‌نام
-          </RouterLink>
+          </NuxtLink>
         </div>
 
         <!-- Quick links -->
         <div class="px-3 py-3 flex-shrink-0" style="border-bottom: 1px solid var(--color-border);">
-          <RouterLink
+          <NuxtLink
             v-for="link in quickLinks"
             :key="link.name"
             :to="link.to"
@@ -84,7 +84,7 @@
               <component :is="link.icon" class="w-4 h-4" />
             </div>
             {{ link.label }}
-          </RouterLink>
+          </NuxtLink>
         </div>
 
         <!-- Categories -->
@@ -106,7 +106,7 @@
         <div v-if="authStore.isLoggedIn" class="p-3 flex-shrink-0"
              style="border-top: 1px solid var(--color-border);">
           <div class="rounded-2xl overflow-hidden" style="background-color: var(--color-bg);">
-            <RouterLink :to="{ name: 'user-profile' }" @click="close"
+            <NuxtLink :to="'/user/profile'" @click="close"
               class="flex items-center gap-3 px-4 py-3 text-sm transition-colors"
               style="color: var(--color-text-primary);"
               @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-brand-5, rgba(124,58,237,0.05))'"
@@ -118,7 +118,7 @@
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24" style="color: var(--color-text-disabled);">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
               </svg>
-            </RouterLink>
+            </NuxtLink>
             <div style="height: 1px; background-color: var(--color-border); margin: 0 12px;" />
             <button @click="handleLogout"
               class="w-full flex items-center gap-3 px-4 py-3 text-sm text-error transition-colors"
@@ -172,12 +172,12 @@ const IconBlog = {
 }
 
 const quickLinks = [
-  { name: 'home', label: 'صفحه اصلی', to: { name: 'home' }, icon: IconHome },
+  { name: 'home', label: 'صفحه اصلی', to: '/', icon: IconHome },
   { name: 'blog', label: 'بلاگ',      to: { name: 'blog' }, icon: IconBlog },
 ]
 
 function isActive(link) {
-  if (link.name === 'home') return route.name === 'home'
+  if (link.name === 'home') return route.path === '/'
   if (link.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
   return false
 }
@@ -189,7 +189,7 @@ function close() {
 async function handleLogout() {
   close()
   authStore.logout()
-  router.push({ name: 'home' })
+  router.push('/')
 }
 </script>
 

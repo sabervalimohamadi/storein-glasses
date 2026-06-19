@@ -104,8 +104,8 @@
           </div>
 
           <!-- Footer — see all -->
-          <RouterLink
-            :to="{ name: 'user-notifications' }"
+          <NuxtLink
+            :to="'/user/notifications'"
             class="nd__footer"
             data-testid="nd-see-all"
             @click="isNotifOpen = false"
@@ -115,14 +115,14 @@
                  stroke-width="2" stroke="currentColor" class="nd__footer-arrow rtl:rotate-180">
               <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
             </svg>
-          </RouterLink>
+          </NuxtLink>
         </div>
       </Transition>
     </div>
 
     <!-- ─── Cart ──────────────────────────────────────────────── -->
-    <RouterLink
-      :to="{ name: 'cart' }"
+    <NuxtLink
+      :to="'/cart'"
       class="relative p-2 rounded-lg text-text-secondary hover:text-brand hover:bg-surface transition-colors"
       title="سبد خرید"
     >
@@ -135,30 +135,30 @@
       >
         {{ cartStore.totalItems > 99 ? '۹۹+' : cartStore.totalItems }}
       </span>
-    </RouterLink>
+    </NuxtLink>
 
     <!-- ─── User area ─────────────────────────────────────────── -->
     <div ref="userRef" class="relative">
       <!-- Not logged in -->
-      <RouterLink
+      <NuxtLink
         v-if="!authStore.isLoggedIn"
-        :to="{ name: 'login' }"
+        to="/auth/login"
         class="hidden md:flex items-center gap-1.5 px-3 py-2 rounded-lg border border-brand text-brand text-sm font-medium hover:bg-brand hover:text-white transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-4 h-4">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
         </svg>
         ورود | ثبت‌نام
-      </RouterLink>
-      <RouterLink
+      </NuxtLink>
+      <NuxtLink
         v-if="!authStore.isLoggedIn"
-        :to="{ name: 'login' }"
+        to="/auth/login"
         class="md:hidden p-2 rounded-lg text-text-secondary hover:text-brand hover:bg-surface transition-colors"
       >
         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
           <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.501 20.118a7.5 7.5 0 0114.998 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.499-1.632z"/>
         </svg>
-      </RouterLink>
+      </NuxtLink>
 
       <!-- Logged in: avatar button -->
       <button
@@ -188,10 +188,10 @@
             <p class="text-sm font-semibold truncate" style="color: var(--color-text-primary);">{{ userName }}</p>
           </div>
           <nav class="py-1">
-            <RouterLink
+            <NuxtLink
               v-for="item in userMenuItems"
               :key="item.name"
-              :to="{ name: item.name }"
+              :to="item.to"
               class="flex items-center gap-3 px-4 py-2.5 text-sm transition-colors"
               style="color: var(--color-text-primary);"
               @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
@@ -200,7 +200,7 @@
             >
               <component :is="item.icon" class="w-4 h-4 shrink-0" style="color: var(--color-text-secondary);" />
               {{ item.label }}
-            </RouterLink>
+            </NuxtLink>
           </nav>
           <div class="py-1" style="border-top: 1px solid var(--color-border);">
             <button
@@ -309,15 +309,15 @@ const IconOrders = { render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg
 const IconHeart  = { render: () => h('svg', { xmlns: 'http://www.w3.org/2000/svg', fill: 'none', viewBox: '0 0 24 24', 'stroke-width': '1.5', stroke: 'currentColor' }, [h('path', { 'stroke-linecap': 'round', 'stroke-linejoin': 'round', d: 'M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z' })]) }
 
 const userMenuItems = [
-  { name: 'user-profile',   label: 'پروفایل من',    icon: IconUser },
-  { name: 'user-orders',    label: 'سفارش‌هایم',    icon: IconOrders },
-  { name: 'user-favorites', label: 'علاقه‌مندی‌ها', icon: IconHeart },
+  { to: '/user/profile',   label: 'پروفایل من',    icon: IconUser },
+  { to: '/user/orders',    label: 'سفارش‌هایم',    icon: IconOrders },
+  { to: '/user/favorites', label: 'علاقه‌مندی‌ها', icon: IconHeart },
 ]
 
 async function handleLogout() {
   isOpen.value = false
   authStore.logout()
-  router.push({ name: 'home' })
+  router.push('/')
 }
 </script>
 

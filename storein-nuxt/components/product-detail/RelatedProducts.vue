@@ -2,15 +2,15 @@
   <section v-if="products.length > 0 || loading" class="mt-6">
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-bold text-text-primary">محصولات مرتبط</h2>
-      <RouterLink
-        :to="{ name: 'category', params: { slug: categorySlug } }"
+      <NuxtLink
+        :to="`/category/${categorySlug}`"
         class="text-brand text-sm flex items-center gap-1 hover:gap-2 transition-all duration-200"
       >
         مشاهده همه
         <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
         </svg>
-      </RouterLink>
+      </NuxtLink>
     </div>
 
     <!-- Horizontal scroll row -->

@@ -267,7 +267,7 @@ const isInCart = computed(() =>
   cartStore.items.some(item => item.productId === props.product._id)
 )
 
-function goToCart() { router.push({ name: 'cart' }) }
+function goToCart() { router.push('/cart') }
 
 async function handleAddToCart() {
   if (!currentVariant.value || addingToCart.value) return
@@ -345,6 +345,6 @@ const features = computed(() => {
 
 // ── Navigation ────────────────────────────────────────────────────
 function handleClick() {
-  router.push({ name: 'product-detail', params: { slug: props.product.slug } })
+  router.push()
 }
 </script>

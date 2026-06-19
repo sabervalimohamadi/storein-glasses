@@ -57,7 +57,7 @@ function makeWrapper() {
   _wrapper = mount(AppHeaderNav, {
     global: {
       // Declare `to` as a prop so it doesn't bleed into $attrs and appear on the <a>
-      stubs: { RouterLink: { props: ['to'], template: '<a><slot /></a>' } },
+      stubs: { NuxtLink: { props: ['to'], template: '<a><slot /></a>' } },
     },
   })
   return _wrapper

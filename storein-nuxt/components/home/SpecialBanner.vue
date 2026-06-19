@@ -1,7 +1,7 @@
 ﻿<template>
   <section class="sb-wrap">
     <div class="sb-grid">
-      <RouterLink
+      <NuxtLink
         v-for="banner in displayed"
         :key="banner._id || banner.id"
         :to="banner.ctaLink || '/'"
@@ -60,7 +60,7 @@
             </svg>
           </span>
         </div>
-      </RouterLink>
+      </NuxtLink>
     </div>
   </section>
 </template>

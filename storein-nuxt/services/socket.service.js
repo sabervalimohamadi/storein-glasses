@@ -6,7 +6,7 @@ function resolveSocketUrl() {
     return typeof window !== 'undefined' ? window.location.origin : ''
   }
   // Local dev: connect directly to the running backend
-  return 'http://localhost:3001'
+  return 'http://localhost:3000'
 }
 
 const SOCKET_NAMESPACE = resolveSocketUrl() + '/notifications'

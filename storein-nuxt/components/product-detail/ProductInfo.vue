@@ -20,12 +20,12 @@
 
       <!-- ① Name + category -->
       <div>
-        <RouterLink
-          :to="{ name: 'category', params: { slug: product.category?.slug } }"
+        <NuxtLink
+          :to="`/category/${product.category?.slug}`"
           class="text-brand text-xs font-medium hover:underline mb-1 block"
         >
           {{ product.category?.name }}
-        </RouterLink>
+        </NuxtLink>
         <h1 class="text-xl md:text-2xl font-bold text-text-primary leading-8">
           {{ product.name }}
         </h1>
@@ -314,10 +314,25 @@ function getAttr(variant, key) {
   return found?.value ?? ''
 }
 
-// ── Colors — from product.colorMap (populated by backend) ─────────
+// ── Colors — from product.colorMap; fallback to Persian color name map ─────
+const FA_COLOR_MAP = {
+  'مشکی': '#1a1a1a', 'مشکی مات': '#2d2d2d', 'سیاه': '#111111',
+  'سفید': '#f5f5f5', 'کرم': '#f5f0e8', 'شیری': '#fffde7',
+  'قرمز': '#e53935', 'قرمز روشن': '#ef5350', 'زرشکی': '#880e4f',
+  'آبی': '#1e88e5', 'آبی تیره': '#1565c0', 'آبی‌تیره': '#1565c0', 'آبی روشن': '#42a5f5', 'نیلی': '#283593',
+  'سبز': '#43a047', 'سبز تیره': '#2e7d32', 'سبز روشن': '#66bb6a',
+  'زرد': '#fdd835', 'طلایی': '#f9a825', 'نارنجی': '#fb8c00',
+  'بنفش': '#8e24aa', 'یاسی': '#ce93d8', 'بادمجانی': '#6a1b9a',
+  'صورتی': '#e91e63', 'صورتی روشن': '#f48fb1',
+  'خاکستری': '#757575', 'نقره‌ای': '#bdbdbd', 'طوسی': '#9e9e9e',
+  'قهوه‌ای': '#6d4c41', 'شکلاتی': '#4e342e', 'کاراملی': '#8d6e63',
+  'عسلی': '#ff8f00', 'فیروزه‌ای': '#00acc1', 'زیتونی': '#827717',
+  'گلبهی': '#f8bbd0', 'لاجوردی': '#283593', 'ذغالی': '#37474f',
+}
+
 function getColorHex(name) {
   if (!name) return '#888'
-  return props.product?.colorMap?.[name] ?? '#888'
+  return props.product?.colorMap?.[name] ?? FA_COLOR_MAP[name] ?? '#888'
 }
 
 const guarantees = [

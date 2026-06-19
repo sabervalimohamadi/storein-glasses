@@ -34,7 +34,7 @@
       title="علاقه‌مندی شما خالی است"
       subtitle="محصولات دلخواه‌تان را با زدن دکمه قلب ذخیره کنید"
       action="مشاهده محصولات"
-      :to="{ name: 'products' }"
+      :to="'/products'"
     />
 
     <!-- Grid -->
@@ -160,7 +160,7 @@ async function doClear() {
 
 function handleAddToCart(product) {
   // Wishlist response doesn't include variants — navigate to product page for selection
-  router.push({ name: 'product-detail', params: { slug: product.slug } })
+  if (product?.slug) router.push(`/product/${product.slug}`)
 }
 
 onMounted(fetchFavorites)
