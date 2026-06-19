@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+Disallow: /auth/
+Disallow: /checkout
+Disallow: /cart
+Disallow: /payment/result
+Disallow: /user/
+Disallow: /api/
+
+Sitemap: https://storein.ir/sitemap.xml

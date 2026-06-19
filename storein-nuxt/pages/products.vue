@@ -1,0 +1,117 @@
+<template>
+  <div class="container-main py-4">
+
+    <nav class="flex items-center gap-2 text-sm text-text-secondary mb-4">
+      <NuxtLink to="/" class="hover:text-brand transition-colors">خانه</NuxtLink>
+      <svg class="w-3 h-3 rotate-180 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+      </svg>
+      <span class="text-text-primary font-medium">همه محصولات</span>
+    </nav>
+
+    <h1 class="text-xl font-bold text-text-primary mb-5">همه محصولات</h1>
+
+    <div class="flex gap-5 items-start">
+      <div class="hidden lg:block sticky top-20 self-start">
+        <FilterSidebar :filters="productStore.filters" @change="onFilterChange" />
+      </div>
+      <div class="flex-1 min-w-0">
+        <SortBar
+          v-model="productStore.filters.sortBy"
+          :total="productStore.total"
+          :loading="productStore.loading"
+          @update:modelValue="onFilterChange"
+          @open-filter="mobileFilterOpen = true"
+        />
+        <ActiveFilters :filters="productStore.filters" @remove="removeFilter" @clear-all="clearAllFilters" />
+        <ProductGrid :products="productStore.products" :loading="productStore.loading" />
+        <BasePagination
+          :model-value="productStore.page"
+          :total-pages="productStore.totalPages"
+          :loading="productStore.loading"
+          @update:modelValue="onPageChange"
+          class="mt-6"
+        />
+      </div>
+    </div>
+
+    <FilterMobileDrawer
+      v-model="mobileFilterOpen"
+      :filters="productStore.filters"
+      @apply="onMobileFilterApply"
+      @clear="clearAllFilters"
+    />
+  </div>
+</template>
+
+<script setup>
+import { useDebounceFn } from '@vueuse/core'
+import FilterSidebar      from '~/components/products/FilterSidebar.vue'
+import FilterMobileDrawer from '~/components/products/FilterMobileDrawer.vue'
+import SortBar            from '~/components/products/SortBar.vue'
+import ActiveFilters      from '~/components/products/ActiveFilters.vue'
+import ProductGrid        from '~/components/products/ProductGrid.vue'
+import BasePagination     from '~/components/common/BasePagination.vue'
+
+definePageMeta({ layout: 'default' })
+
+const route        = useRoute()
+const router       = useRouter()
+const config       = useRuntimeConfig()
+const productStore = useProductStore()
+const categoryStore= useCategoryStore()
+const wishlistStore= useWishlistStore()
+
+const mobileFilterOpen = ref(false)
+
+useSeoMeta({
+  title:       'همه محصولات',
+  description: 'خرید انواع عینک طبی، آفتابی و لنز با بهترین قیمت',
+  ogType:      'website',
+  ogUrl:       `${config.public.siteUrl}/products`,
+})
+useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/products` }] })
+
+onMounted(async () => {
+  await categoryStore.fetchCategories()
+  productStore.fromQueryParams(route.query)
+  await Promise.allSettled([productStore.fetchProducts(), wishlistStore.fetchWishlist()])
+})
+
+const debouncedFetch = useDebounceFn(async () => {
+  productStore.page = 1
+  await productStore.fetchProducts()
+  router.replace({ query: productStore.toQueryParams() })
+}, 300)
+
+function onFilterChange() { debouncedFetch() }
+
+async function onPageChange(p) {
+  productStore.setPage(p)
+  await productStore.fetchProducts()
+  router.replace({ query: productStore.toQueryParams() })
+}
+
+function removeFilter(key, value) {
+  if (key === 'inStock') productStore.filters.inStock = false
+  else if (key === 'minPrice') productStore.filters.minPrice = null
+  else if (key === 'maxPrice') productStore.filters.maxPrice = null
+  else if (key === 'category') productStore.filters.category = null
+  else if (Array.isArray(productStore.filters[key])) {
+    productStore.filters[key] = productStore.filters[key].filter(v => v !== value)
+  }
+  debouncedFetch()
+}
+
+function clearAllFilters() {
+  productStore.resetFilters()
+  mobileFilterOpen.value = false
+  debouncedFetch()
+}
+
+function onMobileFilterApply(newFilters) {
+  Object.assign(productStore.filters, newFilters)
+  mobileFilterOpen.value = false
+  debouncedFetch()
+}
+</script>

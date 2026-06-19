@@ -1,0 +1,153 @@
+<template>
+  <div class="container-main py-16 flex items-center justify-center min-h-[60vh]">
+    <div class="w-full max-w-md text-center">
+
+      <!-- Loading -->
+      <div v-if="verifying" class="space-y-4">
+        <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" />
+        <p class="text-text-secondary">?? ??? ????? ??????...</p>
+      </div>
+
+      <!-- Success -->
+      <div v-else-if="result === 'success'" class="space-y-6">
+        <div class="w-20 h-20 rounded-full bg-success/10 flex items-center justify-center mx-auto">
+          <svg class="w-10 h-10 text-success" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-text-primary">?????? ????</h1>
+          <p class="text-text-secondary text-sm mt-2">????? ??? ?? ?????? ??? ? ?????? ??</p>
+          <p v-if="refId" class="text-text-disabled text-xs font-fanum mt-1">?? ??????: {{ refId }}</p>
+        </div>
+
+        <div class="rounded-2xl border border-surface-border p-5 text-right space-y-3"
+             style="background-color: var(--color-card)">
+          <div class="flex justify-between text-sm">
+            <span class="text-text-secondary">????? ?????</span>
+            <span class="font-fanum text-text-primary font-medium">{{ orderNumber || '—' }}</span>
+          </div>
+          <div class="flex justify-between text-sm">
+            <span class="text-text-secondary">?????</span>
+            <span class="text-success font-medium">????? ???</span>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <NuxtLink :to="{ name: 'user-order-detail', params: { id: orderId } }"
+            class="btn-brand py-3 flex items-center justify-center gap-2 w-full">
+            ?????? ?????? ?????
+          </NuxtLink>
+          <NuxtLink :to="{ name: 'home' }"
+            class="py-3 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors w-full flex items-center justify-center">
+            ?????? ?? ???? ????
+          </NuxtLink>
+        </div>
+      </div>
+
+      <!-- Failed -->
+      <div v-else-if="result === 'failed'" class="space-y-6">
+        <div class="w-20 h-20 rounded-full bg-error/10 flex items-center justify-center mx-auto">
+          <svg class="w-10 h-10 text-error" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold text-text-primary">?????? ??????</h1>
+          <p class="text-text-secondary text-sm mt-2">{{ errorMessage || '?????? ????? ??? ?? ??? ??' }}</p>
+        </div>
+
+        <div class="flex flex-col gap-3">
+          <NuxtLink :to="{ name: 'checkout' }"
+            class="btn-brand py-3 flex items-center justify-center gap-2 w-full">
+            ???? ????
+          </NuxtLink>
+          <NuxtLink :to="{ name: 'user-orders' }"
+            class="py-3 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors w-full flex items-center justify-center">
+            ?????? ???????
+          </NuxtLink>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</template>
+
+<script setup>
+
+definePageMeta({ layout: 'default', middleware: ['auth'] })
+
+
+import { ref, onMounted } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { paymentService } from '~/services/payment.service'
+import { orderService }   from '~/services/order.service'
+import { useCartStore }   from '~/stores/cart.store'
+
+const route     = useRoute()
+const router    = useRouter()
+const cartStore = useCartStore()
+
+const verifying    = ref(true)
+const result       = ref(null)   // 'success' | 'failed'
+const refId        = ref('')
+const errorMessage = ref('')
+const orderId      = ref(route.query.orderId ?? '')
+const orderNumber  = ref('')
+
+onMounted(async () => {
+  // ZarinPal sends capitalized params (Authority, Status); handle both
+  const authority = (route.query.authority || route.query.Authority) ?? ''
+  const status    = (route.query.status    || route.query.Status)    ?? ''
+  const qOrderId  = route.query.orderId ?? ''
+
+  // Direct wallet payment success (no gateway redirect)
+  if (status === 'success' && !authority) {
+    if (qOrderId) {
+      orderId.value = qOrderId
+      try {
+        const { data } = await orderService.getMyOrder(qOrderId)
+        orderNumber.value = data.orderNumber ?? ''
+      } catch { /* silent */ }
+    }
+    result.value   = 'success'
+    verifying.value = false
+    cartStore.items = []
+    return
+  }
+
+  // Gateway callback
+  if (!authority) {
+    result.value    = 'failed'
+    errorMessage.value = '??????? ?????? ???? ???'
+    verifying.value = false
+    return
+  }
+
+  try {
+    const { data } = await paymentService.verifyPayment({ authority, status })
+    if (data.success) {
+      refId.value  = data.refId ?? ''
+      result.value = 'success'
+      // fetch order number if orderId in query
+      if (qOrderId) {
+        orderId.value = qOrderId
+        try {
+          const { data: ord } = await orderService.getMyOrder(qOrderId)
+          orderNumber.value = ord.orderNumber ?? ''
+        } catch { /* silent */ }
+      }
+      await cartStore.fetchCart()
+    } else {
+      result.value    = 'failed'
+      errorMessage.value = data.message ?? '?????? ????? ???'
+    }
+  } catch (err) {
+    result.value    = 'failed'
+    errorMessage.value = err?.response?.data?.message ?? '??? ?? ????? ??????'
+  } finally {
+    verifying.value = false
+  }
+})
+</script>
+

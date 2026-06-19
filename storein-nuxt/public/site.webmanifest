@@ -1,0 +1,20 @@
+{
+  "name": "استورین | فروشگاه تخصصی عینک",
+  "short_name": "استورین",
+  "description": "فروشگاه تخصصی عینک‌های طبی و آفتابی",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#863bff",
+  "lang": "fa",
+  "dir": "rtl",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

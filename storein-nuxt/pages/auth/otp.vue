@@ -1,0 +1,154 @@
+<template>
+  <div class="w-full max-w-sm mx-auto px-4">
+    <div class="rounded-2xl shadow-modal px-6 py-8" style="background-color: var(--color-card);">
+
+      <div class="flex flex-col items-center mb-8">
+        <NuxtLink to="/" class="flex flex-col items-center gap-2">
+          <div class="w-14 h-14 rounded-2xl flex items-center justify-center mb-1" style="background-color: var(--color-brand);">
+            <svg class="w-8 h-8 text-white" viewBox="0 0 48 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="2" y="4" width="18" height="16" rx="8" /><rect x="28" y="4" width="18" height="16" rx="8" /><path d="M20 12 Q24 6 28 12" />
+            </svg>
+          </div>
+          <span class="text-brand font-black text-xl tracking-tight">استورین</span>
+        </NuxtLink>
+      </div>
+
+      <div class="mb-7 text-center">
+        <h1 class="text-xl font-bold text-text-primary mb-3">کد تأیید را وارد کنید</h1>
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium" style="background-color: var(--color-bg); border: 1px solid var(--color-border);">
+          <span style="color: var(--color-text-secondary);">کد ۶ رقمی ارسال شد به</span>
+          <span class="font-bold" style="color: var(--color-text-primary);" dir="ltr">{{ maskedPhone }}</span>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <OtpInput ref="otpInputRef" v-model="otpCode" :length="6" :error="!!otpError" :disabled="authStore.loading" @complete="handleComplete" />
+        <Transition name="fade-down">
+          <p v-if="otpError" class="text-center text-error text-sm mt-3 flex items-center justify-center gap-1.5">{{ otpError }}</p>
+        </Transition>
+      </div>
+
+      <button
+        @click="verify"
+        :disabled="otpCode.length < 6 || authStore.loading"
+        class="w-full bg-brand text-white font-bold py-3.5 rounded-xl hover:opacity-90 active:scale-[0.98] transition-all duration-150 text-base mb-5 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+      >
+        <BaseSpinner v-if="authStore.loading" size="sm" color="white" />
+        <span>{{ authStore.loading ? 'در حال بررسی...' : 'تأیید و ورود' }}</span>
+      </button>
+
+      <div class="flex items-center justify-center gap-3 text-sm">
+        <button @click="resend" :disabled="cooldown > 0 || authStore.loading" :class="['font-medium transition-colors duration-150', cooldown > 0 ? 'text-text-disabled cursor-not-allowed' : 'text-brand hover:opacity-80']">
+          ارسال مجدد کد
+        </button>
+        <Transition name="fade">
+          <span v-if="cooldown > 0" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold tabular-nums" style="background-color: var(--color-bg); color: var(--color-text-secondary);" dir="ltr">{{ formattedCooldown }}</span>
+        </Transition>
+      </div>
+
+      <div class="mt-6 pt-5 border-t border-surface-border text-center">
+        <button @click="goBack" class="text-text-secondary text-sm hover:text-brand inline-flex items-center gap-1.5 mx-auto transition-colors duration-150">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          ویرایش شماره موبایل
+        </button>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import OtpInput  from '~/components/auth/OtpInput.vue'
+import BaseSpinner from '~/components/common/BaseSpinner.vue'
+
+definePageMeta({ layout: 'auth', middleware: ['guest'] })
+
+const router    = useRouter()
+const route     = useRoute()
+const authStore = useAuthStore()
+const ui        = useUiStore()
+
+useSeoMeta({ title: 'تأیید شماره موبایل', robots: 'noindex' })
+
+const otpCode     = ref('')
+const otpError    = ref('')
+const otpInputRef = ref(null)
+
+const RESEND_TIMEOUT = 120
+const cooldown = ref(RESEND_TIMEOUT)
+let countdownInterval = null
+
+const formattedCooldown = computed(() => {
+  const m = Math.floor(cooldown.value / 60)
+  const s = cooldown.value % 60
+  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+})
+
+function startCountdown() {
+  cooldown.value = RESEND_TIMEOUT
+  clearInterval(countdownInterval)
+  countdownInterval = setInterval(() => { if (cooldown.value > 0) cooldown.value--; else clearInterval(countdownInterval) }, 1000)
+}
+
+const maskedPhone = computed(() => {
+  const p = authStore.pendingPhone
+  if (!p || p.length < 8) return p
+  return p.slice(0, 4) + ' ' + p.slice(4, 7) + ' ****'
+})
+
+onMounted(async () => {
+  if (!authStore.pendingPhone) { router.replace('/auth/login'); return }
+  startCountdown()
+  await nextTick()
+  otpInputRef.value?.focus()
+})
+
+onUnmounted(() => clearInterval(countdownInterval))
+
+async function verify() {
+  if (otpCode.value.length < 6 || authStore.loading) return
+  otpError.value = ''
+  try {
+    await authStore.verifyOtp(authStore.pendingPhone, otpCode.value)
+    ui.addToast('خوش آمدید! ورود موفقیت‌آمیز بود', 'success')
+    const redirect = route.query.redirect
+    router.push(redirect ? String(redirect) : '/')
+  } catch (err) {
+    const status = err.response?.status
+    otpCode.value = ''
+    if (status === 401) {
+      otpError.value = err.response?.data?.message?.includes('منقضی')
+        ? 'کد تأیید منقضی شده. کد جدید دریافت کنید'
+        : 'کد تأیید اشتباه است. مجدداً تلاش کنید'
+    } else { otpError.value = 'خطا در ورود. لطفاً دوباره تلاش کنید' }
+    await nextTick()
+    otpInputRef.value?.focus()
+  }
+}
+
+function handleComplete(code) { otpCode.value = code; if (!authStore.loading) verify() }
+
+async function resend() {
+  if (cooldown.value > 0 || authStore.loading) return
+  otpError.value = ''
+  otpCode.value  = ''
+  try {
+    await authStore.sendOtp(authStore.pendingPhone)
+    startCountdown()
+    ui.addToast('کد جدید ارسال شد', 'success')
+    await nextTick()
+    otpInputRef.value?.focus()
+  } catch (err) {
+    if (err.response?.status === 429) ui.addToast('لطفاً کمی صبر کنید و دوباره تلاش کنید', 'warning')
+    else ui.addToast('خطا در ارسال کد. دوباره تلاش کنید', 'error')
+  }
+}
+
+function goBack() { clearInterval(countdownInterval); router.push('/auth/login') }
+</script>
+
+<style scoped>
+.fade-down-enter-active, .fade-down-leave-active { transition: opacity 0.2s ease, transform 0.2s ease; }
+.fade-down-enter-from, .fade-down-leave-to { opacity: 0; transform: translateY(-4px); }
+.fade-enter-active, .fade-leave-active { transition: opacity 0.2s ease; }
+.fade-enter-from, .fade-leave-to { opacity: 0; }
+</style>
