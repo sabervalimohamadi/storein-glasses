@@ -10,13 +10,12 @@ export default defineConfig({
     },
   },
   server: {
-  port: 3000,
-  allowedHosts: 'all',
-  proxy: {
-    '/api/v1/': {
-      target: 'http://localhost:3001',  // backend محلی
-      changeOrigin: true,
-    }
-  }
-},
+    port: 3000,
+    allowedHosts: 'all',
+    proxy: {
+      '/api/v1/': { target: 'http://localhost:3001', changeOrigin: true },
+      // Forward /uploads/* to the backend so <img src="/uploads/..."> works in dev.
+      '/uploads':  { target: 'http://localhost:3001', changeOrigin: true },
+    },
+  },
 })

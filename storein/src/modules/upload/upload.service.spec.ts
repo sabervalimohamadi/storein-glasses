@@ -29,7 +29,7 @@ const mockFile = (overrides: Partial<Express.Multer.File> = {}): Express.Multer.
 
 const mockStorageResult = (key = 'products/test.webp') => ({
   key,
-  url:      `http://localhost:3000/uploads/${key}`,
+  url:      `/uploads/${key}`,   // relative path — no hostname (see local-storage.provider.ts)
   filename: 'test.webp',
   size:     800,
   mimeType: 'image/webp',
@@ -43,7 +43,7 @@ describe('UploadService', () => {
     storage = {
       save:   jest.fn().mockResolvedValue(mockStorageResult()),
       delete: jest.fn().mockResolvedValue(undefined),
-      getUrl: jest.fn().mockReturnValue('http://localhost:3000/uploads/test'),
+      getUrl: jest.fn().mockReturnValue('/uploads/test'),
     } as any;
 
     const configService = {

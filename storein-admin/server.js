@@ -40,6 +40,16 @@ function onProxyError(label) {
   }
 }
 
+// ── Uploads proxy ─────────────────────────────────────────────────────────────
+// Images live on the backend; /uploads/* must be forwarded so <img src="/uploads/...">
+// works when the admin SPA is served from a different origin than the API.
+app.use(createProxyMiddleware({
+  target:       API_TARGET,
+  changeOrigin: true,
+  pathFilter:   '/uploads',
+  on: { error: onProxyError('uploads') },
+}))
+
 // ── Socket.IO proxy — MUST be before static files, MUST have ws:true ──────────
 // Socket.IO connects to /socket.io on THIS domain; proxy forwards the WebSocket
 // upgrade to the backend. This is how Safari/Firefox cross-origin cookie issues

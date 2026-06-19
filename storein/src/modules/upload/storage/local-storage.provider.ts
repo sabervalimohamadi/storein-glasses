@@ -52,6 +52,8 @@ export class LocalStorageProvider extends StorageProvider {
   }
 
   getUrl(key: string): string {
-    return `${this.baseUrl}/uploads/${key}`;
+    // Return a root-relative path so DB records are environment-independent.
+    // Both server.js files proxy /uploads → backend; Vite dev configs do the same.
+    return `/uploads/${key}`;
   }
 }

@@ -40,6 +40,16 @@ function makeProxyErrorHandler(label) {
   }
 }
 
+// ── Uploads proxy ─────────────────────────────────────────────────────────────
+// Images live on the backend; /uploads/* must be forwarded so <img src="/uploads/...">
+// works when the frontend SPA is served from a different origin than the API.
+app.use(createProxyMiddleware({
+  target:       API_TARGET,
+  changeOrigin: true,
+  pathFilter:   '/uploads',
+  on: { error: makeProxyErrorHandler('uploads') },
+}))
+
 // IMPORTANT: use pathFilter (NOT app.use('/api', proxy)).
 // app.use('/api', proxy) strips the /api prefix before forwarding →
 // backend sees /v1/products instead of /api/v1/products → 404.
