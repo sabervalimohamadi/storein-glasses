@@ -1,0 +1,50 @@
+const APP_DIR = '/var/www/storein'
+
+module.exports = {
+  apps: [
+    {
+      name:    'storein-backend',
+      cwd:     `${APP_DIR}/storein`,
+      script:  'node',
+      args:    'dist/main',
+      env_file: `${APP_DIR}/storein/.env`,
+      instances:            1,
+      autorestart:          true,
+      watch:                false,
+      max_memory_restart:   '512M',
+      error_file: '/var/log/pm2/backend-error.log',
+      out_file:   '/var/log/pm2/backend-out.log',
+    },
+    {
+      name:    'storein-nuxt',
+      cwd:     `${APP_DIR}/storein-nuxt`,
+      script:  'node',
+      args:    '.output/server/index.mjs',
+      env_file: `${APP_DIR}/storein-nuxt/.env`,
+      env: { PORT: 3000 },
+      instances:            1,
+      autorestart:          true,
+      watch:                false,
+      max_memory_restart:   '512M',
+      error_file: '/var/log/pm2/nuxt-error.log',
+      out_file:   '/var/log/pm2/nuxt-out.log',
+    },
+    {
+      name:    'storein-admin',
+      cwd:     `${APP_DIR}/storein-admin`,
+      script:  'node',
+      args:    'server.js',
+      env: {
+        NODE_ENV:          'production',
+        PORT:              4000,
+        API_INTERNAL_URL:  'http://localhost:3001',
+      },
+      instances:            1,
+      autorestart:          true,
+      watch:                false,
+      max_memory_restart:   '256M',
+      error_file: '/var/log/pm2/admin-error.log',
+      out_file:   '/var/log/pm2/admin-out.log',
+    },
+  ],
+}
