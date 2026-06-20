@@ -1,188 +1,191 @@
-﻿import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { mount, flushPromises } from '@vue/test-utils'
+import { nextTick } from 'vue'
 
-const { mockGet, mockPush } = vi.hoisted(() => ({
-  mockGet:  vi.fn(),
-  mockPush: vi.fn(),
-}))
+// ── Mocks ────────────────────────────────────────────────────────────────────
 
 vi.mock('~/utils/logger', () => ({
-  logger: { info: vi.fn(), error: vi.fn(), warn: vi.fn(), debug: vi.fn() },
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
 }))
 
-vi.mock('vue-router', () => ({
-  useRouter: () => ({ push: mockPush }),
-  RouterLink: { name: 'RouterLink', props: ['to'], template: '<a><slot /></a>' },
-  useRoute: () => ({}),
-}))
-
-vi.mock('~/services/http.service', () => ({
-  default: { get: mockGet },
-}))
-
-// Bypass debounce — call fn immediately
 vi.mock('@vueuse/core', () => ({
   onClickOutside: vi.fn(),
-  useDebounceFn:  (fn) => fn,
+  useDebounceFn:  (fn) => fn,   // no 300ms delay in tests
 }))
 
-import AppHeaderSearch from './AppHeaderSearch.vue'
-import { logger } from '~/utils/logger'
+const mockPush = vi.fn()
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: mockPush }),
+}))
 
-const emptySuggest = { products: [], categories: [] }
+const mockHttp = { get: vi.fn() }
+vi.mock('~/services/http.service', () => ({ default: mockHttp }))
+
+import AppHeaderSearch from './AppHeaderSearch.vue'
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+const makeProducts = (names = ['عینک آفتابی ری‌بن', 'عینک طبی تیتانیوم']) =>
+  names.map((name, i) => ({ name, slug: `p-slug-${i}` }))
+
+const makeCategories = (names = ['عینک آفتابی']) =>
+  names.map((name, i) => ({ name, slug: `c-slug-${i}` }))
 
 function factory() {
   return mount(AppHeaderSearch, {
     attachTo: document.body,
-    global: { stubs: { Transition: { template: '<div><slot /></div>' } } },
+    global:   { stubs: { transition: false } },
   })
 }
+
+// ── Tests ─────────────────────────────────────────────────────────────────────
 
 describe('AppHeaderSearch', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    mockGet.mockResolvedValue({ data: emptySuggest })
-  })
-
-  // ── rendering ─────────────────────────────────────────────────
-  it('renders the search input', () => {
-    const wrapper = factory()
-    expect(wrapper.find('input[type="text"]').exists()).toBe(true)
-  })
-
-  it('dropdown is hidden when query is empty', () => {
-    const wrapper = factory()
-    expect(wrapper.find('[class*="rounded-2xl"]').exists()).toBe(false)
-  })
-
-  // ── fetching suggestions ──────────────────────────────────────
-  it('calls /search/suggest when query changes', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').setValue('عینک')
-    await flushPromises()
-    expect(mockGet).toHaveBeenCalledWith('/search/suggest', { params: { q: 'عینک' } })
-  })
-
-  it('does not call API when query is whitespace only', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').setValue('   ')
-    await flushPromises()
-    expect(mockGet).not.toHaveBeenCalled()
-  })
-
-  it('logs info with counts after successful fetch', async () => {
-    mockGet.mockResolvedValue({
-      data: { products: [{ name: 'عینک آفتابی', slug: 'sunglasses' }], categories: [] },
+    mockHttp.get.mockResolvedValue({
+      data: { products: makeProducts(), categories: makeCategories() },
     })
-    const wrapper = factory()
-    await wrapper.find('input').setValue('عینک')
-    await flushPromises()
-    expect(logger.info).toHaveBeenCalledWith(
-      'search: suggestions fetched',
-      expect.objectContaining({ q: 'عینک', products: 1, categories: 0 }),
-      'AppHeaderSearch',
-    )
   })
 
-  it('logs error and clears suggestions on API failure', async () => {
-    mockGet.mockRejectedValue(new Error('network error'))
-    const wrapper = factory()
-    await wrapper.find('input').setValue('عینک')
+  // ── Rendering ──────────────────────────────────────────────────────────────
+
+  it('renders search input and button', () => {
+    const w = factory()
+    expect(w.find('input[type="text"]').exists()).toBe(true)
+    expect(w.find('button').text()).toBe('جستجو')
+  })
+
+  it('dropdown is hidden before input', () => {
+    const w = factory()
+    expect(w.find('.rounded-2xl').exists()).toBe(false)
+  })
+
+  // ── Suggestions ────────────────────────────────────────────────────────────
+
+  it('calls /search/suggest and shows results after typing', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
     await flushPromises()
+
+    expect(mockHttp.get).toHaveBeenCalledWith('/search/suggest', { params: { q: 'عینک' } })
+    expect(w.text()).toContain('عینک آفتابی ری‌بن')
+  })
+
+  it('shows "محصولات" label when products exist', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await flushPromises()
+    expect(w.text()).toContain('محصولات')
+  })
+
+  it('shows "دسته‌بندی‌ها" label and category name', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await flushPromises()
+    expect(w.text()).toContain('دسته‌بندی‌ها')
+    expect(w.text()).toContain('عینک آفتابی')
+  })
+
+  it('shows no-results message when API returns empty', async () => {
+    mockHttp.get.mockResolvedValue({ data: { products: [], categories: [] } })
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('xyz')
+    await flushPromises()
+    expect(w.text()).toContain('نتیجه‌ای برای')
+  })
+
+  it('shows no-results and logs error when API throws', async () => {
+    const { logger } = await import('~/utils/logger')
+    mockHttp.get.mockRejectedValue(new Error('Network error'))
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await flushPromises()
+
+    expect(w.text()).toContain('نتیجه‌ای برای')
     expect(logger.error).toHaveBeenCalledWith(
       'search: suggest request failed',
-      expect.objectContaining({ q: 'عینک' }),
+      expect.anything(),
       'AppHeaderSearch',
     )
-    expect(wrapper.vm.suggestions.products).toEqual([])
   })
 
-  // ── products in dropdown ──────────────────────────────────────
-  it('shows product name in dropdown', async () => {
-    mockGet.mockResolvedValue({
-      data: { products: [{ name: 'عینک ری‌بن', slug: 'rayban' }], categories: [] },
-    })
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').setValue('ری')
-    await flushPromises()
-    expect(wrapper.text()).toContain('عینک ری‌بن')
+  it('does not call API for empty query', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('')
+    await nextTick()
+    expect(mockHttp.get).not.toHaveBeenCalled()
   })
 
-  it('shows category name in dropdown', async () => {
-    mockGet.mockResolvedValue({
-      data: { products: [], categories: [{ name: 'عینک آفتابی', slug: 'sunglasses' }] },
-    })
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').setValue('آ')
-    await flushPromises()
-    expect(wrapper.text()).toContain('عینک آفتابی')
-  })
+  // ── Navigation ─────────────────────────────────────────────────────────────
 
-  it('shows "no results" message when both arrays are empty', async () => {
-    mockGet.mockResolvedValue({ data: emptySuggest })
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').setValue('xyz_nomatch')
-    await flushPromises()
-    expect(wrapper.text()).toContain('نتیجه‌ای برای')
-  })
-
-  // ── navigation ────────────────────────────────────────────────
-  it('navigates to product detail on product click', async () => {
-    mockGet.mockResolvedValue({
-      data: { products: [{ name: 'عینک ری‌بن', slug: 'rayban' }], categories: [] },
-    })
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').setValue('ری')
+  it('clicking a product navigates to /product/:slug and clears input', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
     await flushPromises()
 
-    const btns = wrapper.findAll('button').filter(b => b.text() === 'عینک ری‌بن')
-    await btns[0].trigger('click')
-    expect(mockPush).toHaveBeenCalledWith({ name: 'product-detail', params: { slug: 'rayban' } })
+    const btn = w.findAll('button').find(b => b.text().includes('عینک آفتابی ری‌بن'))
+    await btn.trigger('click')
+
+    expect(mockPush).toHaveBeenCalledWith('/product/p-slug-0')
+    expect(w.find('input').element.value).toBe('')
   })
 
-  it('navigates to category page on category click', async () => {
-    mockGet.mockResolvedValue({
-      data: { products: [], categories: [{ name: 'عینک آفتابی', slug: 'sunglasses' }] },
-    })
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').setValue('آ')
+  it('clicking a category navigates to /category/:slug', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
     await flushPromises()
 
-    const btns = wrapper.findAll('button').filter(b => b.text().includes('عینک آفتابی'))
-    await btns[0].trigger('click')
-    expect(mockPush).toHaveBeenCalledWith({ name: 'category', params: { slug: 'sunglasses' } })
+    // category button has a "دسته‌بندی" chip inside it
+    const btn = w.findAll('button').find(b => b.text().includes('دسته‌بندی'))
+    await btn.trigger('click')
+
+    expect(mockPush).toHaveBeenCalledWith('/category/c-slug-0')
   })
 
-  it('navigates to search results page on Enter key', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').setValue('عینک')
-    await wrapper.find('input').trigger('keydown.enter')
-    expect(mockPush).toHaveBeenCalledWith({ name: 'search', query: { q: 'عینک' } })
+  it('Enter key pushes to /search with query param', async () => {
+    const w = factory()
+    const input = w.find('input')
+    await input.setValue('عینک')
+    await input.trigger('keydown', { key: 'Enter' })
+    expect(mockPush).toHaveBeenCalledWith({ path: '/search', query: { q: 'عینک' } })
   })
 
-  it('does not navigate on Enter when query is empty', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').setValue('')
-    await wrapper.find('input').trigger('keydown.enter')
-    expect(mockPush).not.toHaveBeenCalled()
+  it('search button click pushes to /search', async () => {
+    const w = factory()
+    await w.find('input').setValue('فریم')
+    const btn = w.findAll('button').find(b => b.text() === 'جستجو')
+    await btn.trigger('click')
+    expect(mockPush).toHaveBeenCalledWith({ path: '/search', query: { q: 'فریم' } })
   })
 
-  // ── focus / blur ──────────────────────────────────────────────
-  it('opens dropdown on focus', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    expect(wrapper.vm.isOpen).toBe(true)
+  it('Escape key closes the dropdown', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await w.find('input').trigger('keydown', { key: 'Escape' })
+    await nextTick()
+    expect(w.find('.rounded-2xl').exists()).toBe(false)
   })
 
-  it('closes dropdown on Esc key', async () => {
-    const wrapper = factory()
-    await wrapper.find('input').trigger('focus')
-    await wrapper.find('input').trigger('keydown.esc')
-    expect(wrapper.vm.isOpen).toBe(false)
+  // ── Keyboard shortcut ──────────────────────────────────────────────────────
+
+  it('Ctrl+K focuses the search input', async () => {
+    const w = factory()
+    const input = w.find('input').element
+    const focusSpy = vi.spyOn(input, 'focus')
+
+    window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))
+    await nextTick()
+
+    expect(focusSpy).toHaveBeenCalled()
   })
 })

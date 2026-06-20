@@ -143,6 +143,41 @@ describe('SearchService', () => {
       expect(res.products).toEqual([]);
       expect(res.categories).toEqual([]);
     });
+
+    it('falls back to DB when Redis get throws — search still works', async () => {
+      redis.get.mockRejectedValue(new Error('Redis connection refused'));
+      productModel.find.mockReturnValue(leanChain([{ name: 'عینک آفتابی', slug: 'sunglasses' }]));
+      categoryModel.find.mockReturnValue(leanChain([]));
+
+      const res = await service.suggest('عینک');
+      expect(res.products).toEqual([{ name: 'عینک آفتابی', slug: 'sunglasses' }]);
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Redis get failed'));
+    });
+
+    it('returns results even when Redis setex throws', async () => {
+      redis.get.mockResolvedValue(null);
+      redis.setex.mockRejectedValue(new Error('Redis write error'));
+      productModel.find.mockReturnValue(leanChain([{ name: 'لنز', slug: 'lens' }]));
+      categoryModel.find.mockReturnValue(leanChain([]));
+
+      const res = await service.suggest('لنز');
+      expect(res.products).toEqual([{ name: 'لنز', slug: 'lens' }]);
+      expect(mockLogger.warn).toHaveBeenCalledWith(expect.stringContaining('Redis setex failed'));
+    });
+
+    it('returns empty immediately for empty query without hitting DB or Redis', async () => {
+      const res = await service.suggest('');
+      expect(res).toEqual({ products: [], categories: [] });
+      expect(redis.get).not.toHaveBeenCalled();
+      expect(productModel.find).not.toHaveBeenCalled();
+    });
+
+    it('escapes regex special characters in query', async () => {
+      redis.get.mockResolvedValue(null);
+      await service.suggest('a+b');
+      const regexArg = productModel.find.mock.calls[0][0].name;
+      expect(regexArg.source).toBe('a\\+b');
+    });
   });
 
   describe('search history', () => {

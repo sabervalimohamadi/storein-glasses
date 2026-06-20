@@ -37,16 +37,9 @@ export default defineNuxtConfig({
     },
   },
 
-  // Nitro: replaces Express proxy (server.js)
-  nitro: {
-    routeRules: {
-      '/api/**':       { proxy: `${process.env.API_INTERNAL_URL || 'http://localhost:3001'}/api/**` },
-      '/socket.io/**': { proxy: `${process.env.API_INTERNAL_URL || 'http://localhost:3001'}/socket.io/**` },
-      '/uploads/**':   { proxy: `${process.env.API_INTERNAL_URL || 'http://localhost:3001'}/uploads/**` },
-    },
-  },
-
   // Hybrid rendering: SSR for public pages, CSR for private pages
+  // Note: /api, /uploads, /socket.io are proxied via server/middleware/proxy.ts
+  // using useRuntimeConfig() so the backend URL is read at runtime, not build time.
   routeRules: {
     '/':            { swr: 60 },
     '/products':    { swr: 60 },

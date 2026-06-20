@@ -113,11 +113,25 @@ export class SearchService {
     products:   { name: string; slug: string }[];
     categories: { name: string; slug: string }[];
   }> {
-    const cacheKey = `search:suggest:v2:${q.toLowerCase().trim()}`;
-    const cached = await this.redis.get(cacheKey);
-    if (cached) return JSON.parse(cached);
+    const term = q.trim();
+    if (!term) return { products: [], categories: [] };
 
-    const regex = new RegExp(q.trim(), 'i');
+    this.logger.log(`suggest: q="${term}"`);
+
+    const cacheKey = `search:suggest:v2:${term.toLowerCase()}`;
+
+    // Redis is optional — failure must never break search
+    try {
+      const cached = await this.redis.get(cacheKey);
+      if (cached) {
+        this.logger.log(`suggest: cache hit for "${term}"`);
+        return JSON.parse(cached);
+      }
+    } catch (redisErr) {
+      this.logger.warn(`suggest: Redis get failed, falling back to DB — ${redisErr}`);
+    }
+
+    const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
 
     const [productDocs, categoryDocs] = await Promise.all([
       this.productModel
@@ -137,7 +151,17 @@ export class SearchService {
       categories: categoryDocs.map((c) => ({ name: c.name, slug: c.slug })),
     };
 
-    await this.redis.setex(cacheKey, SUGGEST_TTL, JSON.stringify(result));
+    this.logger.log(
+      `suggest: "${term}" → ${result.products.length} products, ${result.categories.length} categories`,
+    );
+
+    // Best-effort cache write
+    try {
+      await this.redis.setex(cacheKey, SUGGEST_TTL, JSON.stringify(result));
+    } catch (redisErr) {
+      this.logger.warn(`suggest: Redis setex failed — ${redisErr}`);
+    }
+
     return result;
   }
 

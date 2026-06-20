@@ -203,13 +203,13 @@ function handleSearch() {
 }
 
 function goToProduct(item) {
-  router.push()
+  router.push(`/product/${item.slug}`)
   close()
   query.value = ''
 }
 
 function goToCategory(cat) {
-  router.push()
+  router.push(`/category/${cat.slug}`)
   close()
   query.value = ''
 }
