@@ -76,7 +76,7 @@ async function bootstrap() {
   });
 
   winstonLogger.info(
-    `🔒 CORS origins: ${allowedOrigins.join(', ')} | NODE_ENV: ${process.env.NODE_ENV}`,
+    `🔒 CORS origins: ${allowedOrigins.join(', ')} | NODE_ENV: ${process.env.NODE_ENV} | build: 2026-06-20`,
     { context: 'Bootstrap' },
   );
 

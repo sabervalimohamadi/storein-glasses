@@ -123,6 +123,37 @@ describe('AppHeaderSearch', () => {
     expect(mockHttp.get).not.toHaveBeenCalled()
   })
 
+  it('does not call API for single-character query', async () => {
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('ع')
+    await nextTick()
+    expect(mockHttp.get).not.toHaveBeenCalled()
+  })
+
+  it('normalizes legacy string[] response to { products, categories }', async () => {
+    mockHttp.get.mockResolvedValue({ data: ['عینک آفتابی', 'عینک طبی'] })
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await flushPromises()
+    expect(w.text()).toContain('عینک آفتابی')
+    expect(w.text()).toContain('محصولات')
+  })
+
+  it('legacy format product with no slug navigates to /search', async () => {
+    mockHttp.get.mockResolvedValue({ data: ['عینک آفتابی'] })
+    const w = factory()
+    await w.find('input').trigger('focus')
+    await w.find('input').setValue('عینک')
+    await flushPromises()
+
+    const btn = w.findAll('button').find(b => b.text().includes('عینک آفتابی'))
+    await btn.trigger('click')
+
+    expect(mockPush).toHaveBeenCalledWith({ path: '/search', query: { q: 'عینک آفتابی' } })
+  })
+
   // ── Navigation ─────────────────────────────────────────────────────────────
 
   it('clicking a product navigates to /product/:slug and clears input', async () => {

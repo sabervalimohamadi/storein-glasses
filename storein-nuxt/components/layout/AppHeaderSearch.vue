@@ -50,7 +50,7 @@
     <!-- Suggestions dropdown -->
     <Transition name="search-drop">
       <div
-        v-if="isOpen && query.trim().length >= 1"
+        v-if="isOpen && query.trim().length >= 2"
         class="absolute top-full mt-2 w-full rounded-2xl shadow-dropdown z-dropdown overflow-hidden"
         style="background-color: var(--color-card); border: 1px solid var(--color-border);"
       >
@@ -179,15 +179,25 @@ function close() {
   isOpen.value = false
 }
 
+function normalizeSuggestData(data) {
+  if (!data) return { products: [], categories: [] }
+  // Legacy backend returns string[] — map to { name, slug } with empty slug
+  if (Array.isArray(data)) {
+    return { products: data.map((name) => ({ name, slug: '' })), categories: [] }
+  }
+  return { products: data.products ?? [], categories: data.categories ?? [] }
+}
+
 const fetchSuggestions = useDebounceFn(async (q) => {
-  if (!q.trim()) { suggestions.value = { products: [], categories: [] }; return }
+  const trimmed = q.trim()
+  if (trimmed.length < 2) { suggestions.value = { products: [], categories: [] }; return }
   loading.value = true
   try {
-    const { data } = await http.get('/search/suggest', { params: { q } })
-    suggestions.value = data || { products: [], categories: [] }
-    logger.info('search: suggestions fetched', { q, products: suggestions.value.products?.length ?? 0, categories: suggestions.value.categories?.length ?? 0 }, 'AppHeaderSearch')
+    const { data } = await http.get('/search/suggest', { params: { q: trimmed } })
+    suggestions.value = normalizeSuggestData(data)
+    logger.info('search: suggestions fetched', { q: trimmed, products: suggestions.value.products.length, categories: suggestions.value.categories.length }, 'AppHeaderSearch')
   } catch (err) {
-    logger.error('search: suggest request failed', { q, err }, 'AppHeaderSearch')
+    logger.error('search: suggest request failed', { q: trimmed, err }, 'AppHeaderSearch')
     suggestions.value = { products: [], categories: [] }
   } finally {
     loading.value = false
@@ -203,7 +213,11 @@ function handleSearch() {
 }
 
 function goToProduct(item) {
-  router.push(`/product/${item.slug}`)
+  if (item.slug) {
+    router.push(`/product/${item.slug}`)
+  } else {
+    router.push({ path: '/search', query: { q: item.name } })
+  }
   close()
   query.value = ''
 }
