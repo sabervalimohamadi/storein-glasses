@@ -246,6 +246,7 @@
 <script setup>
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'جزئیات سفارش', robots: 'noindex,nofollow' })
 
 
 import { ref, computed, onMounted } from 'vue'
@@ -312,7 +313,6 @@ async function fetchOrder() {
   try {
     const { data } = await orderService.getMyOrder(route.params.id)
     order.value = data
-    document.title = `${settingsStore.siteName} - سفارش ${data.orderNumber}`
   } catch {
     order.value = null
   } finally {

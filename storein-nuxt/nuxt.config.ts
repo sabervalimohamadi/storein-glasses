@@ -27,13 +27,31 @@ export default defineNuxtConfig({
       charset: 'utf-8',
       viewport: 'width=device-width, initial-scale=1',
       meta: [
-        { name: 'theme-color', content: '#863bff' },
+        { name: 'theme-color',      content: '#863bff' },
         { name: 'application-name', content: 'استورین' },
+        { name: 'format-detection', content: 'telephone=no' },
+        { property: 'og:site_name', content: 'استورین' },
+        { property: 'og:locale',    content: 'fa_IR' },
       ],
       link: [
-        { rel: 'icon',     href: '/favicon.svg', type: 'image/svg+xml' },
-        { rel: 'manifest', href: '/site.webmanifest' },
+        { rel: 'icon',      href: '/favicon.svg', type: 'image/svg+xml' },
+        { rel: 'manifest',  href: '/site.webmanifest' },
+        { rel: 'alternate', hreflang: 'fa-IR', href: 'https://storein.ir/' },
       ],
+    },
+  },
+
+  nitro: {
+    routeRules: {
+      '/**': {
+        headers: {
+          'X-Content-Type-Options':    'nosniff',
+          'X-Frame-Options':           'SAMEORIGIN',
+          'Referrer-Policy':           'strict-origin-when-cross-origin',
+          'Permissions-Policy':        'camera=(), microphone=(), geolocation=()',
+          'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+        },
+      },
     },
   },
 

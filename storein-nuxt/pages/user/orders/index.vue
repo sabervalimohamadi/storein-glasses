@@ -193,6 +193,7 @@
 <script setup>
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'سفارش‌های من', robots: 'noindex,nofollow' })
 
 
 import { ref, onMounted }    from 'vue'

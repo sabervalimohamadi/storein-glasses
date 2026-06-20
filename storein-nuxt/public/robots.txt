@@ -1,9 +1,14 @@
 User-agent: *
 Allow: /
+Allow: /uploads/
+Allow: /*.css
+Allow: /*.js
+
+Disallow: /_nuxt/
 Disallow: /auth/
 Disallow: /checkout
 Disallow: /cart
-Disallow: /payment/result
+Disallow: /payment/
 Disallow: /user/
 Disallow: /api/
 

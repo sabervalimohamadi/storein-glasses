@@ -20,52 +20,40 @@
       <span class="text-text-primary font-medium truncate">{{ product?.name || '...' }}</span>
     </nav>
 
-    <!-- 404 state -->
-    <div v-if="notFound" class="text-center py-20">
-      <div class="text-6xl mb-4">🔍</div>
-      <h1 class="text-xl font-bold text-text-primary mb-2">محصول یافت نشد</h1>
-      <p class="text-text-secondary mb-6">این محصول وجود ندارد یا حذف شده است</p>
-      <NuxtLink to="/products">
-        <BaseButton>مشاهده همه محصولات</BaseButton>
-      </NuxtLink>
+    <!-- Gallery + Info -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+      <ProductGallery
+        ref="galleryRef"
+        :images="product?.images || []"
+        :name="product?.name || ''"
+        :loading="pending"
+      />
+      <ProductInfo
+        ref="infoRef"
+        :product="product"
+        :loading="pending"
+        @add-to-cart="onAddToCart"
+        @variant-change="onVariantChange"
+      />
     </div>
 
-    <template v-else>
-      <!-- Gallery + Info -->
-      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
-        <ProductGallery
-          ref="galleryRef"
-          :images="product?.images || []"
-          :name="product?.name || ''"
-          :loading="loading"
-        />
-        <ProductInfo
-          ref="infoRef"
-          :product="product"
-          :loading="loading"
-          @add-to-cart="onAddToCart"
-          @variant-change="onVariantChange"
-        />
-      </div>
+    <ProductTabs
+      :product="product"
+      :review-stats="reviewStats"
+      :reviews-loading="reviewsLoading"
+      class="mb-8"
+    />
 
-      <ProductTabs
-        :product="product"
-        :review-stats="reviewStats"
-        :reviews-loading="reviewsLoading"
-        class="mb-8"
-      />
-
-      <RelatedProducts
-        v-if="product"
-        :category-slug="product.category?.slug"
-        :exclude-id="product._id"
-      />
-    </template>
+    <RelatedProducts
+      v-if="product"
+      :category-slug="product.category?.slug"
+      :exclude-id="product._id"
+    />
 
     <!-- Mobile sticky bar -->
     <Transition name="slide-up">
       <div
-        v-if="showStickyBar && product && !loading"
+        v-if="showStickyBar && product && !pending"
         class="fixed bottom-0 left-0 right-0 z-header md:hidden border-t border-surface-border shadow-modal px-4 py-3 flex items-center gap-3"
         style="background-color: var(--color-card);"
       >
@@ -87,7 +75,6 @@
 
 <script setup>
 import { useIntersectionObserver } from '@vueuse/core'
-import { productService }  from '~/services/product.service'
 import { reviewService }   from '~/services/review.service'
 import { formatPrice }     from '~/utils/formatters'
 import ProductGallery  from '~/components/product-detail/ProductGallery.vue'
@@ -105,29 +92,37 @@ const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
 const settingsStore = useSettingsStore()
 
-const product         = ref(null)
-const loading         = ref(true)
-const notFound        = ref(false)
-const reviewStats     = ref(null)
-const reviewsLoading  = ref(false)
-const selectedVariant = ref(null)
-const addingToCart    = ref(false)
-const galleryRef      = ref(null)
-const infoRef         = ref(null)
-const showStickyBar   = ref(false)
+const slug = computed(() => route.params.slug)
+
+// ── SSR Data Fetch — runs on server, data available before render ──
+const { data: product, error, pending, refresh } = await useFetch(
+  () => `/api/v1/products/slug/${slug.value}`,
+  {
+    key:       () => `product-${slug.value}`,
+    transform: (r) => r?.data ?? r,
+  }
+)
+
+if (error.value) {
+  throw createError({ statusCode: error.value.statusCode || 404, fatal: true, message: 'محصول یافت نشد' })
+}
 
 // ── SEO ─────────────────────────────────────────────────────────
 useSeoMeta({
-  title:         () => product.value?.metaTitle    || product.value?.name || '',
+  title:         () => product.value?.metaTitle       || product.value?.name || '',
   description:   () => product.value?.metaDescription || product.value?.shortDescription || '',
   ogTitle:       () => product.value?.name || '',
   ogDescription: () => product.value?.shortDescription || '',
-  ogImage:       () => product.value?.images?.[0] || undefined,
-  ogType:        'product',
-  ogUrl:         () => `${config.public.siteUrl}/product/${route.params.slug}`,
+  ogImage: () => {
+    const img = product.value?.images?.[0]
+    if (!img) return undefined
+    return img.startsWith('http') ? img : `${config.public.siteUrl}${img}`
+  },
+  ogType: 'product',
+  ogUrl:  () => `${config.public.siteUrl}/product/${slug.value}`,
 })
 useHead({
-  link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/product/${route.params.slug}` }],
+  link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/product/${slug.value}` }],
   script: computed(() => {
     const p = product.value
     if (!p) return []
@@ -165,9 +160,21 @@ useHead({
   }),
 })
 
+// ── Client state ─────────────────────────────────────────────────
+const selectedVariant = ref(product.value?.variants?.[0] || null)
+const addingToCart    = ref(false)
+const galleryRef      = ref(null)
+const infoRef         = ref(null)
+const showStickyBar   = ref(false)
+const reviewStats     = ref(null)
+const reviewsLoading  = ref(false)
+
 const isInStock = computed(() =>
   selectedVariant.value ? selectedVariant.value.stock > 0 : (product.value?.totalStock ?? 0) > 0
 )
+
+// Re-init variant on SPA slug navigation
+watch(slug, () => { selectedVariant.value = product.value?.variants?.[0] || null })
 
 let stopObserver = null
 function setupStickyObserver() {
@@ -177,28 +184,6 @@ function setupStickyObserver() {
     showStickyBar.value = !entry.isIntersecting
   })
   stopObserver = stop
-}
-
-async function fetchProduct() {
-  const slug = route.params.slug
-  loading.value  = true
-  notFound.value = false
-  try {
-    const { data } = await productService.getBySlug(slug)
-    product.value = data
-    if (data.variants?.length) selectedVariant.value = data.variants[0]
-    try {
-      reviewsLoading.value = true
-      const { data: reviewData } = await reviewService.getByProduct(data._id, { page: 1, limit: 1 })
-      reviewStats.value = reviewData.stats ?? null
-    } catch { /* non-critical */ } finally { reviewsLoading.value = false }
-  } catch (err) {
-    if (err.response?.status === 404) notFound.value = true
-    else ui.addToast('خطا در بارگذاری محصول', 'error')
-  } finally {
-    loading.value = false
-    setTimeout(setupStickyObserver, 300)
-  }
 }
 
 function onVariantChange(variant) { selectedVariant.value = variant }
@@ -215,18 +200,18 @@ async function quickAddToCart() {
 }
 
 onMounted(async () => {
-  await Promise.allSettled([fetchProduct(), wishlistStore.fetchWishlist()])
+  wishlistStore.fetchWishlist()
+  setTimeout(setupStickyObserver, 300)
+  if (product.value?._id) {
+    try {
+      reviewsLoading.value = true
+      const { data: reviewData } = await reviewService.getByProduct(product.value._id, { page: 1, limit: 1 })
+      reviewStats.value = reviewData.stats ?? null
+    } catch { /* non-critical */ } finally { reviewsLoading.value = false }
+  }
 })
 
 onUnmounted(() => { stopObserver?.() })
-
-watch(() => route.params.slug, (newSlug, oldSlug) => {
-  if (newSlug && newSlug !== oldSlug) {
-    product.value = null
-    selectedVariant.value = null
-    fetchProduct()
-  }
-})
 </script>
 
 <style scoped>

@@ -72,10 +72,37 @@ useSeoMeta({
 })
 useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/products` }] })
 
+// ── SSR: initialize filters + pre-fetch products ────────────────
+productStore.fromQueryParams(route.query)
+await useAsyncData('products-list', async () => {
+  const params = {
+    page:   productStore.page,
+    limit:  productStore.limit,
+    status: 'active',
+    sort:   productStore.filters.sortBy,
+    ...(productStore.filters.category          ? { category:      productStore.filters.category                  } : {}),
+    ...(productStore.filters.brand             ? { brand:         productStore.filters.brand                     } : {}),
+    ...(productStore.filters.genders?.length   ? { gender:        productStore.filters.genders.join(',')         } : {}),
+    ...(productStore.filters.frameShapes?.length ? { frameShape:  productStore.filters.frameShapes.join(',')     } : {}),
+    ...(productStore.filters.frameMaterials?.length ? { frameMaterial: productStore.filters.frameMaterials.join(',') } : {}),
+    ...(productStore.filters.minPrice          ? { minPrice:      productStore.filters.minPrice                  } : {}),
+    ...(productStore.filters.maxPrice          ? { maxPrice:      productStore.filters.maxPrice                  } : {}),
+    ...(productStore.filters.inStock           ? { inStock:       true                                           } : {}),
+  }
+  const res = await $fetch('/api/v1/products', { params })
+  const d   = res?.data ?? res
+  productStore.products = d?.products ?? d?.items ?? []
+  productStore.total    = d?.total ?? 0
+  return null
+})
+
 onMounted(async () => {
   await categoryStore.fetchCategories()
-  productStore.fromQueryParams(route.query)
-  await Promise.allSettled([productStore.fetchProducts(), wishlistStore.fetchWishlist()])
+  wishlistStore.fetchWishlist()
+  if (!productStore.products.length) {
+    productStore.fromQueryParams(route.query)
+    await productStore.fetchProducts()
+  }
 })
 
 const debouncedFetch = useDebounceFn(async () => {

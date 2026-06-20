@@ -86,6 +86,7 @@
 <script setup>
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'علاقه‌مندی‌ها', robots: 'noindex,nofollow' })
 
 
 import { ref, onMounted }    from 'vue'

@@ -64,33 +64,91 @@ const productStore  = useProductStore()
 const categoryStore = useCategoryStore()
 const wishlistStore = useWishlistStore()
 
-const mobileFilterOpen = ref(false)
+const mobileFilterOpen  = ref(false)
+const categorySlug      = computed(() => route.params.slug)
 
 const currentCategory = computed(() => {
-  const slug = route.params.slug
   const flat = []
   function flatten(nodes) {
     if (!Array.isArray(nodes)) return
     nodes.forEach(n => { flat.push(n); if (n.children?.length) flatten(n.children) })
   }
   flatten(categoryStore.categories)
-  return flat.find(c => c.slug === slug) || null
+  return flat.find(c => c.slug === categorySlug.value) || null
 })
 
 useSeoMeta({
   title:       () => currentCategory.value?.name || 'دسته‌بندی',
   description: () => currentCategory.value?.description || 'خرید انواع عینک طبی، آفتابی و لنز',
   ogType:      'website',
-  ogUrl:       () => `${config.public.siteUrl}/category/${route.params.slug}`,
+  ogUrl:       () => `${config.public.siteUrl}/category/${categorySlug.value}`,
 })
-useHead({ link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/category/${route.params.slug}` }] })
+useHead({
+  link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/category/${categorySlug.value}` }],
+  script: computed(() => {
+    const cat = currentCategory.value
+    if (!cat) return []
+    return [{
+      type: 'application/ld+json', key: 'jsonld-breadcrumb',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org', '@type': 'BreadcrumbList',
+        itemListElement: [
+          { '@type': 'ListItem', position: 1, name: 'خانه',      item: config.public.siteUrl },
+          { '@type': 'ListItem', position: 2, name: cat.name,    item: `${config.public.siteUrl}/category/${cat.slug}` },
+        ],
+      }),
+    }]
+  }),
+})
+
+// ── SSR: fetch categories + products ────────────────────────────
+const { data: _cats } = await useAsyncData(
+  'categories',
+  () => $fetch('/api/v1/categories/tree'),
+  { transform: (r) => r?.data ?? r }
+)
+if (_cats.value && !categoryStore.categories.length) {
+  categoryStore.categories = Array.isArray(_cats.value) ? _cats.value : []
+}
+
+productStore.resetFilters()
+productStore.filters.category = categorySlug.value
+productStore.fromQueryParams(route.query)
+
+await useAsyncData(
+  () => `category-products-${categorySlug.value}`,
+  async () => {
+    const res = await $fetch('/api/v1/products', {
+      params: {
+        category: categorySlug.value,
+        page:     productStore.page,
+        limit:    productStore.limit,
+        status:   'active',
+        sort:     productStore.filters.sortBy,
+        ...(productStore.filters.genders?.length   ? { gender:        productStore.filters.genders.join(',')    } : {}),
+        ...(productStore.filters.frameShapes?.length ? { frameShape:  productStore.filters.frameShapes.join(',') } : {}),
+        ...(productStore.filters.frameMaterials?.length ? { frameMaterial: productStore.filters.frameMaterials.join(',') } : {}),
+        ...(productStore.filters.minPrice          ? { minPrice:      productStore.filters.minPrice             } : {}),
+        ...(productStore.filters.maxPrice          ? { maxPrice:      productStore.filters.maxPrice             } : {}),
+        ...(productStore.filters.inStock           ? { inStock:       true                                      } : {}),
+      }
+    })
+    const d = res?.data ?? res
+    productStore.products = d?.products ?? d?.items ?? []
+    productStore.total    = d?.total ?? 0
+    return null
+  }
+)
 
 onMounted(async () => {
-  await categoryStore.fetchCategories()
-  productStore.resetFilters()
-  productStore.filters.category = route.params.slug
-  productStore.fromQueryParams(route.query)
-  await Promise.allSettled([productStore.fetchProducts(), wishlistStore.fetchWishlist()])
+  if (!categoryStore.categories.length) await categoryStore.fetchCategories()
+  wishlistStore.fetchWishlist()
+  if (!productStore.products.length) {
+    productStore.resetFilters()
+    productStore.filters.category = categorySlug.value
+    productStore.fromQueryParams(route.query)
+    await productStore.fetchProducts()
+  }
 })
 
 watch(() => route.params.slug, async (slug, prevSlug) => {

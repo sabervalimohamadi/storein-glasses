@@ -1,7 +1,7 @@
 <template>
   <div class="container mx-auto px-4 py-8 max-w-3xl">
 
-    <div v-if="loading" class="space-y-4 animate-pulse">
+    <div v-if="pending" class="space-y-4 animate-pulse">
       <div class="h-8 bg-surface rounded-lg w-2/3" />
       <div class="h-4 bg-surface rounded w-full" />
       <div class="h-4 bg-surface rounded w-5/6" />
@@ -21,34 +21,29 @@
 </template>
 
 <script setup>
-import { pageService } from '~/services/page.service'
-
 definePageMeta({ layout: 'default' })
 
-const route   = useRoute()
-const config  = useRuntimeConfig()
-const page    = ref(null)
-const loading = ref(true)
+const route  = useRoute()
+const config = useRuntimeConfig()
 
-useSeoMeta({
-  title:       () => page.value?.metaTitle  || page.value?.title || '',
-  description: () => page.value?.metaDescription || page.value?.excerpt || '',
-  ogUrl:       () => `${config.public.siteUrl}/pages/${route.params.slug}`,
-})
-useHead({ link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/pages/${route.params.slug}` }] })
+const slug = computed(() => route.params.slug)
 
-async function load(slug) {
-  loading.value = true
-  page.value    = null
-  try {
-    const { data } = await pageService.getBySlug(slug)
-    page.value = data
-  } catch { /* stays null → 404 block */ }
-  finally { loading.value = false }
+// ── SSR Data Fetch — Google sees full page content ──────────────
+const { data: page, error, pending } = await useFetch(
+  () => `/api/v1/pages/slug/${slug.value}`,
+  { key: () => `page-${slug.value}`, transform: (r) => r?.data ?? r }
+)
+
+if (error.value) {
+  throw createError({ statusCode: 404, fatal: true, message: 'صفحه یافت نشد' })
 }
 
-onMounted(() => load(route.params.slug))
-watch(() => route.params.slug, (s) => s && load(s))
+useSeoMeta({
+  title:       () => page.value?.metaTitle       || page.value?.title   || '',
+  description: () => page.value?.metaDescription || page.value?.excerpt || '',
+  ogUrl:       () => `${config.public.siteUrl}/pages/${slug.value}`,
+})
+useHead({ link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/pages/${slug.value}` }] })
 </script>
 
 <style>

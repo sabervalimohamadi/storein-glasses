@@ -131,6 +131,7 @@
 <script setup>
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'اعلان‌ها', robots: 'noindex,nofollow' })
 
 
 import { ref, onMounted } from 'vue'

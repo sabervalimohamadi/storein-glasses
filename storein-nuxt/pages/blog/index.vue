@@ -108,6 +108,26 @@ const sortOptions = [
   { value: 'popular', icon: '🔥', label: 'محبوب‌ترین' },
 ]
 
+// ── SSR: pre-fetch posts and tags ───────────────────────────────
+await Promise.all([
+  useAsyncData('blog-posts', async () => {
+    const res = await $fetch('/api/v1/blog', {
+      params: { page: store.filters.page, limit: store.filters.limit, sortBy: store.filters.sortBy, status: 'published' },
+    })
+    const d = res?.data ?? res
+    store.posts      = d?.posts      ?? []
+    store.total      = d?.total      ?? 0
+    store.totalPages = d?.totalPages ?? 1
+    return null
+  }),
+  useAsyncData('blog-tags', async () => {
+    const res = await $fetch('/api/v1/blog/tags')
+    const d   = res?.data ?? res
+    store.tags = Array.isArray(d) ? d : []
+    return null
+  }),
+])
+
 const onSearchInput = useDebounceFn(() => {
   store.filters.page = 1
   store.fetchPosts()
@@ -123,5 +143,8 @@ function goToPage(p) {
   if (import.meta.client) window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-onMounted(() => { store.fetchPosts(); store.fetchTags() })
+onMounted(() => {
+  if (!store.posts.length) store.fetchPosts()
+  if (!store.tags.length)  store.fetchTags()
+})
 </script>

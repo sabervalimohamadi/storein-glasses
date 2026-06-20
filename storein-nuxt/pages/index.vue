@@ -41,14 +41,12 @@ import ProductRow    from '~/components/home/ProductRow.vue'
 import SpecialBanner from '~/components/home/SpecialBanner.vue'
 import MostViewed    from '~/components/home/MostViewed.vue'
 import TrustStrip    from '~/components/home/TrustStrip.vue'
-import { productService } from '~/services/product.service'
 
 definePageMeta({ layout: 'default' })
 
 const config        = useRuntimeConfig()
 const settingsStore = useSettingsStore()
 const wishlistStore = useWishlistStore()
-const ui            = useUiStore()
 
 useSeoMeta({
   title:       () => settingsStore.tagline,
@@ -58,33 +56,41 @@ useSeoMeta({
 })
 useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/` }] })
 
-const newArrivals = ref([])
-const bestsellers = ref([])
-const sunglasses  = ref([])
-const loadingNew  = ref(true)
-const loadingBest = ref(true)
-const loadingSun  = ref(true)
+// ── SSR Data Fetch — Google sees real product content ───────────
+const [
+  { data: rawNew,  pending: loadingNew },
+  { data: rawBest, pending: loadingBest },
+  { data: rawSun,  pending: loadingSun },
+] = await Promise.all([
+  useAsyncData('home-new',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest' } }),                              { transform: (r) => r?.data ?? r }),
+  useAsyncData('home-best', () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'bestseller' } }),                          { transform: (r) => r?.data ?? r }),
+  useAsyncData('home-sun',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest', category: 'eynak-aftabi' } }),    { transform: (r) => r?.data ?? r }),
+])
 
-async function fetchSection(params, target, loadingRef) {
-  loadingRef.value = true
-  try {
-    const { data } = await productService.getAll({ status: 'active', limit: 8, ...params })
-    target.value = data?.products ?? data?.items ?? []
-  } catch {
-    target.value = []
-  } finally {
-    loadingRef.value = false
-  }
-}
+const newArrivals = computed(() => rawNew.value?.products  ?? rawNew.value?.items  ?? [])
+const bestsellers = computed(() => rawBest.value?.products ?? rawBest.value?.items ?? [])
+const sunglasses  = computed(() => rawSun.value?.products  ?? rawSun.value?.items  ?? [])
 
-onMounted(() => {
-  Promise.allSettled([
-    fetchSection({ sort: 'newest' },                            newArrivals, loadingNew),
-    fetchSection({ sort: 'bestseller' },                        bestsellers, loadingBest),
-    fetchSection({ sort: 'newest', category: 'eynak-aftabi' }, sunglasses,  loadingSun),
-    wishlistStore.fetchWishlist(),
-  ])
+// ItemList JSON-LD for bestsellers
+useHead({
+  script: computed(() => {
+    const items = bestsellers.value
+    if (!items?.length) return []
+    return [{
+      type: 'application/ld+json', key: 'jsonld-itemlist',
+      innerHTML: JSON.stringify({
+        '@context': 'https://schema.org', '@type': 'ItemList',
+        name: 'پرفروش‌ترین محصولات', url: `${config.public.siteUrl}/`,
+        itemListElement: items.map((p, i) => ({
+          '@type': 'ListItem', position: i + 1,
+          url: `${config.public.siteUrl}/product/${p.slug}`, name: p.name,
+        })),
+      }),
+    }]
+  }),
 })
+
+onMounted(() => { wishlistStore.fetchWishlist() })
 </script>
 
 <style scoped>

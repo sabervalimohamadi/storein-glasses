@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen bg-[var(--color-bg)]">
 
-    <template v-if="store.loading">
+    <template v-if="pending">
       <div class="animate-pulse">
         <div class="h-64 bg-gray-300 dark:bg-gray-700 w-full"></div>
         <div class="container mx-auto px-4 py-8 max-w-3xl space-y-4">
@@ -10,14 +10,6 @@
         </div>
       </div>
     </template>
-
-    <div v-else-if="notFound" class="container mx-auto px-4 py-24 text-center">
-      <div class="text-6xl mb-4">📭</div>
-      <h1 class="text-2xl font-black text-[var(--color-text-primary)] mb-2">مقاله یافت نشد</h1>
-      <NuxtLink to="/blog" class="inline-flex items-center gap-2 bg-brand text-white px-5 py-2.5 rounded-xl text-sm font-medium hover:bg-brand-dark transition-colors">
-        بازگشت به بلاگ
-      </NuxtLink>
-    </div>
 
     <article v-else-if="post">
       <div v-if="post.featuredImage" class="relative h-64 sm:h-80 lg:h-96 overflow-hidden bg-gray-900">
@@ -83,35 +75,46 @@ definePageMeta({ layout: 'default' })
 
 const route         = useRoute()
 const config        = useRuntimeConfig()
-const store         = useBlogStore()
 const settingsStore = useSettingsStore()
 
-const notFound = ref(false)
-const copied   = ref(false)
+const slug = computed(() => route.params.slug)
 
-const post = computed(() => store.post)
+// ── SSR Data Fetch — Google sees full article content ──────────
+const { data: post, error, pending } = await useFetch(
+  () => `/api/v1/blog/slug/${slug.value}`,
+  { key: () => `blog-${slug.value}`, transform: (r) => r?.data ?? r }
+)
 
+if (error.value) {
+  throw createError({ statusCode: 404, fatal: true, message: 'مقاله یافت نشد' })
+}
+
+// ── SEO ─────────────────────────────────────────────────────────
 useSeoMeta({
-  title:                () => post.value?.metaTitle    || post.value?.title    || '',
+  title:                () => post.value?.metaTitle       || post.value?.title   || '',
   description:          () => post.value?.metaDescription || post.value?.excerpt || '',
-  ogTitle:              () => post.value?.title    || '',
-  ogDescription:        () => post.value?.excerpt  || '',
-  ogImage:              () => post.value?.featuredImage || undefined,
+  ogTitle:              () => post.value?.title   || '',
+  ogDescription:        () => post.value?.excerpt || '',
+  ogImage: () => {
+    const img = post.value?.featuredImage
+    if (!img) return undefined
+    return img.startsWith('http') ? img : `${config.public.siteUrl}${img}`
+  },
   ogType:               'article',
   articlePublishedTime: () => post.value?.publishedAt || undefined,
-  ogUrl:                () => `${config.public.siteUrl}/blog/${route.params.slug}`,
+  ogUrl:                () => `${config.public.siteUrl}/blog/${slug.value}`,
 })
 useHead({
-  link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/blog/${route.params.slug}` }],
+  link: [{ rel: 'canonical', href: () => `${config.public.siteUrl}/blog/${slug.value}` }],
   script: computed(() => {
     const p = post.value
     if (!p) return []
+    const img = p.featuredImage ? (p.featuredImage.startsWith('http') ? p.featuredImage : `${config.public.siteUrl}${p.featuredImage}`) : null
     return [{
-      type: 'application/ld+json',
-      key: 'jsonld-blog',
+      type: 'application/ld+json', key: 'jsonld-blog',
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org', '@type': 'BlogPosting',
-        headline: p.title, description: p.excerpt, image: p.featuredImage || null,
+        headline: p.title, description: p.excerpt, image: img,
         datePublished: p.publishedAt, dateModified: p.updatedAt,
         url: `${config.public.siteUrl}/blog/${p.slug}`,
         author:    { '@type': 'Organization', name: settingsStore.siteName },
@@ -121,6 +124,8 @@ useHead({
     }]
   }),
 })
+
+const copied = ref(false)
 
 function formatDate(iso) {
   if (!iso) return ''
@@ -134,17 +139,6 @@ async function copyLink() {
     setTimeout(() => { copied.value = false }, 2500)
   } catch { /* ignore */ }
 }
-
-async function loadPost(slug) {
-  notFound.value = false
-  try {
-    await store.fetchPostBySlug(slug)
-    if (!store.post) notFound.value = true
-  } catch { notFound.value = true }
-}
-
-onMounted(() => loadPost(route.params.slug))
-watch(() => route.params.slug, (slug) => { if (slug) loadPost(slug) })
 </script>
 
 <style>

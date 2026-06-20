@@ -320,6 +320,7 @@
 <script setup>
 
 definePageMeta({ layout: 'default', middleware: ['auth'] })
+useSeoMeta({ title: 'آدرس‌های من', robots: 'noindex,nofollow' })
 
 
 import { ref, computed, onMounted } from 'vue'

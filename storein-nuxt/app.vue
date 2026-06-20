@@ -20,7 +20,11 @@ useSeoMeta({
   ogSiteName:    () => settingsStore.siteName,
   description:   () => settingsStore.description,
   ogDescription: () => settingsStore.description,
-  ogImage:       () => settingsStore.ogImage || undefined,
+  ogImage: () => {
+    const img = settingsStore.ogImage
+    if (!img) return undefined
+    return img.startsWith('http') ? img : `${siteUrl}${img}`
+  },
   ogLocale:      'fa_IR',
   twitterCard:   'summary_large_image',
 })
