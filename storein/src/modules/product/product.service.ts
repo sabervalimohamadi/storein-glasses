@@ -153,7 +153,7 @@ export class ProductService {
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
-        .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount category tags specs createdAt variants')
+        .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount viewCount soldCount category tags specs createdAt variants')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)

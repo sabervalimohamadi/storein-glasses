@@ -47,6 +47,15 @@
             <span v-else-if="idx === 2">🥉</span>
             <span v-else class="mv__rank-num font-fanum">{{ idx + 1 }}</span>
           </div>
+          <!-- View count badge -->
+          <div class="mv__views">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                 stroke-linecap="round" stroke-linejoin="round" class="mv__views-icon">
+              <path d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.964-7.178Z"/>
+              <path d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"/>
+            </svg>
+            <span class="mv__views-count font-fanum">{{ formatViewCount(product.viewCount) }}</span>
+          </div>
           <BaseProductCard
             :product="product"
             :wishlist="wishlistStore.isInWishlist(product._id)"
@@ -88,6 +97,11 @@ async function handleAddToCart(product) {
   } catch {
     ui.addToast('خطا در افزودن به سبد خرید', 'error')
   }
+}
+
+function formatViewCount(count = 0) {
+  if (count >= 1000) return (count / 1000).toFixed(1).replace(/\.0$/, '') + 'K'
+  return String(count)
 }
 
 onMounted(async () => {
@@ -258,6 +272,39 @@ onMounted(async () => {
   font-weight: 700;
   font-size: 0.65rem;
   filter: drop-shadow(0 0 3px rgba(57,255,20,0.8));
+}
+
+/* ── View count badge ───────────────────────────────── */
+.mv__views {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 2px 6px;
+  border-radius: 20px;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(6px);
+  border: 1px solid rgba(57,255,20,0.25);
+  pointer-events: none;
+}
+
+.mv__views-icon {
+  width: 11px;
+  height: 11px;
+  color: #39ff14;
+  flex-shrink: 0;
+  filter: drop-shadow(0 0 3px rgba(57,255,20,0.7));
+}
+
+.mv__views-count {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: rgba(255,255,255,0.85);
+  line-height: 1;
+  direction: ltr;
 }
 
 .mv__empty {
