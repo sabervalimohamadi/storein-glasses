@@ -92,22 +92,51 @@
 
       <!-- ④ Price -->
       <div class="pb-4 border-b border-surface-border">
-        <template v-if="selectedVariant?.comparePrice > selectedVariant?.price">
-          <div class="flex items-center gap-2 mb-1">
-            <span class="text-text-disabled line-through text-sm font-fanum">
-              {{ formatPrice(selectedVariant.comparePrice) }}
-            </span>
-            <BaseBadge variant="red" size="sm">{{ discountPercent }}٪ تخفیف</BaseBadge>
+
+        <!-- قیمت عمده برای کاربران wholesale -->
+        <template v-if="auth.isWholesale && selectedVariant?.wholesalePrice">
+          <div class="inline-flex items-center gap-1.5 bg-amber-100 text-amber-800 text-xs font-bold px-3 py-1 rounded-full mb-2">
+            <span>🏪</span>
+            <span>قیمت عمده — حداقل {{ selectedVariant.wholesaleMinQty || 10 }} عدد</span>
           </div>
-          <div class="text-2xl font-black text-text-primary font-fanum">
-            {{ formatPrice(selectedVariant?.price || product.minPrice) }}
+          <div class="text-2xl font-black text-amber-600 font-fanum">
+            {{ formatPrice(selectedVariant.wholesalePrice) }} تومان
+          </div>
+          <div class="text-sm line-through mt-0.5 font-fanum" style="color: var(--color-text-disabled);">
+            قیمت خرده: {{ formatPrice(selectedVariant.price) }} تومان
           </div>
         </template>
+
+        <!-- قیمت معمولی -->
         <template v-else>
-          <div class="text-2xl font-black text-text-primary font-fanum">
-            {{ formatPrice(selectedVariant?.price || product.minPrice) }}
-          </div>
+          <template v-if="selectedVariant?.comparePrice > selectedVariant?.price">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-text-disabled line-through text-sm font-fanum">
+                {{ formatPrice(selectedVariant.comparePrice) }}
+              </span>
+              <BaseBadge variant="red" size="sm">{{ discountPercent }}٪ تخفیف</BaseBadge>
+            </div>
+            <div class="text-2xl font-black text-text-primary font-fanum">
+              {{ formatPrice(selectedVariant?.price || product.minPrice) }}
+            </div>
+          </template>
+          <template v-else>
+            <div class="text-2xl font-black text-text-primary font-fanum">
+              {{ formatPrice(selectedVariant?.price || product.minPrice) }}
+            </div>
+          </template>
+
+          <!-- لینک معرفی قیمت عمده به کاربران غیر-عمده -->
+          <NuxtLink
+            v-if="product.minWholesalePrice"
+            to="/wholesale"
+            class="mt-2 text-xs text-brand hover:underline flex items-center gap-1"
+          >
+            <span>🏪</span>
+            <span>قیمت عمده این محصول: {{ formatPrice(product.minWholesalePrice) }} تومان — درخواست عمده‌فروشی</span>
+          </NuxtLink>
         </template>
+
       </div>
 
       <!-- ⑤ Stock status -->
@@ -209,6 +238,7 @@ import { ref, computed, watch } from 'vue'
 import { useCartStore }     from '~/stores/cart.store'
 import { useWishlistStore } from '~/stores/wishlist.store'
 import { useUiStore }       from '~/stores/ui.store'
+import { useAuthStore }     from '~/stores/auth.store'
 import { formatPrice, formatNumber, calcDiscount } from '~/utils/formatters'
 import BaseRating   from '~/components/common/BaseRating.vue'
 import BaseBadge    from '~/components/common/BaseBadge.vue'
@@ -224,6 +254,7 @@ const emit = defineEmits(['add-to-cart', 'variant-change'])
 const cartStore     = useCartStore()
 const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
+const auth          = useAuthStore()
 
 const addingToCart  = ref(false)
 const cartButtonRef = ref(null)

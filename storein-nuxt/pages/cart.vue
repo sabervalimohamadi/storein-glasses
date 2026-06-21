@@ -49,8 +49,13 @@
             </div>
 
             <div class="flex-1 min-w-0 flex flex-col gap-2">
-              <NuxtLink v-if="item.slug" :to="`/product/${item.slug}`" class="text-text-primary font-medium text-sm leading-6 hover:text-brand line-clamp-2 transition-colors">{{ item.name }}</NuxtLink>
-              <span v-else class="text-text-primary font-medium text-sm line-clamp-2">{{ item.name }}</span>
+              <div class="flex items-center gap-2 flex-wrap">
+                <NuxtLink v-if="item.slug" :to="`/product/${item.slug}`" class="text-text-primary font-medium text-sm leading-6 hover:text-brand line-clamp-2 transition-colors">{{ item.name }}</NuxtLink>
+                <span v-else class="text-text-primary font-medium text-sm line-clamp-2">{{ item.name }}</span>
+                <span v-if="item.isWholesalePrice" class="text-xs bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full font-bold flex-shrink-0">
+                  🏪 قیمت عمده
+                </span>
+              </div>
 
               <div v-if="item.attributes?.length" class="flex flex-wrap gap-1.5">
                 <span v-for="attr in item.attributes" :key="attr.key" class="text-xs text-text-secondary bg-surface px-2 py-0.5 rounded-lg border border-surface-border">{{ attr.key }}: {{ attr.value }}</span>

@@ -68,19 +68,23 @@ export class ProductService {
     maxPrice: number;
     totalStock: number;
     maxComparePrice: number;
+    minWholesalePrice: number | null;
   } {
     const active = variants.filter((v) => v.isActive !== false);
-    if (!active.length) return { minPrice: 0, maxPrice: 0, totalStock: 0, maxComparePrice: 0 };
+    if (!active.length) return { minPrice: 0, maxPrice: 0, totalStock: 0, maxComparePrice: 0, minWholesalePrice: null };
 
     const prices = active.map((v) => v.price);
     const totalStock = active.reduce((s, v) => s + (v.stock ?? 0), 0);
     const comparePrices = active.filter((v) => v.comparePrice > 0).map((v) => v.comparePrice);
     const maxComparePrice = comparePrices.length ? Math.max(...comparePrices) : 0;
+    const wholesalePrices = active.filter((v) => v.wholesalePrice > 0).map((v) => v.wholesalePrice);
+    const minWholesalePrice = wholesalePrices.length ? Math.min(...wholesalePrices) : null;
     return {
       minPrice: Math.min(...prices),
       maxPrice: Math.max(...prices),
       totalStock,
       maxComparePrice,
+      minWholesalePrice,
     };
   }
 

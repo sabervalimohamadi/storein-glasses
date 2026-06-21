@@ -159,6 +159,12 @@ const routes = [
     component: () => import('@/views/notifications/NotificationsSendView.vue'),
     meta: { layout: 'admin', title: 'ارسال پیام', adminOnly: true },
   },
+  {
+    path: '/wholesale',
+    name: 'wholesale-requests',
+    component: () => import('@/views/wholesale/WholesaleRequestsView.vue'),
+    meta: { layout: 'admin', title: 'درخواست‌های عمده', permission: 'users' },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 

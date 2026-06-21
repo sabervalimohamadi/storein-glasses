@@ -70,6 +70,9 @@ export class Product {
   @Prop({ default: 0 })
   maxComparePrice: number;
 
+  @Prop({ type: Number, default: null })
+  minWholesalePrice: number | null;
+
   @Prop({ type: [String], default: [] })
   tags: string[];
 

@@ -5,6 +5,7 @@ import {
 import { IsArray, IsIn, IsString } from 'class-validator';
 import { AdminService } from './admin.service';
 import { DateRangeDto, LowStockDto } from './dto/date-range.dto';
+import { WholesaleActionDto } from './dto/wholesale-action.dto';
 import { JwtAuthGuard }    from '../auth/guards/jwt-auth.guard';
 import { AdminGuard }      from '../../common/guards/admin.guard';
 import { SuperAdminGuard } from '../../common/guards/super-admin.guard';
@@ -88,6 +89,20 @@ export class AdminController {
   @UseGuards(SuperAdminGuard)
   demoteFromAdmin(@Param('id') id: string) {
     return this.adminService.demoteFromAdmin(id);
+  }
+
+  // ── Wholesale ─────────────────────────────────────────────────
+  @Get('wholesale-requests')
+  getWholesaleRequests(@Query('status') status?: string) {
+    return this.adminService.getWholesaleRequests(status);
+  }
+
+  @Patch('wholesale-requests/:userId')
+  handleWholesaleRequest(
+    @Param('userId') userId: string,
+    @Body() dto: WholesaleActionDto,
+  ) {
+    return this.adminService.handleWholesaleRequest(userId, dto);
   }
 
   // ── Cache ─────────────────────────────────────────────────────

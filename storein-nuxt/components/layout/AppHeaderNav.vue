@@ -105,13 +105,15 @@ const hoveredId = ref(null)
 let closeTimer  = null
 
 const quickLinks = [
-  { name: 'home', label: 'صفحه اصلی', to: '/' },
-  { name: 'blog', label: 'بلاگ',      to: '/blog' },
+  { name: 'home',      label: 'صفحه اصلی',  to: '/' },
+  { name: 'blog',      label: 'بلاگ',        to: '/blog' },
+  { name: 'wholesale', label: 'فروش عمده',   to: '/wholesale' },
 ]
 
 function isLinkActive(link) {
-  if (link.name === 'home') return route.path === '/'
-  if (link.name === 'blog') return route.name === 'blog' || route.name === 'blog-detail'
+  if (link.name === 'home')      return route.path === '/'
+  if (link.name === 'blog')      return route.name === 'blog' || route.name === 'blog-detail'
+  if (link.name === 'wholesale') return route.path === '/wholesale'
   if (link.to?.params?.slug) return route.params?.slug === link.to.params.slug
   return false
 }

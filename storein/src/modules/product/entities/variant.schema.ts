@@ -31,6 +31,12 @@ export class Variant {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ type: Number, min: 0, default: null })
+  wholesalePrice: number | null;
+
+  @Prop({ type: Number, min: 1, default: 10 })
+  wholesaleMinQty: number;
 }
 
 export const VariantSchema = SchemaFactory.createForClass(Variant);

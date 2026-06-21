@@ -3,7 +3,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
-import { User, UserDocument, UserRole } from '../user/entities/user.schema';
+import { User, UserDocument, UserRole, WholesaleStatus } from '../user/entities/user.schema';
+import { WholesaleActionDto, WholesaleAction } from './dto/wholesale-action.dto';
 import { Order, OrderDocument, OrderStatus } from '../order/entities/order.schema';
 import { Product, ProductDocument, ProductStatus } from '../product/entities/product.schema';
 import { Transaction, TransactionDocument } from '../payment/entities/transaction.schema';
@@ -255,6 +256,36 @@ export class AdminService {
       .find({ $or: [{ isAdmin: true }, { role: UserRole.MANAGER }] })
       .select('phone firstName lastName isAdmin role isActive createdAt')
       .lean<UserDocument[]>();
+  }
+
+  // ── Wholesale ─────────────────────────────────────────────────
+  async getWholesaleRequests(status = 'pending') {
+    return this.userModel
+      .find({ wholesaleStatus: status })
+      .select('phone firstName lastName wholesaleCompanyName wholesaleNationalId wholesaleDescription wholesaleStatus createdAt')
+      .sort({ createdAt: -1 })
+      .lean();
+  }
+
+  async handleWholesaleRequest(userId: string, dto: WholesaleActionDto) {
+    if (!Types.ObjectId.isValid(userId))
+      throw new BadRequestException('شناسه کاربر معتبر نیست');
+    const user = await this.userModel.findById(userId);
+    if (!user) throw new NotFoundException('کاربر یافت نشد');
+
+    if (dto.action === WholesaleAction.APPROVE) {
+      user.wholesaleStatus     = WholesaleStatus.APPROVED;
+      user.role                = UserRole.WHOLESALE;
+      user.wholesaleApprovedAt = new Date();
+    } else {
+      user.wholesaleStatus          = WholesaleStatus.REJECTED;
+      user.role                     = UserRole.USER;
+      user.wholesaleRejectedReason  = dto.reason;
+    }
+
+    await user.save();
+    this.logger.log(`Wholesale request ${dto.action}d for user ${userId}`);
+    return { message: dto.action === WholesaleAction.APPROVE ? 'کاربر تأیید شد' : 'درخواست رد شد' };
   }
 
   // ── Cache Management ──────────────────────────────────────────

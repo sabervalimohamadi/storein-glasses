@@ -1,15 +1,17 @@
 export interface CartItem {
-  productId:    string;
-  variantId:    string;
-  sku:          string;
-  name:         string;
-  slug:         string;
-  thumbnail:    string | null;
-  price:        number;
-  comparePrice: number | null;
-  quantity:     number;
-  stock:        number;
-  attributes:   { key: string; value: string }[];
+  productId:        string;
+  variantId:        string;
+  sku:              string;
+  name:             string;
+  slug:             string;
+  thumbnail:        string | null;
+  price:            number;
+  comparePrice:     number | null;
+  quantity:         number;
+  stock:            number;
+  attributes:       { key: string; value: string }[];
+  isWholesalePrice: boolean;
+  wholesaleMinQty:  number | null;
 }
 
 export interface Cart {

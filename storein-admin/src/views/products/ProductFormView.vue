@@ -344,7 +344,7 @@ const form = reactive({
   categoryId:  '',
   brandId:     '',
   images:      [],
-  variants:    [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }],
+  variants:    [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }],
   tags:        [],
   status:      'active',
   discountPct: 0,
@@ -449,10 +449,12 @@ function buildDto(statusOverride) {
     })(),
     variants:    form.variants.map(v => ({
       ...(v._id ? { _id: v._id } : {}),
-      sku:          v.sku?.trim() || '',
-      price:        Number(v.price),
-      comparePrice: Number(v.comparePrice) > 0 ? Number(v.comparePrice) : 0,
-      stock:        Number(v.stock),
+      sku:             v.sku?.trim() || '',
+      price:           Number(v.price),
+      comparePrice:    Number(v.comparePrice) > 0 ? Number(v.comparePrice) : 0,
+      stock:           Number(v.stock),
+      wholesalePrice:  v.wholesalePrice > 0 ? Number(v.wholesalePrice) : null,
+      wholesaleMinQty: Number(v.wholesaleMinQty) > 0 ? Number(v.wholesaleMinQty) : 10,
       attributes:   Object.entries(v.attributes || {})
         .filter(([k, val]) => k && val)
         .map(([key, value]) => ({ key: String(key), value: String(value) })),
@@ -537,16 +539,18 @@ function fillForm(p) {
 
   form.variants    = p.variants?.length
     ? p.variants.map(v => ({
-        _id:          v._id,
-        sku:          v.sku          ?? '',
-        price:        v.price        ?? 0,
-        comparePrice: v.comparePrice ?? 0,
-        stock:        v.stock        ?? 0,
+        _id:             v._id,
+        sku:             v.sku             ?? '',
+        price:           v.price           ?? 0,
+        comparePrice:    v.comparePrice    ?? 0,
+        stock:           v.stock           ?? 0,
+        wholesalePrice:  v.wholesalePrice  ?? null,
+        wholesaleMinQty: v.wholesaleMinQty ?? 10,
         attributes:   Array.isArray(v.attributes)
           ? Object.fromEntries(v.attributes.map(a => [a.key, a.value]))
           : (v.attributes ?? {}),
       }))
-    : [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }]
+    : [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }]
 
   // Reset dirty tracking after watchers have fired (nextTick ensures watcher runs first)
   nextTick(() => { isDirty.value = false; savedRecently.value = false })

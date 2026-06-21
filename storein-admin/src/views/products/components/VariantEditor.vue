@@ -63,6 +63,25 @@
           </div>
         </div>
 
+        <!-- Wholesale pricing -->
+        <div class="mb-4 rounded-xl border border-amber-200 dark:border-amber-800/50 bg-amber-50 dark:bg-amber-900/10 p-3">
+          <p class="text-xs font-bold text-amber-700 dark:text-amber-400 mb-2">🏪 قیمت عمده (اختیاری)</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label text-amber-700 dark:text-amber-400">قیمت عمده (تومان)</label>
+              <input v-model.number="variant.wholesalePrice" type="number" min="0" step="1000" dir="ltr"
+                     placeholder="0 = غیرفعال"
+                     class="field-input text-left" />
+            </div>
+            <div>
+              <label class="field-label text-amber-700 dark:text-amber-400">حداقل تعداد عمده</label>
+              <input v-model.number="variant.wholesaleMinQty" type="number" min="1" step="1" dir="ltr"
+                     placeholder="10"
+                     class="field-input text-left" />
+            </div>
+          </div>
+        </div>
+
         <!-- Attributes -->
         <div>
           <label class="field-label mb-2">ویژگی‌های این تنوع</label>
@@ -345,14 +364,14 @@ onBeforeUnmount(() => document.removeEventListener('click', closeOnOutside))
 
 // ── Variant helpers ────────────────────────────────────────
 function newVariant() {
-  return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {} }
+  return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }
 }
 function addVariant() {
   emit('update:modelValue', [...props.modelValue, newVariant()])
 }
 function duplicateVariant(idx) {
   const src = props.modelValue[idx]
-  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, stock: src.stock, attributes: { ...src.attributes } }
+  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, stock: src.stock, attributes: { ...src.attributes }, wholesalePrice: src.wholesalePrice ?? null, wholesaleMinQty: src.wholesaleMinQty ?? 10 }
   const updated = [...props.modelValue]
   updated.splice(idx + 1, 0, copy)
   emit('update:modelValue', updated)

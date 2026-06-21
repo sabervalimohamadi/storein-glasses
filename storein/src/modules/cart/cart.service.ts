@@ -9,6 +9,7 @@ import { Model, Types } from 'mongoose';
 import Redis from 'ioredis';
 import { REDIS_CLIENT } from '../../redis/redis.module';
 import { Product, ProductDocument } from '../product/entities/product.schema';
+import { User, UserDocument } from '../user/entities/user.schema';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 import { UpdateCartItemDto } from './dto/update-cart-item.dto';
 import { Cart, CartItem, CartSummary } from './cart.interface';
@@ -20,6 +21,7 @@ const cartKey  = (uid: string) => `cart:${uid}`;
 export class CartService {
   constructor(
     @InjectModel(Product.name) private productModel: Model<ProductDocument>,
+    @InjectModel(User.name)    private userModel:    Model<UserDocument>,
     @Inject(REDIS_CLIENT)      private redis: Redis,
   ) {}
 
@@ -56,11 +58,38 @@ export class CartService {
     return this.buildSummary(cart);
   }
 
+  private resolvePrice(
+    variant: any,
+    quantity: number,
+    isWholesale: boolean,
+  ): { price: number; comparePrice: number | null; isWholesalePrice: boolean } {
+    if (
+      isWholesale &&
+      variant.wholesalePrice &&
+      variant.wholesalePrice > 0 &&
+      quantity >= (variant.wholesaleMinQty ?? 10)
+    ) {
+      return {
+        price:            variant.wholesalePrice,
+        comparePrice:     variant.price,
+        isWholesalePrice: true,
+      };
+    }
+    return {
+      price:            variant.price,
+      comparePrice:     variant.comparePrice ?? null,
+      isWholesalePrice: false,
+    };
+  }
+
   async addItem(userId: string, dto: AddToCartDto): Promise<CartSummary> {
-    const product = await this.productModel
-      .findById(dto.productId)
-      .select('name slug thumbnail variants')
-      .lean<ProductDocument>();
+    const [product, user] = await Promise.all([
+      this.productModel
+        .findById(dto.productId)
+        .select('name slug thumbnail variants')
+        .lean<ProductDocument>(),
+      this.userModel.findById(userId).select('role').lean<UserDocument>(),
+    ]);
     if (!product) throw new NotFoundException('محصول یافت نشد');
 
     const variant = product.variants.find(
@@ -69,8 +98,9 @@ export class CartService {
     if (!variant || !variant.isActive)
       throw new NotFoundException('ویریانت یافت نشد');
 
-    const cart     = await this.loadCart(userId);
-    const existing = cart.items.find(
+    const isWholesale = user?.role === 'wholesale';
+    const cart        = await this.loadCart(userId);
+    const existing    = cart.items.find(
       (i) => i.productId === dto.productId && i.variantId === dto.variantId,
     );
     const newQty = (existing?.quantity ?? 0) + dto.quantity;
@@ -80,21 +110,32 @@ export class CartService {
         `موجودی کافی نیست. حداکثر ${variant.stock} عدد`,
       );
 
+    const { price, comparePrice, isWholesalePrice } = this.resolvePrice(
+      variant,
+      newQty,
+      isWholesale,
+    );
+
     if (existing) {
-      existing.quantity = newQty;
+      existing.quantity         = newQty;
+      existing.price            = price;
+      existing.comparePrice     = comparePrice;
+      existing.isWholesalePrice = isWholesalePrice;
     } else {
       const item: CartItem = {
-        productId:    dto.productId,
-        variantId:    dto.variantId,
-        sku:          variant.sku,
-        name:         product.name,
-        slug:         product.slug,
-        thumbnail:    product.thumbnail ?? null,
-        price:        variant.price,
-        comparePrice: variant.comparePrice ?? null,
-        quantity:     dto.quantity,
-        stock:        variant.stock,
-        attributes:   variant.attributes ?? [],
+        productId:        dto.productId,
+        variantId:        dto.variantId,
+        sku:              variant.sku,
+        name:             product.name,
+        slug:             product.slug,
+        thumbnail:        product.thumbnail ?? null,
+        price,
+        comparePrice,
+        quantity:         dto.quantity,
+        stock:            variant.stock,
+        attributes:       variant.attributes ?? [],
+        isWholesalePrice,
+        wholesaleMinQty:  (variant as any).wholesaleMinQty ?? null,
       };
       cart.items.push(item);
     }
