@@ -49,3 +49,6 @@ config.yml
 
 # Local docs (photos/fonts downloaded separately)
 docs/
+
+# Railway CLI pull artifacts
+.railway-config-pull-*/
