@@ -36,7 +36,7 @@ module.exports = {
       args:    'server.js',
       env: {
         NODE_ENV:          'production',
-        PORT:              4000,
+        PORT:              4001,
         API_INTERNAL_URL:  'http://localhost:3001',
       },
       instances:            1,

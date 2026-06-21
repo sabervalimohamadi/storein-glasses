@@ -88,16 +88,36 @@ useHead({
   script: computed(() => {
     const cat = currentCategory.value
     if (!cat) return []
-    return [{
-      type: 'application/ld+json', key: 'jsonld-breadcrumb',
-      innerHTML: JSON.stringify({
-        '@context': 'https://schema.org', '@type': 'BreadcrumbList',
-        itemListElement: [
-          { '@type': 'ListItem', position: 1, name: 'خانه',      item: config.public.siteUrl },
-          { '@type': 'ListItem', position: 2, name: cat.name,    item: `${config.public.siteUrl}/category/${cat.slug}` },
-        ],
-      }),
-    }]
+    return [
+      {
+        type: 'application/ld+json',
+        key:  'jsonld-category-breadcrumb',
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type':    'BreadcrumbList',
+          itemListElement: [
+            { '@type': 'ListItem', position: 1, name: 'خانه',       item: config.public.siteUrl },
+            { '@type': 'ListItem', position: 2, name: 'محصولات',    item: `${config.public.siteUrl}/products` },
+            { '@type': 'ListItem', position: 3, name: cat.name },
+          ],
+        }),
+      },
+      {
+        type: 'application/ld+json',
+        key:  'jsonld-category-list',
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type':    'ItemList',
+          name:       cat.name,
+          itemListElement: (productStore.products || []).slice(0, 20).map((p, i) => ({
+            '@type':  'ListItem',
+            position: i + 1,
+            url:      `${config.public.siteUrl}/product/${p.slug}`,
+            name:     p.name,
+          })),
+        }),
+      },
+    ]
   }),
 })
 

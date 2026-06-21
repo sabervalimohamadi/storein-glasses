@@ -40,6 +40,12 @@ if $FIRST_RUN; then
   pm2 start deploy/ecosystem.config.js
   pm2 save
   pm2 startup systemd -u root --hp /root | tail -1 | bash
+
+  echo ">>> Setting up cron jobs..."
+  (crontab -l 2>/dev/null; echo "0 3 * * * bash $APP_DIR/deploy/backup.sh >> /var/log/storein-backup.log 2>&1") | crontab -
+  (crontab -l 2>/dev/null; echo "*/5 * * * * bash $APP_DIR/deploy/healthcheck.sh") | crontab -
+  bash "$APP_DIR/deploy/setup-logrotate.sh"
+  echo "Cron jobs configured ✓"
 else
   echo ">>> Reloading PM2..."
   pm2 reload deploy/ecosystem.config.js --update-env

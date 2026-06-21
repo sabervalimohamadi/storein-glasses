@@ -100,7 +100,31 @@ useSeoMeta({
   ogType:      'website',
   ogUrl:       `${config.public.siteUrl}/blog`,
 })
-useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/blog` }] })
+useHead({
+  link: [{ rel: 'canonical', href: `${config.public.siteUrl}/blog` }],
+  script: computed(() => {
+    const posts = store.posts
+    if (!posts?.length) return []
+    return [{
+      type: 'application/ld+json',
+      key:  'jsonld-blog-list',
+      innerHTML: JSON.stringify({
+        '@context':  'https://schema.org',
+        '@type':     'Blog',
+        name:        'وبلاگ استورین',
+        description: 'مقالات آموزشی در زمینه عینک، سلامت چشم، مد و استایل',
+        url:         `${config.public.siteUrl}/blog`,
+        blogPost:    posts.slice(0, 10).map(p => ({
+          '@type':       'BlogPosting',
+          headline:       p.title,
+          url:            `${config.public.siteUrl}/blog/${p.slug}`,
+          datePublished:  p.publishedAt,
+          image:          p.featuredImage || undefined,
+        })),
+      }),
+    }]
+  }),
+})
 
 const sortOptions = [
   { value: 'newest',  icon: '🕐', label: 'جدیدترین' },

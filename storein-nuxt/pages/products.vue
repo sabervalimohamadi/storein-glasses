@@ -70,7 +70,29 @@ useSeoMeta({
   ogType:      'website',
   ogUrl:       `${config.public.siteUrl}/products`,
 })
-useHead({ link: [{ rel: 'canonical', href: `${config.public.siteUrl}/products` }] })
+useHead({
+  link: [{ rel: 'canonical', href: `${config.public.siteUrl}/products` }],
+  script: computed(() => {
+    const items = productStore.products
+    if (!items?.length) return []
+    return [{
+      type: 'application/ld+json',
+      key:  'jsonld-products-list',
+      innerHTML: JSON.stringify({
+        '@context':      'https://schema.org',
+        '@type':         'ItemList',
+        name:            'فهرست محصولات عینک',
+        numberOfItems:   productStore.total,
+        itemListElement: items.slice(0, 20).map((p, i) => ({
+          '@type':  'ListItem',
+          position: i + 1,
+          url:      `${config.public.siteUrl}/product/${p.slug}`,
+          name:     p.name,
+        })),
+      }),
+    }]
+  }),
+})
 
 // ── SSR: initialize filters + pre-fetch products ────────────────
 productStore.fromQueryParams(route.query)
