@@ -20,13 +20,12 @@ import { UserRole } from '../user/entities/user.schema';
 const COOKIE_NAME = 'refresh_token';
 const COOKIE_PATH = '/api/v1/auth';
 
-// Explicit env overrides — set COOKIE_SAME_SITE=none and COOKIE_SECURE=true on Railway
-// if NODE_ENV is not being propagated correctly.
+// Cookie flags are driven entirely by env vars — never inferred from NODE_ENV.
+// On HTTP-only deployments (e.g. VPS without SSL) set COOKIE_SECURE=false.
+// On HTTPS deployments (Railway, domain with TLS) set COOKIE_SECURE=true + COOKIE_SAME_SITE=none.
 function cookieConfig(): { sameSite: 'none' | 'lax'; secure: boolean } {
-  const isProd    = process.env.NODE_ENV === 'production';
-  const sameSite  = (process.env.COOKIE_SAME_SITE as 'none' | 'lax' | undefined)
-                    ?? (isProd ? 'none' : 'lax');
-  const secure    = process.env.COOKIE_SECURE === 'true' || isProd;
+  const sameSite = (process.env.COOKIE_SAME_SITE as 'none' | 'lax' | undefined) ?? 'lax';
+  const secure   = process.env.COOKIE_SECURE === 'true';
   return { sameSite, secure };
 }
 

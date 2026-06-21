@@ -205,6 +205,9 @@
                       <span class="text-primary underline underline-offset-2">انتخاب کنید</span>
                     </p>
                     <p class="text-xs text-text-disabled mt-1">JPG، PNG، WebP — حداکثر ۵MB</p>
+                    <p class="text-xs mt-1" style="color: var(--color-primary); opacity: 0.75;">
+                      سایز پیشنهادی: <strong>۸۰۰×۴۵۰</strong> پیکسل (نسبت ۱۶:۹)
+                    </p>
                   </div>
                 </template>
                 <template v-else>

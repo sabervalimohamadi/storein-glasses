@@ -1,105 +1,70 @@
-﻿<template>
+<template>
   <Teleport to="body">
     <Transition name="backdrop">
       <div
         v-if="visible && popup"
         class="fixed inset-0 z-[900] flex items-end sm:items-center justify-center p-0 sm:p-4"
-        style="background: rgba(0,0,0,0.75); backdrop-filter: blur(6px);"
+        style="background: rgba(0,0,0,0.65); backdrop-filter: blur(10px);"
         @click.self="close"
       >
         <Transition name="card" appear>
-          <div
-            v-if="visible && popup"
-            class="popup-card relative w-full sm:max-w-md overflow-hidden"
-          >
+          <div v-if="visible && popup" class="popup-card relative w-full sm:w-[320px] overflow-hidden">
 
-            <!-- Decorative ambient blobs -->
-            <div class="blob blob-1" aria-hidden="true"/>
-            <div class="blob blob-2" aria-hidden="true"/>
-
-            <!-- ─── Image ──────────────────────────────────── -->
-            <div v-if="popup.imageUrl" class="relative overflow-hidden h-56 sm:h-64">
-              <img
-                :src="popup.imageUrl"
-                :alt="popup.title"
-                class="w-full h-full object-cover scale-105 img-zoom"
-                @error="e => e.target.closest('div').remove()"
-              />
-              <!-- gradient fade bottom -->
-              <div class="absolute inset-0 bg-gradient-to-t from-[var(--popup-bg)] via-transparent to-transparent"/>
-              <!-- shimmer sweep on image -->
-              <div class="absolute inset-0 img-shimmer pointer-events-none"/>
-            </div>
-
-            <!-- ─── Body ───────────────────────────────────── -->
-            <div class="relative px-6 pb-7 pt-4 z-10">
-
-              <!-- sparkles row -->
-              <div class="flex items-center gap-1.5 mb-3">
-                <span class="sparkle sparkle-1">✦</span>
-                <span class="sparkle sparkle-2">✦</span>
-                <span class="sparkle sparkle-3">✦</span>
-              </div>
-
-              <h3
-                v-if="popup.title"
-                class="text-2xl font-black text-white leading-snug mb-2 title-anim"
-                style="text-shadow: 0 2px 16px rgba(0,0,0,0.4);"
-              >
-                {{ popup.title }}
-              </h3>
-
-              <p
-                v-if="popup.description"
-                class="text-white/70 text-sm leading-relaxed mb-6 desc-anim"
-              >
-                {{ popup.description }}
-              </p>
-
-              <!-- CTA Button -->
-              <NuxtLink
-                v-if="popup.buttonText && popup.buttonLink"
-                :to="popup.buttonLink"
-                @click="close"
-                class="cta-btn btn-anim relative block w-full py-3.5 px-6
-                       text-center font-black text-base rounded-2xl
-                       overflow-hidden select-none"
-              >
-                <span class="relative z-10 flex items-center justify-center gap-2">
-                  {{ popup.buttonText }}
-                  <svg class="w-4 h-4 btn-arrow" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
-                  </svg>
-                </span>
-                <!-- shimmer sweep -->
-                <span class="btn-shimmer absolute inset-0 pointer-events-none"/>
-              </NuxtLink>
-
-              <!-- No-thanks -->
-              <button
-                @click="close"
-                class="mt-3 w-full text-center text-xs text-white/40
-                       hover:text-white/70 transition-colors py-1"
-              >
-                نه ممنون، بستن
-              </button>
-
-            </div>
-
-            <!-- ─── Close ──────────────────────────────────── -->
+            <!-- ── Close ── -->
             <button
               @click="close"
-              class="close-btn absolute top-4 left-4 z-20 w-8 h-8 rounded-full
-                     flex items-center justify-center
-                     bg-black/30 border border-white/10
-                     text-white hover:bg-white/20
-                     transition-all duration-200 hover:rotate-90"
+              class="close-btn absolute top-3 left-3 z-20 w-7 h-7 rounded-full flex items-center justify-center"
             >
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
               </svg>
             </button>
 
+            <!-- ── Image ── -->
+            <div v-if="popup.imageUrl" class="relative overflow-hidden" style="height:200px">
+              <img
+                :src="popup.imageUrl"
+                :alt="popup.title"
+                class="w-full h-full object-cover img-scale"
+                @error="e => e.target.closest('div').remove()"
+              />
+              <div class="img-overlay absolute inset-0"/>
+            </div>
+
+            <!-- ── Body ── -->
+            <div class="px-5 pt-4 pb-5 space-y-3">
+
+              <!-- Tag -->
+              <div v-if="popup.title" class="flex items-center gap-2">
+                <span class="tag-dot"/>
+                <span class="tag-label">پیشنهاد ویژه</span>
+              </div>
+
+              <!-- Title + desc -->
+              <div>
+                <h3 v-if="popup.title" class="popup-title">{{ popup.title }}</h3>
+                <p v-if="popup.description" class="popup-desc mt-1">{{ popup.description }}</p>
+              </div>
+
+              <!-- CTA -->
+              <NuxtLink
+                v-if="popup.buttonText && popup.buttonLink"
+                :to="popup.buttonLink"
+                @click="close"
+                class="cta-btn flex items-center justify-center gap-2 w-full py-2.5 rounded-xl text-sm font-semibold"
+              >
+                {{ popup.buttonText }}
+                <svg class="w-3.5 h-3.5 arrow" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+                </svg>
+              </NuxtLink>
+
+              <!-- Dismiss -->
+              <button @click="close" class="dismiss-btn w-full text-center">
+                نه ممنون، بستن
+              </button>
+
+            </div>
           </div>
         </Transition>
       </div>
@@ -153,169 +118,141 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-/* ── CSS variables ─────────────────────────────────── */
+/* ── Card ───────────────────────────────────────────── */
 .popup-card {
-  --popup-bg: #0f0f1a;
-  background: var(--popup-bg);
-  border-radius: 28px 28px 0 0;
-  box-shadow:
-    0 -8px 40px rgba(0,0,0,0.6),
-    0 0 0 1px rgba(255,255,255,0.08),
-    inset 0 1px 0 rgba(255,255,255,0.1);
+  background: #0f0f18;
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -4px 40px rgba(0,0,0,0.5), 0 0 0 1px rgba(255,255,255,0.04);
 }
 @media (min-width: 640px) {
   .popup-card {
-    border-radius: 28px;
-    box-shadow:
-      0 32px 80px rgba(0,0,0,0.7),
-      0 0 0 1px rgba(255,255,255,0.08),
-      inset 0 1px 0 rgba(255,255,255,0.1);
+    border-radius: 20px;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
   }
 }
 
-/* ── Backdrop transition ───────────────────────────── */
-.backdrop-enter-active { transition: opacity 0.35s ease; }
-.backdrop-leave-active { transition: opacity 0.25s ease; }
+/* ── Image overlay ──────────────────────────────────── */
+.img-overlay {
+  background: linear-gradient(
+    to bottom,
+    transparent 40%,
+    rgba(15,15,24,0.5) 70%,
+    rgba(15,15,24,1) 100%
+  );
+}
+.img-scale {
+  transition: transform 6s ease;
+  transform: scale(1.04);
+  animation: img-zoom 6s ease forwards;
+}
+@keyframes img-zoom {
+  to { transform: scale(1); }
+}
+
+/* ── Tag ────────────────────────────────────────────── */
+.tag-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #a78bfa;
+  box-shadow: 0 0 6px #a78bfa;
+  animation: dot-pulse 2s ease-in-out infinite;
+}
+@keyframes dot-pulse {
+  0%,100% { opacity: 1; }
+  50%      { opacity: 0.4; }
+}
+.tag-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #a78bfa;
+  opacity: 0.85;
+}
+
+/* ── Typography ─────────────────────────────────────── */
+.popup-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+}
+.popup-desc {
+  font-size: 12px;
+  line-height: 1.6;
+  color: rgba(255,255,255,0.45);
+}
+
+/* ── CTA Button ─────────────────────────────────────── */
+.cta-btn {
+  background: linear-gradient(130deg, #6d28d9 0%, #9333ea 55%, #c026d3 100%);
+  color: #fff;
+  box-shadow: 0 4px 20px rgba(109,40,217,0.4), inset 0 1px 0 rgba(255,255,255,0.12);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+.cta-btn:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+.cta-btn:active {
+  transform: translateY(0);
+  opacity: 1;
+}
+.arrow {
+  transition: transform 0.2s ease;
+}
+.cta-btn:hover .arrow { transform: translateX(-3px); }
+
+/* ── Dismiss ────────────────────────────────────────── */
+.dismiss-btn {
+  font-size: 11px;
+  color: rgba(255,255,255,0.28);
+  transition: color 0.15s ease;
+  padding-bottom: 2px;
+}
+.dismiss-btn:hover { color: rgba(255,255,255,0.55); }
+
+/* ── Close button ───────────────────────────────────── */
+.close-btn {
+  background: rgba(0,0,0,0.45);
+  border: 1px solid rgba(255,255,255,0.08);
+  color: rgba(255,255,255,0.6);
+  transition: background 0.15s ease, color 0.15s ease, transform 0.2s ease;
+  backdrop-filter: blur(4px);
+}
+.close-btn:hover {
+  background: rgba(255,255,255,0.12);
+  color: #fff;
+  transform: rotate(90deg);
+}
+
+/* ── Backdrop ───────────────────────────────────────── */
+.backdrop-enter-active { transition: opacity 0.3s ease; }
+.backdrop-leave-active { transition: opacity 0.2s ease; }
 .backdrop-enter-from,
 .backdrop-leave-to     { opacity: 0; }
 
-/* ── Card entrance ─────────────────────────────────── */
+/* ── Card animation ─────────────────────────────────── */
 .card-enter-active {
-  transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1.2, 0.36, 1);
+  transition: opacity 0.35s ease, transform 0.45s cubic-bezier(0.16, 1, 0.3, 1);
 }
 .card-leave-active {
-  transition: opacity 0.25s ease, transform 0.2s ease;
+  transition: opacity 0.2s ease, transform 0.18s ease;
 }
 .card-enter-from {
   opacity: 0;
-  transform: translateY(60px) scale(0.92);
+  transform: translateY(40px) scale(0.96);
 }
 .card-leave-to {
   opacity: 0;
-  transform: translateY(20px) scale(0.96);
+  transform: scale(0.97) translateY(8px);
 }
 @media (min-width: 640px) {
-  .card-enter-from { transform: scale(0.88) translateY(24px); }
-  .card-leave-to   { transform: scale(0.95); }
-}
-
-/* ── Ambient blobs ─────────────────────────────────── */
-.blob {
-  position: absolute;
-  border-radius: 50%;
-  filter: blur(40px);
-  pointer-events: none;
-  animation: blob-drift 6s ease-in-out infinite alternate;
-}
-.blob-1 {
-  width: 200px; height: 200px;
-  top: -60px; right: -40px;
-  background: radial-gradient(circle, rgba(139,92,246,0.35) 0%, transparent 70%);
-}
-.blob-2 {
-  width: 160px; height: 160px;
-  bottom: 60px; left: -50px;
-  background: radial-gradient(circle, rgba(236,72,153,0.25) 0%, transparent 70%);
-  animation-delay: -3s;
-}
-@keyframes blob-drift {
-  from { transform: translate(0, 0) scale(1); }
-  to   { transform: translate(12px, -10px) scale(1.08); }
-}
-
-/* ── Image zoom on enter ───────────────────────────── */
-.img-zoom {
-  animation: zoom-in 6s ease forwards;
-}
-@keyframes zoom-in {
-  from { transform: scale(1.08); }
-  to   { transform: scale(1);    }
-}
-
-/* ── Image shimmer ─────────────────────────────────── */
-.img-shimmer {
-  background: linear-gradient(
-    105deg,
-    transparent 40%,
-    rgba(255,255,255,0.08) 50%,
-    transparent 60%
-  );
-  background-size: 200% 100%;
-  animation: shimmer-sweep 3.5s ease-in-out infinite;
-}
-@keyframes shimmer-sweep {
-  0%   { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
-}
-
-/* ── Sparkles ──────────────────────────────────────── */
-.sparkle {
-  font-size: 10px;
-  animation: sparkle-pulse 2s ease-in-out infinite;
-}
-.sparkle-1 { color: #a78bfa; animation-delay: 0s; }
-.sparkle-2 { color: #f472b6; animation-delay: 0.4s; }
-.sparkle-3 { color: #60a5fa; animation-delay: 0.8s; }
-@keyframes sparkle-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50%       { opacity: 1;   transform: scale(1.4); }
-}
-
-/* ── Title + desc animation ────────────────────────── */
-.title-anim {
-  animation: slide-up 0.5s cubic-bezier(0.22,1,0.36,1) 0.15s both;
-}
-.desc-anim {
-  animation: slide-up 0.5s cubic-bezier(0.22,1,0.36,1) 0.25s both;
-}
-@keyframes slide-up {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── CTA Button ────────────────────────────────────── */
-.cta-btn {
-  background: linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #ec4899 100%);
-  color: #fff;
-  box-shadow:
-    0 4px 24px rgba(139,92,246,0.45),
-    0 1px 0 rgba(255,255,255,0.15) inset;
-  transition: transform 0.18s ease, box-shadow 0.18s ease;
-}
-.cta-btn:hover {
-  transform: translateY(-2px);
-  box-shadow:
-    0 8px 32px rgba(139,92,246,0.6),
-    0 1px 0 rgba(255,255,255,0.15) inset;
-}
-.cta-btn:active { transform: translateY(0); }
-
-.btn-shimmer {
-  background: linear-gradient(
-    105deg,
-    transparent 35%,
-    rgba(255,255,255,0.25) 50%,
-    transparent 65%
-  );
-  background-size: 250% 100%;
-  animation: btn-sweep 2.5s ease-in-out infinite;
-}
-@keyframes btn-sweep {
-  0%   { background-position: 250% 0; }
-  100% { background-position: -250% 0; }
-}
-
-.btn-arrow {
-  transition: transform 0.2s ease;
-}
-.cta-btn:hover .btn-arrow { transform: translateX(-4px); }
-
-.btn-anim {
-  animation: slide-up 0.5s cubic-bezier(0.22,1,0.36,1) 0.35s both;
-}
-
-/* ── Close button ──────────────────────────────────── */
-.close-btn {
-  transition: transform 0.2s ease, background 0.2s ease;
+  .card-enter-from { transform: scale(0.92) translateY(16px); }
+  .card-leave-to   { transform: scale(0.96); }
 }
 </style>
