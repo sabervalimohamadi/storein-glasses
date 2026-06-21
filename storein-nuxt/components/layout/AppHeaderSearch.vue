@@ -26,8 +26,7 @@
         placeholder="جستجو در عینک، فریم، لنز ..."
         class="flex-1 min-w-0 py-2.5 bg-transparent text-sm text-[var(--color-text-primary)] placeholder:text-[var(--color-text-disabled)] focus:outline-none"
         @focus="onFocus"
-        @keydown.enter="handleSearch"
-        @keydown.esc="close"
+        @keydown="onInputKeydown"
       />
 
       <!-- Keyboard shortcut hint — desktop only -->
@@ -70,14 +69,13 @@
                 محصولات
               </div>
               <button
-                v-for="item in suggestions.products.slice(0, 5)"
+                v-for="(item, idx) in suggestions.products.slice(0, 5)"
                 :key="item.slug"
                 type="button"
                 class="w-full text-right px-4 py-2.5 flex items-center gap-3 transition-colors duration-100 group"
-                style="color: var(--color-text-primary);"
-                :style="{ '--hover-bg': 'var(--color-bg)' }"
-                @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
-                @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
+                :style="{ color: 'var(--color-text-primary)', backgroundColor: activeIndex === idx ? 'var(--color-bg)' : '' }"
+                @mouseenter="activeIndex = idx"
+                @mouseleave="activeIndex = -1"
                 @click="goToProduct(item)"
               >
                 <span class="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
@@ -100,13 +98,13 @@
                 دسته‌بندی‌ها
               </div>
               <button
-                v-for="cat in suggestions.categories.slice(0, 3)"
+                v-for="(cat, cidx) in suggestions.categories.slice(0, 3)"
                 :key="cat.slug"
                 type="button"
                 class="w-full text-right px-4 py-2.5 flex items-center gap-3 transition-colors duration-100"
-                style="color: var(--color-text-primary);"
-                @mouseenter="e => e.currentTarget.style.backgroundColor = 'var(--color-bg)'"
-                @mouseleave="e => e.currentTarget.style.backgroundColor = ''"
+                :style="{ color: 'var(--color-text-primary)', backgroundColor: activeIndex === (suggestions.products?.length || 0) + cidx ? 'var(--color-bg)' : '' }"
+                @mouseenter="activeIndex = (suggestions.products?.length || 0) + cidx"
+                @mouseleave="activeIndex = -1"
                 @click="goToCategory(cat)"
               >
                 <span class="w-7 h-7 rounded-lg bg-brand/10 flex items-center justify-center shrink-0">
@@ -161,11 +159,17 @@ const query     = ref('')
 const isOpen    = ref(false)
 const isFocused = ref(false)
 const loading   = ref(false)
+const activeIndex = ref(-1)
 const suggestions = ref({ products: [], categories: [] })
 
 const hasResults = computed(() =>
   suggestions.value.products?.length > 0 || suggestions.value.categories?.length > 0
 )
+
+const allItems = computed(() => [
+  ...(suggestions.value.products || []).slice(0, 5).map(p => ({ type: 'product', item: p })),
+  ...(suggestions.value.categories || []).slice(0, 3).map(c => ({ type: 'category', item: c })),
+])
 
 onClickOutside(wrapper, close)
 
@@ -205,6 +209,27 @@ const fetchSuggestions = useDebounceFn(async (q) => {
 }, 300)
 
 watch(query, fetchSuggestions)
+watch(suggestions, () => { activeIndex.value = -1 })
+
+function onInputKeydown(e) {
+  if (e.key === 'ArrowDown') {
+    e.preventDefault()
+    activeIndex.value = Math.min(activeIndex.value + 1, allItems.value.length - 1)
+  } else if (e.key === 'ArrowUp') {
+    e.preventDefault()
+    activeIndex.value = Math.max(activeIndex.value - 1, -1)
+  } else if (e.key === 'Enter') {
+    if (activeIndex.value >= 0 && allItems.value[activeIndex.value]) {
+      const selected = allItems.value[activeIndex.value]
+      if (selected.type === 'product') goToProduct(selected.item)
+      else goToCategory(selected.item)
+    } else {
+      handleSearch()
+    }
+  } else if (e.key === 'Escape') {
+    close()
+  }
+}
 
 function handleSearch() {
   if (!query.value.trim()) return

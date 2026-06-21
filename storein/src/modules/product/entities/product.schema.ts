@@ -103,7 +103,14 @@ export class Product {
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
-ProductSchema.index({ name: 'text', description: 'text', tags: 'text' });
+ProductSchema.index(
+  { name: 'text', description: 'text', tags: 'text', shortDescription: 'text' },
+  {
+    default_language: 'none',
+    weights: { name: 10, tags: 5, shortDescription: 3, description: 1 },
+    name: 'product_text_search',
+  }
+);
 ProductSchema.index({ category: 1, status: 1, minPrice: 1 });
 ProductSchema.index({ status: 1, totalStock: 1 });
 ProductSchema.index({ status: 1, maxComparePrice: -1, minPrice: 1 });

@@ -36,7 +36,21 @@ export class SearchService {
     const match: Record<string, any> = { status: ProductStatus.ACTIVE };
 
     if (q?.trim()) {
-      match.$text = { $search: q.trim() };
+      const term = q.trim();
+      if (term.length < 3) {
+        const regex = new RegExp(this.escapeRegex(term), 'i');
+        match.$or = [
+          { name:             { $regex: regex } },
+          { tags:             { $elemMatch: { $regex: regex } } },
+          { shortDescription: { $regex: regex } },
+        ];
+      } else {
+        match.$or = [
+          { $text: { $search: term } },
+          { name:  { $regex: new RegExp(this.escapeRegex(term), 'i') } },
+          { tags:  { $elemMatch: { $regex: new RegExp(this.escapeRegex(term), 'i') } } },
+        ];
+      }
     }
 
     if (category) {
@@ -67,9 +81,9 @@ export class SearchService {
       newest:     { createdAt: -1 },
       price_asc:  { minPrice: 1 },
       price_desc: { minPrice: -1 },
-      popular:    { soldCount: -1 },
+      popular:    { soldCount: -1, createdAt: -1 },
       mostViewed: { viewCount: -1, createdAt: -1 },
-      relevant:   q ? { score: { $meta: 'textScore' } } : { createdAt: -1 },
+      relevant:   { score: { $meta: 'textScore' }, soldCount: -1 },
     };
     const resolvedSort = sort ?? (q ? 'relevant' : 'newest');
     const sortStage = sortMap[resolvedSort];
@@ -77,16 +91,17 @@ export class SearchService {
 
     const skip = (page - 1) * limit;
 
+    const hasTextSearch = q?.trim() && q.trim().length >= 3;
     const projectFields = {
       name: 1, slug: 1, thumbnail: 1, images: 1,
-      minPrice: 1, maxPrice: 1, totalStock: 1,
-      category: 1, tags: 1, soldCount: 1, createdAt: 1,
-      ...(q && { score: { $meta: 'textScore' } }),
+      minPrice: 1, maxPrice: 1, maxComparePrice: 1, totalStock: 1,
+      category: 1, tags: 1, soldCount: 1, createdAt: 1, avgRating: 1,
+      ...(hasTextSearch ? { score: { $meta: 'textScore' } } : {}),
     };
 
     const [products, countResult, facets] = await Promise.all([
       this.productModel
-        .find(match, q ? { score: { $meta: 'textScore' } } : {})
+        .find(match, hasTextSearch ? { score: { $meta: 'textScore' } } : {})
         .select(projectFields)
         .sort(sortStage)
         .skip(skip)
@@ -250,6 +265,10 @@ export class SearchService {
       .select('_id')
       .lean();
     return cats.map((c) => c._id as Types.ObjectId);
+  }
+
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   }
 
   private parseAttrs(attrs: string): { key: string; value: string }[] {

@@ -66,7 +66,7 @@ export default defineNuxtConfig({
     '/blog':        { swr: 300 },
     '/blog/**':     { swr: 3600 },
     '/pages/**':    { swr: 3600 },
-    '/search':      { ssr: true },
+    '/search':      { ssr: false },
 
     // Private pages — CSR only
     '/auth/**':    { ssr: false },

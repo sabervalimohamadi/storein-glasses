@@ -1,7 +1,8 @@
 import {
   Controller, Delete, Get, Param,
-  Query, UseGuards,
+  Query, Req, UseGuards,
 } from '@nestjs/common';
+import { Request } from 'express';
 import { SearchService } from './search.service';
 import { SearchQueryDto } from './dto/search-query.dto';
 import { SearchSuggestDto } from './dto/search-suggest.dto';
@@ -17,8 +18,12 @@ export class SearchController {
   // ── Public ─────────────────────────────────────────────────
   @Public()
   @Get()
-  async search(@Query() dto: SearchQueryDto) {
-    return this.searchService.search(dto);
+  async search(@Query() dto: SearchQueryDto, @Req() req: Request) {
+    const result = await this.searchService.search(dto);
+    if (dto.q?.trim() && req['user']?.['sub']) {
+      this.searchService.saveHistory(req['user']['sub'], dto.q.trim()).catch(() => {});
+    }
+    return result;
   }
 
   @Public()

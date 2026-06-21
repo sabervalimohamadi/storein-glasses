@@ -16,7 +16,7 @@
         </svg>
         <div>
           <span class="text-text-secondary text-sm">نتایج جستجو برای: </span>
-          <span class="text-text-primary font-bold text-lg">"{{ searchQuery }}"</span>
+          <span class="text-text-primary font-bold text-lg">«{{ searchQuery }}»</span>
         </div>
         <span v-if="!loading && searchQuery" class="text-text-secondary text-sm font-fanum mr-auto">
           <span class="text-text-primary font-bold">{{ formatNumber(total) }}</span> کالا
@@ -24,74 +24,185 @@
       </div>
     </div>
 
-    <SortBar v-model="sortBy" :total="total" :loading="loading" @update:modelValue="onSortChange" />
+    <div class="flex gap-4">
 
-    <ProductGrid :products="products" :loading="loading" />
+      <!-- Sidebar filters (desktop) -->
+      <aside v-if="facets && total > 0" class="hidden lg:block w-60 flex-shrink-0">
+        <div class="sticky top-24 space-y-4">
 
-    <div v-if="!loading && products.length === 0 && searchQuery" class="text-center py-16">
-      <div class="text-6xl mb-4 select-none">🔍</div>
-      <h2 class="text-xl font-bold text-text-primary mb-2">نتیجه‌ای برای "{{ searchQuery }}" یافت نشد</h2>
-      <p class="text-text-secondary mb-6 text-sm leading-7">لغت کلیدی دیگری امتحان کنید یا محصولات ما را مرور کنید</p>
-      <NuxtLink to="/products" class="inline-block bg-brand text-white font-bold px-6 py-3 rounded-xl hover:bg-brand-dark transition-colors">مشاهده همه محصولات</NuxtLink>
+          <div v-if="facets.priceRange" class="rounded-xl p-4 shadow-card" style="background: var(--color-card);">
+            <h3 class="font-semibold text-sm mb-3">محدوده قیمت</h3>
+            <div class="flex gap-2 text-xs text-text-secondary font-fanum">
+              <span>{{ formatNumber(facets.priceRange.min) }} ت</span>
+              <span class="mr-auto">{{ formatNumber(facets.priceRange.max) }} ت</span>
+            </div>
+            <div class="flex gap-2 mt-2">
+              <input
+                v-model.number="priceMin"
+                type="number"
+                placeholder="از"
+                class="w-full border rounded-lg px-2 py-1 text-xs font-fanum"
+                style="background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-primary);"
+                @change="onFilterChange"
+              />
+              <input
+                v-model.number="priceMax"
+                type="number"
+                placeholder="تا"
+                class="w-full border rounded-lg px-2 py-1 text-xs font-fanum"
+                style="background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-primary);"
+                @change="onFilterChange"
+              />
+            </div>
+          </div>
+
+          <div
+            v-for="attr in facets.attributes"
+            :key="attr.key"
+            class="rounded-xl p-4 shadow-card"
+            style="background: var(--color-card);"
+          >
+            <h3 class="font-semibold text-sm mb-3">{{ attr.key }}</h3>
+            <div class="space-y-2">
+              <label
+                v-for="val in attr.values"
+                :key="val"
+                class="flex items-center gap-2 cursor-pointer text-sm"
+              >
+                <input
+                  type="checkbox"
+                  :value="`${attr.key}:${val}`"
+                  v-model="selectedAttrs"
+                  class="accent-brand"
+                  @change="onFilterChange"
+                />
+                <span>{{ val }}</span>
+              </label>
+            </div>
+          </div>
+
+          <div class="rounded-xl p-4 shadow-card" style="background: var(--color-card);">
+            <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
+              <input type="checkbox" v-model="inStock" class="accent-brand" @change="onFilterChange" />
+              <span>فقط موجود</span>
+            </label>
+          </div>
+
+        </div>
+      </aside>
+
+      <div class="flex-1 min-w-0">
+        <SortBar v-model="sortBy" :total="total" :loading="loading" @update:modelValue="onSortChange" />
+
+        <ProductGrid :products="products" :loading="loading" />
+
+        <div v-if="!loading && products.length === 0 && searchQuery" class="text-center py-16">
+          <div class="text-6xl mb-4 select-none">🔍</div>
+          <h2 class="text-xl font-bold text-text-primary mb-2">
+            نتیجه‌ای برای «{{ searchQuery }}» یافت نشد
+          </h2>
+          <p class="text-text-secondary mb-2 text-sm">پیشنهادات:</p>
+          <ul class="text-text-secondary text-sm mb-6 space-y-1">
+            <li>• از کلمات کوتاه‌تر یا متفاوت‌تر استفاده کنید</li>
+            <li>• غلط‌های تایپی را بررسی کنید</li>
+            <li>• با کلمه فارسی معادل امتحان کنید</li>
+          </ul>
+          <NuxtLink to="/products" class="inline-block bg-brand text-white font-bold px-6 py-3 rounded-xl hover:bg-brand-dark transition-colors">
+            مشاهده همه محصولات
+          </NuxtLink>
+        </div>
+
+        <div v-if="!searchQuery" class="text-center py-16 text-text-secondary">
+          <div class="text-5xl mb-4">🔎</div>
+          <p>کلمه‌ای برای جستجو وارد کنید</p>
+        </div>
+
+        <BasePagination
+          v-if="totalPages > 1"
+          :model-value="currentPage"
+          :total-pages="totalPages"
+          :loading="loading"
+          @update:modelValue="onPageChange"
+          class="mt-6"
+        />
+      </div>
     </div>
-
-    <BasePagination
-      :model-value="currentPage"
-      :total-pages="totalPages"
-      :loading="loading"
-      @update:modelValue="onPageChange"
-      class="mt-6"
-    />
   </div>
 </template>
 
 <script setup>
 import { formatNumber } from '~/utils/formatters'
-import SortBar        from '~/components/products/SortBar.vue'
-import ProductGrid    from '~/components/products/ProductGrid.vue'
-import BasePagination from '~/components/common/BasePagination.vue'
-import { productService } from '~/services/product.service'
+import SortBar          from '~/components/products/SortBar.vue'
+import ProductGrid      from '~/components/products/ProductGrid.vue'
+import BasePagination   from '~/components/common/BasePagination.vue'
+import http             from '~/services/http.service'
 
 definePageMeta({ layout: 'default' })
-useSeoMeta({ title: 'جستجو', robots: 'noindex' })
+useSeoMeta({ title: () => searchQuery.value ? `جستجو: ${searchQuery.value}` : 'جستجو', robots: 'noindex' })
 
 const route  = useRoute()
 const router = useRouter()
 const ui     = useUiStore()
 
-const products    = ref([])
-const loading     = ref(false)
-const total       = ref(0)
-const currentPage = ref(1)
-const sortBy      = ref('newest')
-const LIMIT       = 24
+const products      = ref([])
+const loading       = ref(false)
+const total         = ref(0)
+const facets        = ref(null)
+const currentPage   = ref(1)
+const sortBy        = ref('relevant')
+const priceMin      = ref(null)
+const priceMax      = ref(null)
+const inStock       = ref(false)
+const selectedAttrs = ref([])
+const LIMIT         = 24
 
 const searchQuery = computed(() => String(route.query.q || '').trim())
 const totalPages  = computed(() => Math.max(1, Math.ceil(total.value / LIMIT)))
 
 async function fetchSearch() {
-  if (!searchQuery.value) { products.value = []; total.value = 0; return }
+  if (!searchQuery.value) { products.value = []; total.value = 0; facets.value = null; return }
   loading.value = true
   try {
-    const { data } = await productService.search(searchQuery.value, {
-      page: currentPage.value, limit: LIMIT, sort: sortBy.value,
-    })
-    products.value = data?.products ?? data?.items ?? []
-    total.value    = data?.total ?? 0
+    const params = {
+      q:     searchQuery.value,
+      page:  currentPage.value,
+      limit: LIMIT,
+      sort:  sortBy.value,
+      ...(priceMin.value ? { minPrice: priceMin.value } : {}),
+      ...(priceMax.value ? { maxPrice: priceMax.value } : {}),
+      ...(inStock.value  ? { inStock: true }            : {}),
+      ...(selectedAttrs.value.length ? { attrs: selectedAttrs.value.join(',') } : {}),
+    }
+    const { data } = await http.get('/search', { params })
+    products.value = data?.products ?? []
+    total.value    = data?.total    ?? 0
+    facets.value   = data?.facets   ?? null
   } catch {
     ui.addToast('خطا در جستجو. دوباره تلاش کنید', 'error')
     products.value = []
     total.value    = 0
-  } finally { loading.value = false }
+  } finally {
+    loading.value = false
+  }
 }
 
 onMounted(async () => {
-  sortBy.value      = route.query.sortBy || 'newest'
+  sortBy.value      = route.query.sortBy || 'relevant'
   currentPage.value = Number(route.query.page) || 1
+  priceMin.value    = route.query.minPrice ? Number(route.query.minPrice) : null
+  priceMax.value    = route.query.maxPrice ? Number(route.query.maxPrice) : null
+  inStock.value     = route.query.inStock === 'true'
   await fetchSearch()
 })
 
-watch(searchQuery, async () => { currentPage.value = 1; await fetchSearch() })
+watch(searchQuery, async () => {
+  currentPage.value   = 1
+  selectedAttrs.value = []
+  priceMin.value      = null
+  priceMax.value      = null
+  inStock.value       = false
+  await fetchSearch()
+})
 
 function onSortChange() {
   currentPage.value = 1
@@ -99,9 +210,24 @@ function onSortChange() {
   router.replace({ query: { ...route.query, sortBy: sortBy.value, page: undefined } })
 }
 
+function onFilterChange() {
+  currentPage.value = 1
+  fetchSearch()
+  router.replace({
+    query: {
+      ...route.query,
+      page:     undefined,
+      minPrice: priceMin.value || undefined,
+      maxPrice: priceMax.value || undefined,
+      inStock:  inStock.value  || undefined,
+    },
+  })
+}
+
 async function onPageChange(p) {
   currentPage.value = p
   await fetchSearch()
   router.replace({ query: { ...route.query, page: p > 1 ? p : undefined } })
+  window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 </script>
