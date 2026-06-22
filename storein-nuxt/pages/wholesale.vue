@@ -191,42 +191,72 @@
       <div v-else-if="auth.isLoggedIn">
 
         <!-- Step tracker -->
-        <div style="margin-bottom: 36px;">
-          <div style="display:flex; align-items:flex-start; justify-content:center; gap:0; position:relative;">
-            <div v-for="(step, i) in howItWorks" :key="i"
-                 style="display:flex; flex-direction:column; align-items:center; flex:1; max-width:160px; position:relative;">
+        <div style="
+          background: var(--color-card);
+          border: 1px solid var(--color-border);
+          border-radius: 20px;
+          padding: 20px 16px 22px;
+          margin-bottom: 20px;
+        ">
+          <!-- Section label -->
+          <p style="text-align:center; font-size:11px; font-weight:700; letter-spacing:0.1em;
+                    color:var(--color-text-secondary); opacity:0.6; margin-bottom:20px;">
+            مراحل عضویت
+          </p>
 
-              <!-- Connector line (before this step, except first) -->
-              <div v-if="i > 0"
-                   style="position:absolute; top:20px; right:50%; left:0; height:2px;
-                          background: linear-gradient(to left, rgba(99,102,241,0.35), rgba(99,102,241,0.12));
-                          transform: translateY(-50%); z-index:0;" />
+          <!-- Steps row -->
+          <div style="position:relative; display:flex; justify-content:space-between; align-items:flex-start; max-width:420px; margin:0 auto;">
 
+            <!-- Track line (behind circles, 1/6 padding each side to align with circle centers) -->
+            <div style="
+              position:absolute; top:20px;
+              right:calc(100% / 6); left:calc(100% / 6);
+              height:2px;
+              background: linear-gradient(to left, var(--color-border) 0%, rgba(124,58,237,0.25) 50%, var(--color-border) 100%);
+              z-index:0;
+            " />
+
+            <!-- Each step -->
+            <div
+              v-for="(step, i) in howItWorks"
+              :key="i"
+              style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10px; position:relative; z-index:1; padding:0 4px;"
+            >
               <!-- Circle -->
               <div :style="`
-                position:relative; z-index:1;
                 width:40px; height:40px; border-radius:50%;
                 display:flex; align-items:center; justify-content:center;
-                font-size:15px; font-weight:800;
-                background: ${i === 0
-                  ? 'linear-gradient(135deg,#7c3aed,#6d28d9)'
-                  : 'var(--color-surface)'};
-                color: ${i === 0 ? '#fff' : 'var(--color-text-secondary)'};
-                border: 2px solid ${i === 0 ? 'transparent' : 'var(--color-border)'};
-                box-shadow: ${i === 0 ? '0 4px 14px rgba(109,40,217,0.35)' : 'none'};
-                margin-bottom:10px;
+                font-weight:800;
+                transition: all 0.2s ease;
+                ${i === 0
+                  ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(109,40,217,0.45); border:2px solid transparent;'
+                  : 'background:var(--color-bg); color:var(--color-text-secondary); border:2px solid var(--color-border);'
+                }
               `">
-                <span v-if="i === 0" style="font-size:17px;">✦</span>
-                <span v-else>{{ i + 1 }}</span>
+                <svg v-if="i === 0" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
+                </svg>
+                <span v-else style="font-size:14px;">{{ i + 1 }}</span>
               </div>
 
               <!-- Label -->
               <p :style="`
-                font-size:clamp(11px,2.8vw,13px); font-weight:600; text-align:center;
-                line-height:1.4; padding:0 4px;
+                font-size: clamp(10px, 2.5vw, 12px);
+                font-weight: ${i === 0 ? '700' : '500'};
+                text-align: center;
+                line-height: 1.5;
                 color: ${i === 0 ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};
               `">{{ step }}</p>
+
+              <!-- Active dot indicator -->
+              <div v-if="i === 0" style="
+                width:6px; height:6px; border-radius:50%;
+                background:#7c3aed;
+                box-shadow:0 0 8px rgba(124,58,237,0.6);
+                margin-top:-4px;
+              " />
             </div>
+
           </div>
         </div>
 
