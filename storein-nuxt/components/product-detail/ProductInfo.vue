@@ -133,7 +133,7 @@
             class="mt-2 text-xs text-brand hover:underline flex items-center gap-1"
           >
             <span>🏪</span>
-            <span>قیمت عمده این محصول: {{ formatPrice(product.minWholesalePrice) }} تومان — درخواست عمده‌فروشی</span>
+            <span>قیمت عمده این محصول: ✦✦✦✦✦ — خرید عمده</span>
           </NuxtLink>
         </template>
 
