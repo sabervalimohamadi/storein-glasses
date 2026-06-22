@@ -34,4 +34,10 @@ export class CreateVariantDto {
 
   @IsOptional() @IsBoolean()
   isActive?: boolean;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(0)
+  wholesalePrice?: number | null;
+
+  @IsOptional() @Type(() => Number) @IsNumber() @Min(1)
+  wholesaleMinQty?: number;
 }
