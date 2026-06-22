@@ -7,10 +7,17 @@ import { Product, ProductStatus } from './entities/product.schema';
 import { Category } from '../category/entities/category.schema';
 import { Color } from '../color/entities/color.schema';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
+import { TimeDiscountService } from '../time-discount/time-discount.service';
 
 const mockLogger = {
   setContext: jest.fn().mockReturnThis(),
   log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
+
+const mockTimeDiscountService = {
+  create:                   jest.fn(),
+  calculateDiscountedPrice: jest.fn(),
+  getActiveDiscounts:       jest.fn().mockResolvedValue([]),
 };
 
 const catId  = new Types.ObjectId().toString();
@@ -84,6 +91,7 @@ describe('ProductService', () => {
         { provide: getModelToken(Category.name), useValue: catModel },
         { provide: getModelToken(Color.name),    useValue: colorModel },
         { provide: AppLoggerService,             useValue: mockLogger },
+        { provide: TimeDiscountService,          useValue: mockTimeDiscountService },
       ],
     }).compile();
 
@@ -336,6 +344,97 @@ describe('ProductService', () => {
 
       expect(mockLogger.warn).toHaveBeenCalledWith('BulkDiscount: removing discount', expect.any(Object));
       expect(mockLogger.log).toHaveBeenCalledWith('BulkDiscount: done', expect.objectContaining({ updated: 1, pct: 0 }));
+    });
+  });
+
+  describe('bulkDiscount — timed mode', () => {
+    const startDate = '2026-07-01T00:00:00.000Z';
+    const endDate   = '2026-07-15T23:59:59.000Z';
+
+    beforeEach(() => jest.clearAllMocks());
+
+    it('delegates to TimeDiscountService when startDate+endDate provided', async () => {
+      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+
+      const result = await service.bulkDiscount({
+        productIds: [prodId],
+        discountPct: 25,
+        startDate,
+        endDate,
+      });
+
+      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          discountType: 'percentage',
+          value:        25,
+          targetType:   'products',
+          targetIds:    [prodId],
+          startDate,
+          endDate,
+        }),
+      );
+      expect(result).toEqual({ updated: 1, mode: 'timed' });
+    });
+
+    it('does not query or modify products in timed mode', async () => {
+      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 20, startDate, endDate });
+
+      expect(model.find).not.toHaveBeenCalled();
+    });
+
+    it('uses custom title when provided', async () => {
+      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+
+      await service.bulkDiscount({
+        productIds: [prodId],
+        discountPct: 30,
+        startDate,
+        endDate,
+        title: 'فروش ویژه تابستان',
+      });
+
+      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'فروش ویژه تابستان' }),
+      );
+    });
+
+    it('auto-generates title from pct when title is not provided', async () => {
+      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+
+      await service.bulkDiscount({ productIds: [prodId], discountPct: 15, startDate, endDate });
+
+      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'تخفیف گروهی 15٪' }),
+      );
+    });
+
+    it('throws BadRequestException when endDate is before startDate', async () => {
+      await expect(
+        service.bulkDiscount({
+          productIds:  [prodId],
+          discountPct: 10,
+          startDate:   '2026-07-15T00:00:00.000Z',
+          endDate:     '2026-07-01T00:00:00.000Z',
+        }),
+      ).rejects.toThrow(BadRequestException);
+
+      expect(mockTimeDiscountService.create).not.toHaveBeenCalled();
+    });
+
+    it('falls back to permanent mode when only startDate is given (no endDate)', async () => {
+      const prod = mockProduct({ variants: [mockVariant()], markModified: jest.fn() });
+      model.find.mockReturnValue({ exec: jest.fn().mockResolvedValue([prod]) });
+
+      const result = await service.bulkDiscount({
+        productIds:  [prodId],
+        discountPct: 10,
+        startDate,
+      });
+
+      expect(mockTimeDiscountService.create).not.toHaveBeenCalled();
+      expect(result.mode).toBe('permanent');
     });
   });
 

@@ -1,12 +1,39 @@
-import { IsArray, IsMongoId, IsNumber, Max, Min } from 'class-validator'
+import {
+  IsArray,
+  IsDateString,
+  IsMongoId,
+  IsNumber,
+  IsOptional,
+  IsString,
+  Max,
+  Min,
+  ValidateIf,
+} from 'class-validator';
+import { IsEndDateAfterStartDate } from '../../time-discount/validators/date-range.validator';
 
 export class BulkDiscountDto {
   @IsArray()
   @IsMongoId({ each: true })
-  productIds: string[]
+  productIds: string[];
 
   @IsNumber()
   @Min(0)
   @Max(90)
-  discountPct: number
+  discountPct: number;
+
+  // ── Timed-mode fields (all optional; when startDate+endDate provided, a TimeDiscount is created) ──
+
+  @IsOptional()
+  @IsString()
+  title?: string;
+
+  @IsOptional()
+  @IsDateString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsDateString()
+  @ValidateIf((o) => !!o.startDate)
+  @IsEndDateAfterStartDate('startDate', { message: 'تاریخ پایان باید بعد از تاریخ شروع باشد' })
+  endDate?: string;
 }

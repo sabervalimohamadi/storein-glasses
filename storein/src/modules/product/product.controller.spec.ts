@@ -118,10 +118,24 @@ describe('ProductController', () => {
   });
 
   describe('bulkDiscount', () => {
-    it('returns updated count', async () => {
-      mockService.bulkDiscount.mockResolvedValue({ updated: 3 });
+    it('returns updated count in permanent mode', async () => {
+      mockService.bulkDiscount.mockResolvedValue({ updated: 3, mode: 'permanent' });
       const result = await controller.bulkDiscount({ productIds: [prodId], discountPct: 10 });
       expect(result.updated).toBe(3);
+      expect(result.mode).toBe('permanent');
+    });
+
+    it('returns updated count and timed mode when dates provided', async () => {
+      mockService.bulkDiscount.mockResolvedValue({ updated: 2, mode: 'timed' });
+      const result = await controller.bulkDiscount({
+        productIds:  [prodId],
+        discountPct: 20,
+        startDate:   '2026-07-01T00:00:00.000Z',
+        endDate:     '2026-07-15T23:59:59.000Z',
+        title:       'تخفیف تابستانه',
+      });
+      expect(result.updated).toBe(2);
+      expect(result.mode).toBe('timed');
     });
   });
 

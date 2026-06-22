@@ -414,10 +414,36 @@ export class ProductService {
     return product.toObject();
   }
 
-  async bulkDiscount(dto: BulkDiscountDto): Promise<{ updated: number }> {
-    const { productIds, discountPct } = dto;
+  async bulkDiscount(
+    dto: BulkDiscountDto,
+  ): Promise<{ updated: number; mode: 'timed' | 'permanent' }> {
+    const { productIds, discountPct, startDate, endDate, title } = dto;
     const pct = Math.max(0, Math.min(90, discountPct));
 
+    // ── Timed mode: delegate to TimeDiscountService, prices stay untouched ──
+    if (startDate && endDate) {
+      if (new Date(startDate) >= new Date(endDate))
+        throw new BadRequestException('تاریخ پایان باید بعد از تاریخ شروع باشد');
+
+      this.logger.log('BulkDiscount[timed]: creating time-limited discount', {
+        pct, count: productIds.length, startDate, endDate,
+      });
+
+      await this.timeDiscountService.create({
+        title: title?.trim() || `تخفیف گروهی ${pct}٪`,
+        discountType: 'percentage',
+        value: pct,
+        startDate,
+        endDate,
+        targetType: 'products',
+        targetIds: productIds,
+      });
+
+      this.logger.log('BulkDiscount[timed]: done', { pct, count: productIds.length });
+      return { updated: productIds.length, mode: 'timed' };
+    }
+
+    // ── Permanent mode: modify variant prices directly ──
     const products = await this.productModel
       .find({ _id: { $in: productIds.map((id) => new Types.ObjectId(id)) } })
       .exec();
@@ -451,7 +477,7 @@ export class ProductService {
     }
 
     this.logger.log('BulkDiscount: done', { updated, pct });
-    return { updated };
+    return { updated, mode: 'permanent' };
   }
 
   async updateVariant(

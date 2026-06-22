@@ -245,6 +245,67 @@
                   </div>
                 </div>
 
+                <!-- Timed-mode toggle -->
+                <div>
+                  <div class="flex items-center justify-between mb-3">
+                    <p class="text-xs font-semibold text-text-secondary flex items-center gap-1.5">
+                      <span class="w-1 h-3 rounded-full bg-primary inline-block"></span>
+                      تخفیف زمان‌دار
+                    </p>
+                    <button
+                      data-testid="timed-toggle"
+                      @click="timedMode = !timedMode"
+                      class="timed-toggle-btn relative w-10 h-5 rounded-full transition-all flex-shrink-0"
+                      :class="timedMode ? 'timed-toggle-btn--on' : 'timed-toggle-btn--off'">
+                      <span class="timed-toggle-thumb absolute top-0.5 w-4 h-4 rounded-full bg-white shadow transition-all"
+                        :class="timedMode ? 'right-0.5' : 'left-0.5'" />
+                    </button>
+                  </div>
+
+                  <Transition name="slide-down">
+                    <div v-if="timedMode" class="timed-section space-y-3 rounded-xl p-3">
+                      <!-- Title -->
+                      <div>
+                        <p class="text-xs text-text-disabled mb-1.5">عنوان تخفیف</p>
+                        <input
+                          v-model="discountTitle"
+                          data-testid="timed-title"
+                          type="text"
+                          dir="rtl"
+                          :placeholder="`تخفیف گروهی ${discountPct}٪`"
+                          class="field-input text-sm w-full h-9 px-3 rounded-lg"
+                        />
+                      </div>
+                      <!-- Start date -->
+                      <div>
+                        <p class="text-xs text-text-disabled mb-1.5">تاریخ شروع <span class="text-danger">*</span></p>
+                        <DatePicker
+                          v-model="startDate"
+                          data-testid="timed-start"
+                          type="datetime"
+                          format="YYYY-MM-DDTHH:mm:ss"
+                          display-format="jYYYY/jMM/jDD HH:mm"
+                          :clearable="false"
+                          input-class="admin-date-input"
+                        />
+                      </div>
+                      <!-- End date -->
+                      <div>
+                        <p class="text-xs text-text-disabled mb-1.5">تاریخ پایان <span class="text-danger">*</span></p>
+                        <DatePicker
+                          v-model="endDate"
+                          data-testid="timed-end"
+                          type="datetime"
+                          format="YYYY-MM-DDTHH:mm:ss"
+                          display-format="jYYYY/jMM/jDD HH:mm"
+                          :clearable="false"
+                          input-class="admin-date-input"
+                        />
+                      </div>
+                    </div>
+                  </Transition>
+                </div>
+
                 <!-- Summary card -->
                 <div class="summary-card rounded-xl p-4 space-y-3"
                   :class="{ 'summary-card--ready': targetProducts.length && discountPct > 0 }">
@@ -262,10 +323,17 @@
                       {{ discountPct > 0 ? discountPct + '٪' : '—' }}
                     </span>
                   </div>
+                  <div v-if="timedMode" class="flex justify-between items-center">
+                    <span class="text-xs text-text-secondary">نوع</span>
+                    <span class="text-xs font-semibold timed-badge px-2 py-0.5 rounded-full">زمان‌دار</span>
+                  </div>
 
                   <template v-if="targetProducts.length && discountPct > 0">
                     <div class="summary-note pt-2.5 border-t border-border">
-                      <p class="text-xs text-text-secondary leading-relaxed">
+                      <p v-if="timedMode" class="text-xs text-primary leading-relaxed">
+                        تخفیف زمان‌دار ثبت می‌شود و قیمت‌ها تغییر نمی‌کنند
+                      </p>
+                      <p v-else class="text-xs text-text-secondary leading-relaxed">
                         قیمت نهایی
                         <span class="text-success font-bold font-fanum">{{ discountPct }}٪</span>
                         پایین‌تر خواهد بود
@@ -316,6 +384,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
+import DatePicker               from 'vue3-persian-datetime-picker'
 import { productService } from '@/services/product.service'
 import { useUiStore }     from '@/stores/ui.store'
 import { formatPrice }    from '@/utils/formatters'
@@ -339,6 +408,16 @@ const filterSearched = ref(false)
 const filterLoading  = ref(false)
 const saving         = ref(false)
 
+// ── Timed-mode state ──────────────────────────────────────────────
+const timedMode     = ref(false)
+const discountTitle = ref('')
+const startDate     = ref('')
+const endDate       = ref('')
+
+const timedValid = computed(() =>
+  !timedMode.value || (!!startDate.value && !!endDate.value),
+)
+
 const validDiscount  = computed(() => discountPct.value > 0 && discountPct.value <= 90)
 const existingIds    = computed(() => new Set(targetProducts.value.map(p => p._id)))
 const newInResults   = computed(() => filterResults.value.filter(p => !existingIds.value.has(p._id)))
@@ -352,6 +431,10 @@ watch(() => props.modelValue, (open) => {
   filterBrand.value    = ''
   filterResults.value  = []
   filterSearched.value = false
+  timedMode.value      = false
+  discountTitle.value  = ''
+  startDate.value      = ''
+  endDate.value        = ''
   logger.info('BulkDiscountModal opened', { initialCount: props.initialProducts.length }, 'BulkDiscountModal')
 }, { immediate: true })
 
@@ -403,26 +486,46 @@ async function apply() {
     ui.addToast('درصد تخفیف باید بین ۰ تا ۹۰ باشد', 'error')
     return
   }
+  if (timedMode.value && (!startDate.value || !endDate.value)) {
+    ui.addToast('تاریخ شروع و پایان الزامی است', 'error')
+    return
+  }
 
   saving.value = true
   logger.info('BulkDiscountModal: applying discount', {
-    productCount: targetProducts.value.length, discountPct: pct,
+    productCount: targetProducts.value.length,
+    discountPct:  pct,
+    mode:         timedMode.value ? 'timed' : 'permanent',
+    ...(timedMode.value && { startDate: startDate.value, endDate: endDate.value }),
   }, 'BulkDiscountModal')
 
   try {
-    const { data } = await productService.bulkDiscount({
+    const payload = {
       productIds:  targetProducts.value.map(p => p._id),
       discountPct: pct,
-    })
-    const msg = pct === 0
-      ? `تخفیف ${data.updated} محصول حذف شد`
-      : `تخفیف ${pct}٪ روی ${data.updated} محصول اعمال شد`
+      ...(timedMode.value && {
+        title:     discountTitle.value.trim() || `تخفیف گروهی ${pct}٪`,
+        startDate: startDate.value,
+        endDate:   endDate.value,
+      }),
+    }
+
+    const { data } = await productService.bulkDiscount(payload)
+
+    const msg = data.mode === 'timed'
+      ? `تخفیف زمان‌دار ${pct}٪ برای ${data.updated} محصول ثبت شد`
+      : pct === 0
+        ? `تخفیف ${data.updated} محصول حذف شد`
+        : `تخفیف ${pct}٪ روی ${data.updated} محصول اعمال شد`
+
     ui.addToast(msg, 'success')
-    emit('applied', { productIds: targetProducts.value.map(p => p._id), discountPct: pct })
+    emit('applied', { productIds: targetProducts.value.map(p => p._id), discountPct: pct, mode: data.mode })
     close()
   } catch (err) {
     logger.error('BulkDiscountModal: apply failed', err, {
-      productCount: targetProducts.value.length, discountPct: pct,
+      productCount: targetProducts.value.length,
+      discountPct:  pct,
+      mode:         timedMode.value ? 'timed' : 'permanent',
     }, 'BulkDiscountModal')
     ui.addToast(err.response?.data?.message ?? 'خطا در اعمال تخفیف', 'error')
   } finally {
@@ -710,4 +813,41 @@ async function apply() {
   color: var(--color-text-primary);
   border-color: rgba(255,255,255,0.12);
 }
+
+/* ── Timed-mode toggle ────────────────────────────── */
+.timed-toggle-btn--on  { background: linear-gradient(135deg, #1B4F8A, #3B6FBE); }
+.timed-toggle-btn--off { background: rgba(255,255,255,0.1); }
+.timed-toggle-thumb    { transition: left 0.18s ease, right 0.18s ease; }
+
+/* ── Timed section ────────────────────────────────── */
+.timed-section {
+  border: 1px solid rgba(27,79,138,0.25);
+  background: rgba(27,79,138,0.06);
+}
+
+.timed-section :deep(.admin-date-input) {
+  width: 100%;
+  height: 2.25rem;
+  padding: 0 0.75rem;
+  border-radius: 0.5rem;
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text-primary);
+  font-size: 0.8125rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+.timed-section :deep(.admin-date-input:focus) {
+  border-color: rgba(27,79,138,0.5);
+}
+
+/* ── Timed badge in summary ───────────────────────── */
+.timed-badge {
+  background: rgba(27,79,138,0.15);
+  color: #3B6FBE;
+  border: 1px solid rgba(27,79,138,0.25);
+}
+
+/* ── Danger color helper ──────────────────────────── */
+.text-danger { color: #ef4444; }
 </style>
