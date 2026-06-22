@@ -1,4 +1,4 @@
-import { http } from './http.service'
+import http from './http.service'
 
 export const timeDiscountService = {
   getAll:   (params) => http.get('/time-discounts', { params }),
