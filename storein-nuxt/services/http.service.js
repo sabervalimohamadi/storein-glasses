@@ -49,11 +49,17 @@ http.interceptors.response.use(
     return response
   },
   async (error) => {
-    const status  = error.response?.status
-    const url     = error.config?.url ?? 'unknown'
+    const status          = error.response?.status
+    const url             = error.config?.url ?? 'unknown'
+    const originalRequest = error.config
+
+    if (status === 503 && originalRequest && !originalRequest._503retried) {
+      originalRequest._503retried = true
+      await new Promise(r => setTimeout(r, 2000))
+      return http(originalRequest)
+    }
 
     if (status === 401) {
-      const originalRequest = error.config
 
       if (url.includes('/auth/refresh')) {
         return Promise.reject(error)

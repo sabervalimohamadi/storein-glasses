@@ -89,6 +89,11 @@ async function bootstrap() {
   winstonLogger.info(`📁 Uploads served at http://localhost:${port}/uploads`, {
     context: 'Bootstrap',
   });
+
+  // Signal PM2 that the app is fully ready (wait_ready: true in ecosystem.config.js)
+  if (process.send) {
+    process.send('ready');
+  }
 }
 
 bootstrap();
