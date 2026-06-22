@@ -277,6 +277,10 @@ export class AdminService {
       user.wholesaleStatus     = WholesaleStatus.APPROVED;
       user.role                = UserRole.WHOLESALE;
       user.wholesaleApprovedAt = new Date();
+    } else if (dto.action === WholesaleAction.REVOKE) {
+      user.wholesaleStatus     = WholesaleStatus.NONE;
+      user.role                = UserRole.USER;
+      user.wholesaleApprovedAt = undefined;
     } else {
       user.wholesaleStatus          = WholesaleStatus.REJECTED;
       user.role                     = UserRole.USER;
@@ -284,8 +288,9 @@ export class AdminService {
     }
 
     await user.save();
+    const messages = { approve: 'کاربر تأیید شد', reject: 'درخواست رد شد', revoke: 'دسترسی عمده لغو شد' };
     this.logger.log(`Wholesale request ${dto.action}d for user ${userId}`);
-    return { message: dto.action === WholesaleAction.APPROVE ? 'کاربر تأیید شد' : 'درخواست رد شد' };
+    return { message: messages[dto.action] ?? 'انجام شد' };
   }
 
   // ── Cache Management ──────────────────────────────────────────

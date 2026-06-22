@@ -57,6 +57,7 @@
               {{ new Date(req.createdAt).toLocaleDateString('fa-IR') }}
             </td>
             <td class="px-4 py-3">
+              <!-- pending: approve + reject -->
               <div v-if="currentStatus === 'pending'" class="flex gap-2">
                 <button
                   @click="handleAction(req._id, 'approve')"
@@ -73,7 +74,20 @@
                   ✕ رد
                 </button>
               </div>
-              <span v-else-if="currentStatus === 'approved'" class="text-green-600 text-xs font-bold">✓ تأیید شده</span>
+
+              <!-- approved: status + revoke button -->
+              <div v-else-if="currentStatus === 'approved'" class="flex items-center gap-2 flex-wrap">
+                <span class="text-green-600 text-xs font-bold">✓ تأیید شده</span>
+                <button
+                  @click="openRevoke(req._id, req.firstName, req.lastName, req.phone)"
+                  :disabled="actionLoading === req._id"
+                  class="text-xs px-2.5 py-1 rounded-lg border border-orange-400 text-orange-500 hover:bg-orange-50 dark:hover:bg-orange-500/10 transition-colors disabled:opacity-50"
+                >
+                  لغو دسترسی
+                </button>
+              </div>
+
+              <!-- rejected -->
               <span v-else class="text-red-500 text-xs font-bold">✕ رد شده</span>
             </td>
           </tr>
@@ -115,6 +129,46 @@
       </div>
     </Teleport>
 
+    <!-- Modal لغو دسترسی -->
+    <Teleport to="body">
+      <div v-if="revokeModal.open" class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div class="bg-card rounded-2xl p-6 w-full max-w-md shadow-xl">
+          <div class="flex items-center gap-3 mb-4">
+            <div class="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-500/15 flex items-center justify-center flex-shrink-0">
+              <svg class="w-5 h-5 text-orange-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+              </svg>
+            </div>
+            <div>
+              <h3 class="font-bold text-text-primary">لغو دسترسی عمده</h3>
+              <p class="text-text-secondary text-sm mt-0.5">
+                {{ revokeModal.name || revokeModal.phone }}
+              </p>
+            </div>
+          </div>
+          <p class="text-text-secondary text-sm mb-5 leading-relaxed">
+            با لغو دسترسی، این کاربر دیگر قیمت عمده را نخواهد دید و از گروه خریداران عمده خارج می‌شود.
+            کاربر می‌تواند مجدداً درخواست ثبت کند.
+          </p>
+          <div class="flex gap-3">
+            <button
+              @click="confirmRevoke"
+              :disabled="actionLoading !== null"
+              class="flex-1 bg-orange-500 text-white font-bold py-2.5 rounded-xl hover:bg-orange-600 transition-colors disabled:opacity-50"
+            >
+              بله، لغو شود
+            </button>
+            <button
+              @click="revokeModal.open = false"
+              class="flex-1 border border-border py-2.5 rounded-xl text-text-secondary hover:bg-surface transition-colors"
+            >
+              انصراف
+            </button>
+          </div>
+        </div>
+      </div>
+    </Teleport>
+
   </div>
 </template>
 
@@ -130,6 +184,7 @@ const actionLoading = ref(null)
 const currentStatus = ref('pending')
 
 const rejectModal = reactive({ open: false, userId: null, reason: '' })
+const revokeModal = reactive({ open: false, userId: null, name: '', phone: '' })
 
 const statusTabs = [
   { value: 'pending',  label: '⏳ در انتظار' },
@@ -153,7 +208,8 @@ async function handleAction(userId, action, reason = '') {
   actionLoading.value = userId
   try {
     await http.patch(`/admin/wholesale-requests/${userId}`, { action, reason })
-    ui.addToast(action === 'approve' ? 'کاربر تأیید شد ✓' : 'درخواست رد شد', 'success')
+    const messages = { approve: 'کاربر تأیید شد ✓', reject: 'درخواست رد شد', revoke: 'دسترسی عمده لغو شد' }
+    ui.addToast(messages[action] ?? 'انجام شد', 'success')
     await fetchRequests()
   } catch {
     ui.addToast('خطا در انجام عملیات', 'error')
@@ -171,6 +227,18 @@ function openReject(userId) {
 async function confirmReject() {
   await handleAction(rejectModal.userId, 'reject', rejectModal.reason)
   rejectModal.open = false
+}
+
+function openRevoke(userId, firstName, lastName, phone) {
+  revokeModal.open   = true
+  revokeModal.userId = userId
+  revokeModal.name   = [firstName, lastName].filter(Boolean).join(' ') || ''
+  revokeModal.phone  = phone
+}
+
+async function confirmRevoke() {
+  await handleAction(revokeModal.userId, 'revoke')
+  revokeModal.open = false
 }
 
 onMounted(fetchRequests)

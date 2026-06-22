@@ -3,6 +3,7 @@ import { IsEnum, IsOptional, IsString } from 'class-validator';
 export enum WholesaleAction {
   APPROVE = 'approve',
   REJECT  = 'reject',
+  REVOKE  = 'revoke',
 }
 
 export class WholesaleActionDto {
