@@ -12,13 +12,15 @@
         ]"
         :aria-label="item.label"
       >
-        <!-- Cart badge -->
-        <span
-          v-if="item.badge && item.badge > 0"
-          class="absolute top-1.5 left-1/2 translate-x-2 min-w-[16px] h-4 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
-        >
-          {{ item.badge > 9 ? '۹+' : item.badge }}
-        </span>
+        <!-- Cart badge — client-only to avoid hydration mismatch -->
+        <ClientOnly>
+          <span
+            v-if="item.badge && item.badge > 0"
+            class="absolute top-1.5 left-1/2 translate-x-2 min-w-[16px] h-4 bg-error text-white text-xs font-bold rounded-full flex items-center justify-center px-1 leading-none font-fanum"
+          >
+            {{ item.badge > 9 ? '۹+' : item.badge }}
+          </span>
+        </ClientOnly>
 
         <component :is="item.icon" class="w-5 h-5" />
         <span class="text-xs font-medium">{{ item.label }}</span>

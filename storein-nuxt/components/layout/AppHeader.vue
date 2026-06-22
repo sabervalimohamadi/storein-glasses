@@ -35,7 +35,17 @@
       <div class="flex-1 md:hidden" />
 
       <!-- Actions — leftmost on desktop (order-1) -->
-      <AppHeaderActions class="md:order-3 md:ms-auto" />
+      <ClientOnly>
+        <AppHeaderActions class="md:order-3 md:ms-auto" />
+        <template #fallback>
+          <!-- SSR placeholder — same size as real actions to prevent layout shift -->
+          <div class="flex items-center gap-1 shrink-0">
+            <div class="w-9 h-9 rounded-lg bg-[var(--color-surface,rgba(0,0,0,.06))]" />
+            <div class="w-9 h-9 rounded-lg bg-[var(--color-surface,rgba(0,0,0,.06))]" />
+            <div class="w-9 h-9 rounded-lg bg-[var(--color-surface,rgba(0,0,0,.06))]" />
+          </div>
+        </template>
+      </ClientOnly>
     </div>
 
     <!-- Mobile search row -->
