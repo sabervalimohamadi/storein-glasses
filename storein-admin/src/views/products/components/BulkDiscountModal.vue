@@ -278,29 +278,33 @@
                       </div>
                       <!-- Start date -->
                       <div>
-                        <p class="text-xs text-text-disabled mb-1.5">تاریخ شروع <span class="text-danger">*</span></p>
-                        <DatePicker
+                        <p class="text-xs text-text-disabled mb-1.5">
+                          تاریخ شروع <span class="text-danger">*</span>
+                        </p>
+                        <input
                           v-model="startDate"
                           data-testid="timed-start"
-                          type="datetime"
-                          format="YYYY-MM-DDTHH:mm:ss"
-                          display-format="jYYYY/jMM/jDD HH:mm"
-                          :clearable="false"
-                          input-class="admin-date-input"
+                          type="datetime-local"
+                          class="datetime-input field-input text-sm w-full h-9 px-3 rounded-lg"
+                          :class="{ 'datetime-input--filled': startDate }"
                         />
                       </div>
                       <!-- End date -->
                       <div>
-                        <p class="text-xs text-text-disabled mb-1.5">تاریخ پایان <span class="text-danger">*</span></p>
-                        <DatePicker
+                        <p class="text-xs text-text-disabled mb-1.5">
+                          تاریخ پایان <span class="text-danger">*</span>
+                        </p>
+                        <input
                           v-model="endDate"
                           data-testid="timed-end"
-                          type="datetime"
-                          format="YYYY-MM-DDTHH:mm:ss"
-                          display-format="jYYYY/jMM/jDD HH:mm"
-                          :clearable="false"
-                          input-class="admin-date-input"
+                          type="datetime-local"
+                          class="datetime-input field-input text-sm w-full h-9 px-3 rounded-lg"
+                          :class="{ 'datetime-input--filled': endDate }"
                         />
+                        <p v-if="endDate && startDate && new Date(endDate) <= new Date(startDate)"
+                          class="text-xs text-danger mt-1">
+                          تاریخ پایان باید بعد از تاریخ شروع باشد
+                        </p>
                       </div>
                     </div>
                   </Transition>
@@ -384,7 +388,7 @@
 
 <script setup>
 import { ref, computed, watch } from 'vue'
-import DatePicker               from 'vue3-persian-datetime-picker'
+import { useRouter }            from 'vue-router'
 import { productService } from '@/services/product.service'
 import { useUiStore }     from '@/stores/ui.store'
 import { formatPrice }    from '@/utils/formatters'
@@ -396,8 +400,9 @@ const props = defineProps({
   categories:      { type: Array,   default: () => [] },
   brands:          { type: Array,   default: () => [] },
 })
-const emit = defineEmits(['update:modelValue', 'applied'])
-const ui   = useUiStore()
+const emit   = defineEmits(['update:modelValue', 'applied'])
+const ui     = useUiStore()
+const router = useRouter()
 
 const targetProducts = ref([])
 const discountPct    = ref(10)
@@ -479,6 +484,11 @@ function removeProduct(id) {
   targetProducts.value = targetProducts.value.filter(p => p._id !== id)
 }
 
+// datetime-local returns 'YYYY-MM-DDTHH:mm' — backend @IsDateString requires seconds
+function toISOWithSeconds(dt) {
+  return dt.length === 16 ? dt + ':00' : dt
+}
+
 async function apply() {
   if (!targetProducts.value.length) return
   const pct = Number(discountPct.value)
@@ -486,16 +496,24 @@ async function apply() {
     ui.addToast('درصد تخفیف باید بین ۰ تا ۹۰ باشد', 'error')
     return
   }
-  if (timedMode.value && (!startDate.value || !endDate.value)) {
-    ui.addToast('تاریخ شروع و پایان الزامی است', 'error')
-    return
+
+  if (timedMode.value) {
+    if (!startDate.value || !endDate.value) {
+      ui.addToast('تاریخ شروع و پایان الزامی است', 'error')
+      return
+    }
+    if (new Date(endDate.value) <= new Date(startDate.value)) {
+      ui.addToast('تاریخ پایان باید بعد از تاریخ شروع باشد', 'error')
+      return
+    }
   }
 
   saving.value = true
+  const mode = timedMode.value ? 'timed' : 'permanent'
   logger.info('BulkDiscountModal: applying discount', {
     productCount: targetProducts.value.length,
     discountPct:  pct,
-    mode:         timedMode.value ? 'timed' : 'permanent',
+    mode,
     ...(timedMode.value && { startDate: startDate.value, endDate: endDate.value }),
   }, 'BulkDiscountModal')
 
@@ -505,8 +523,8 @@ async function apply() {
       discountPct: pct,
       ...(timedMode.value && {
         title:     discountTitle.value.trim() || `تخفیف گروهی ${pct}٪`,
-        startDate: startDate.value,
-        endDate:   endDate.value,
+        startDate: toISOWithSeconds(startDate.value),
+        endDate:   toISOWithSeconds(endDate.value),
       }),
     }
 
@@ -521,11 +539,16 @@ async function apply() {
     ui.addToast(msg, 'success')
     emit('applied', { productIds: targetProducts.value.map(p => p._id), discountPct: pct, mode: data.mode })
     close()
+
+    // After timed discount, navigate to list so user can confirm it was created
+    if (data.mode === 'timed') {
+      router.push('/time-discounts')
+    }
   } catch (err) {
     logger.error('BulkDiscountModal: apply failed', err, {
       productCount: targetProducts.value.length,
       discountPct:  pct,
-      mode:         timedMode.value ? 'timed' : 'permanent',
+      mode,
     }, 'BulkDiscountModal')
     ui.addToast(err.response?.data?.message ?? 'خطا در اعمال تخفیف', 'error')
   } finally {
@@ -825,20 +848,13 @@ async function apply() {
   background: rgba(27,79,138,0.06);
 }
 
-.timed-section :deep(.admin-date-input) {
-  width: 100%;
-  height: 2.25rem;
-  padding: 0 0.75rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--color-border);
-  background: var(--color-surface);
-  color: var(--color-text-primary);
-  font-size: 0.8125rem;
-  outline: none;
-  transition: border-color 0.15s;
+.datetime-input {
+  color-scheme: dark;
 }
-.timed-section :deep(.admin-date-input:focus) {
+.datetime-input:focus {
   border-color: rgba(27,79,138,0.5);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(27,79,138,0.12);
 }
 
 /* ── Timed badge in summary ───────────────────────── */

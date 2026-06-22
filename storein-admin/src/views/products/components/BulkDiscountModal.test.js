@@ -3,6 +3,10 @@ import { mount } from '@vue/test-utils'
 import { setActivePinia, createPinia } from 'pinia'
 import { defineComponent, h } from 'vue'
 
+vi.mock('vue-router', () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}))
+
 vi.mock('@/services/product.service', () => ({
   productService: {
     getAll:        vi.fn(),
