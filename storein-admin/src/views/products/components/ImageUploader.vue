@@ -62,7 +62,7 @@
     </div>
 
     <p v-if="uploadError" class="text-error text-xs mb-1">{{ uploadError }}</p>
-    <p class="text-text-disabled text-xs">حداکثر {{ maxImages }} تصویر — فرمت: JPG, PNG, WEBP</p>
+    <p class="text-text-disabled text-xs">حداکثر {{ maxImages }} تصویر — فرمت: JPG, PNG, WEBP — سایز پیشنهادی: <span class="text-text-secondary font-medium">800×800px</span></p>
 
     <input ref="fileInput" type="file" accept="image/jpeg,image/png,image/webp"
            multiple class="hidden" @change="onFilesSelected" />
