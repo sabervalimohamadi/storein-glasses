@@ -24,7 +24,7 @@
       </div>
     </section>
 
-    <div class="max-w-2xl mx-auto px-4 py-12">
+    <div class="max-w-6xl mx-auto px-4 py-12">
 
       <!-- حالت ۱: وارد نشده -->
       <div v-if="!auth.isLoggedIn" class="text-center py-10">
@@ -44,21 +44,30 @@
       </div>
 
       <!-- حالت ۲: تأیید شده -->
-      <div v-else-if="wholesaleStatus?.isWholesale" class="text-center py-10">
-        <div class="text-5xl mb-4">✅</div>
-        <h2 class="text-xl font-bold mb-3 text-green-600">حساب عمده شما فعال است</h2>
-        <p v-if="wholesaleStatus.companyName" class="text-sm mb-1" style="color: var(--color-text-secondary);">
-          شرکت: <strong>{{ wholesaleStatus.companyName }}</strong>
-        </p>
-        <p v-if="wholesaleStatus.approvedAt" class="text-sm mb-6" style="color: var(--color-text-secondary);">
-          از تاریخ {{ formatDate(wholesaleStatus.approvedAt) }} تأیید شده‌اید
-        </p>
-        <NuxtLink
-          to="/products"
-          class="inline-block bg-brand text-white font-bold px-6 py-3 rounded-xl hover:opacity-90 transition-opacity"
-        >
-          مشاهده محصولات با قیمت عمده
-        </NuxtLink>
+      <div v-else-if="wholesaleStatus?.isWholesale">
+        <div class="text-center py-10">
+          <div class="text-5xl mb-4">✅</div>
+          <h2 class="text-xl font-bold mb-3 text-green-600">حساب عمده شما فعال است</h2>
+          <p v-if="wholesaleStatus.companyName" class="text-sm mb-1" style="color: var(--color-text-secondary);">
+            شرکت: <strong>{{ wholesaleStatus.companyName }}</strong>
+          </p>
+          <p v-if="wholesaleStatus.approvedAt" class="text-sm mb-6" style="color: var(--color-text-secondary);">
+            از تاریخ {{ formatDate(wholesaleStatus.approvedAt) }} تأیید شده‌اید
+          </p>
+        </div>
+
+        <!-- Product listing -->
+        <div class="mt-2">
+          <div class="flex items-center justify-between mb-4">
+            <h2 class="text-lg font-bold" style="color: var(--color-text-primary);">
+              محصولات عمده‌فروشی
+            </h2>
+            <span class="text-sm" style="color: var(--color-text-secondary);">
+              قیمت‌های ویژه فقط برای شما
+            </span>
+          </div>
+          <WholesaleProductGrid :products="wholesaleProducts" :loading="productsLoading" />
+        </div>
       </div>
 
       <!-- حالت ۳: در انتظار بررسی -->
@@ -98,6 +107,7 @@
 
 <script setup>
 import WholesaleRequestForm from '~/components/wholesale/WholesaleRequestForm.vue'
+import WholesaleProductGrid from '~/components/wholesale/WholesaleProductGrid.vue'
 import { useAuthStore } from '~/stores/auth.store'
 import http from '~/services/http.service'
 
@@ -109,13 +119,31 @@ useSeoMeta({
 
 const auth             = useAuthStore()
 const wholesaleStatus  = ref(null)
+const wholesaleProducts = ref([])
+const productsLoading   = ref(false)
+
+async function fetchWholesaleProducts() {
+  productsLoading.value = true
+  try {
+    const { data } = await http.get('/products', {
+      params: { status: 'active', hasWholesalePrice: true, limit: 24 },
+    })
+    wholesaleProducts.value = data?.items ?? data?.products ?? []
+  } catch {}
+  finally { productsLoading.value = false }
+}
 
 onMounted(async () => {
   if (!auth.isLoggedIn) return
   try {
     const { data } = await http.get('/users/me/wholesale-status')
     wholesaleStatus.value = data
+    if (data?.isWholesale) fetchWholesaleProducts()
   } catch {}
+})
+
+watch(() => wholesaleStatus.value?.isWholesale, (approved) => {
+  if (approved) fetchWholesaleProducts()
 })
 
 function onSubmitted() {
