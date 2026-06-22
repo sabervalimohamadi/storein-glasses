@@ -23,7 +23,7 @@
     </div>
 
     <!-- Empty cart guard -->
-    <div v-if="!cartStore.items.length && !placing" class="text-center py-20">
+    <div v-if="!checkoutItems.length && !placing" class="text-center py-20">
       <div class="text-5xl mb-4">🛒</div>
       <p class="text-text-secondary mb-4">سبد خرید شما خالی است</p>
       <NuxtLink to="/products" class="btn-brand px-6 py-2.5 text-sm">مشاهده محصولات</NuxtLink>
@@ -33,6 +33,15 @@
 
       <!-- Main content -->
       <div class="lg:col-span-2 space-y-5">
+
+        <!-- Wholesale order badge -->
+        <div v-if="isWholesaleOrder"
+             style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25);
+                    border-radius:10px; padding:8px 14px;
+                    display:flex; align-items:center; gap:8px;">
+          <span>🏪</span>
+          <span style="font-weight:700; color:#b45309; font-size:13px;">سفارش عمده — ارسال رایگان</span>
+        </div>
 
         <!-- STEP 0: آدرس تحویل -->
         <div v-show="currentStep === 0">
@@ -195,7 +204,7 @@
               بررسی سفارش
             </h2>
             <div class="space-y-3">
-              <div v-for="item in cartStore.items" :key="`${item.productId}-${item.variantId}`"
+              <div v-for="item in checkoutItems" :key="`${item.productId}-${item.variantId}`"
                 class="flex items-center gap-3 py-3 border-b border-surface-border last:border-0">
                 <img :src="item.thumbnail || PLACEHOLDER" :alt="item.name" class="w-14 h-14 object-cover rounded-lg flex-shrink-0" @error="e => e.target.src = PLACEHOLDER" />
                 <div class="flex-1 min-w-0">
@@ -270,19 +279,19 @@
                 </div>
               </label>
               <label :class="['flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all',
-                walletBalance < cartStore.totalPrice ? 'border-surface-border opacity-50 cursor-not-allowed'
+                walletBalance < checkoutTotal ? 'border-surface-border opacity-50 cursor-not-allowed'
                   : paymentMethod === 'wallet' ? 'border-brand bg-brand/5' : 'border-surface-border hover:border-brand/30']">
-                <input type="radio" value="wallet" v-model="paymentMethod" class="sr-only" :disabled="walletBalance < cartStore.totalPrice" />
+                <input type="radio" value="wallet" v-model="paymentMethod" class="sr-only" :disabled="walletBalance < checkoutTotal" />
                 <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center', paymentMethod === 'wallet' ? 'border-brand' : 'border-surface-border']">
                   <div v-if="paymentMethod === 'wallet'" class="w-2.5 h-2.5 rounded-full bg-brand" />
                 </div>
                 <div>
                   <p class="font-semibold text-text-primary text-sm">پرداخت از کیف پول</p>
-                  <p class="text-text-secondary text-xs mt-0.5">{{ walletBalance < cartStore.totalPrice ? `موجودی کافی نیست (کمبود: ${formatPrice(cartStore.totalPrice - walletBalance)})` : 'پرداخت فوری بدون نیاز به درگاه' }}</p>
+                  <p class="text-text-secondary text-xs mt-0.5">{{ walletBalance < checkoutTotal ? `موجودی کافی نیست (کمبود: ${formatPrice(checkoutTotal - walletBalance)})` : 'پرداخت فوری بدون نیاز به درگاه' }}</p>
                 </div>
                 <span class="mr-auto text-xs font-fanum text-brand font-bold flex-shrink-0">{{ formatPrice(walletBalance) }}</span>
               </label>
-              <label v-if="walletBalance > 0 && walletBalance < cartStore.totalPrice" :class="['flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all', paymentMethod === 'mixed' ? 'border-brand bg-brand/5' : 'border-surface-border hover:border-brand/30']">
+              <label v-if="walletBalance > 0 && walletBalance < checkoutTotal" :class="['flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all', paymentMethod === 'mixed' ? 'border-brand bg-brand/5' : 'border-surface-border hover:border-brand/30']">
                 <input type="radio" value="mixed" v-model="paymentMethod" class="sr-only" />
                 <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center', paymentMethod === 'mixed' ? 'border-brand' : 'border-surface-border']">
                   <div v-if="paymentMethod === 'mixed'" class="w-2.5 h-2.5 rounded-full bg-brand" />
@@ -297,7 +306,7 @@
                         <input type="range" v-model.number="walletAmount" :min="1" :max="walletBalance" :step="1000" class="flex-1 accent-brand" />
                         <span class="font-fanum text-sm text-brand font-bold w-28 text-left">{{ formatPrice(walletAmount) }}</span>
                       </div>
-                      <p class="text-xs text-text-secondary font-fanum">مابقی از درگاه: {{ formatPrice(cartStore.totalPrice - walletAmount) }}</p>
+                      <p class="text-xs text-text-secondary font-fanum">مابقی از درگاه: {{ formatPrice(checkoutTotal - walletAmount) }}</p>
                     </div>
                   </Transition>
                 </div>
@@ -323,7 +332,7 @@
       <div class="rounded-2xl border border-surface-border p-5 flex flex-col gap-4 lg:sticky lg:top-24" style="background-color: var(--color-card)">
         <h2 class="font-bold text-text-primary text-sm border-b border-surface-border pb-3">خلاصه سبد خرید</h2>
         <div class="space-y-2 max-h-52 overflow-y-auto">
-          <div v-for="item in cartStore.items" :key="`${item.productId}-${item.variantId}`" class="flex items-center gap-2">
+          <div v-for="item in checkoutItems" :key="`${item.productId}-${item.variantId}`" class="flex items-center gap-2">
             <img :src="item.thumbnail || PLACEHOLDER" :alt="item.name" class="w-10 h-10 rounded-lg object-cover flex-shrink-0" @error="e => e.target.src = PLACEHOLDER" />
             <div class="flex-1 min-w-0">
               <p class="text-xs text-text-primary line-clamp-1">{{ item.name }}</p>
@@ -341,7 +350,7 @@
         <div class="border-t border-surface-border pt-3">
           <div class="flex justify-between items-center">
             <span class="font-bold text-text-primary">مبلغ قابل پرداخت</span>
-            <span class="text-brand text-lg font-black font-fanum">{{ formatPrice(cartStore.totalPrice) }}</span>
+            <span class="text-brand text-lg font-black font-fanum">{{ formatPrice(checkoutTotal) }}</span>
           </div>
           <p v-if="savings > 0" class="text-success text-xs font-fanum text-left mt-1">{{ formatPrice(savings) }} صرفه‌جویی</p>
         </div>
@@ -373,9 +382,19 @@ definePageMeta({ layout: 'default', middleware: ['auth'] })
 useSeoMeta({ title: 'تکمیل خرید', robots: 'noindex' })
 
 const router    = useRouter()
+const route     = useRoute()
 const cartStore = useCartStore()
 const auth      = useAuthStore()
 const ui        = useUiStore()
+
+const orderType        = computed(() => route.query.type || 'retail')
+const isWholesaleOrder = computed(() => orderType.value === 'wholesale')
+const checkoutItems    = computed(() =>
+  isWholesaleOrder.value ? cartStore.wholesaleItems : cartStore.retailItems
+)
+const checkoutTotal    = computed(() =>
+  checkoutItems.value.reduce((s, i) => s + i.price * i.quantity, 0)
+)
 
 const PLACEHOLDER = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="%23e2e8f0"%3E%3Crect width="56" height="56"/%3E%3C/svg%3E'
 
@@ -450,7 +469,7 @@ async function applyCoupon() {
   if (!code) return
   checkingCoupon.value = true; couponMessage.value = ''; couponError.value = false
   try {
-    const { data } = await discountService.validate(code, cartStore.totalPrice)
+    const { data } = await discountService.validate(code, checkoutTotal.value)
     if (data.isValid) {
       couponApplied.value = true; couponError.value = false
       discountAmount.value = data.discountAmount ?? 0
@@ -480,13 +499,13 @@ watch(currentStep, async (n) => {
     try {
       const { data } = await paymentService.getBalance()
       walletBalance.value = data.balance ?? 0
-      walletAmount.value  = Math.min(walletBalance.value, cartStore.totalPrice - 1)
+      walletAmount.value  = Math.min(walletBalance.value, checkoutTotal.value - 1)
     } catch { } finally { loadingWallet.value = false }
   }
 })
 
-const subtotal = computed(() => cartStore.items.reduce((s, i) => s + (i.comparePrice > i.price ? i.comparePrice : i.price) * i.quantity, 0))
-const savings  = computed(() => subtotal.value - cartStore.totalPrice)
+const subtotal = computed(() => checkoutItems.value.reduce((s, i) => s + (i.comparePrice > i.price ? i.comparePrice : i.price) * i.quantity, 0))
+const savings  = computed(() => subtotal.value - checkoutTotal.value)
 
 const placing = ref(false)
 
@@ -496,6 +515,7 @@ async function placeOrder() {
   try {
     const orderDto = {
       addressId: selectedAddressId.value,
+      orderType: orderType.value,
       ...(orderNote.value.trim() ? { note: orderNote.value.trim() } : {}),
       ...(couponApplied.value && couponCode.value ? { couponCode: couponCode.value.trim() } : {}),
     }

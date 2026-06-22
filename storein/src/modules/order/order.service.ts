@@ -44,6 +44,14 @@ export class OrderService {
     if (!cart.items.length)
       throw new BadRequestException('سبد خرید خالی است');
 
+    const isWholesaleOrder = dto.orderType === 'wholesale';
+    const itemsToOrder = isWholesaleOrder
+      ? cart.items.filter(i => (i as any).isWholesalePrice)
+      : cart.items.filter(i => !(i as any).isWholesalePrice);
+
+    if (!itemsToOrder.length)
+      throw new BadRequestException('هیچ آیتم مناسبی برای این نوع سفارش یافت نشد');
+
     const user = await this.userModel
       .findById(userId)
       .select('addresses firstName lastName phone role')
@@ -61,7 +69,7 @@ export class OrderService {
     const productMap = new Map(products.map(p => [(p._id as Types.ObjectId).toString(), p]));
 
     // Full stock validation pass before any write
-    for (const item of cart.items) {
+    for (const item of itemsToOrder) {
       const product = productMap.get(item.productId);
       if (!product) throw new BadRequestException(`محصول "${item.name}" یافت نشد`);
       const variant  = product.variants.find(
@@ -84,7 +92,7 @@ export class OrderService {
       }
     }
 
-    const subtotal = cart.items.reduce((s, i) => s + i.price * i.quantity, 0);
+    const subtotal = itemsToOrder.reduce((s, i) => s + i.price * i.quantity, 0);
 
     let discount   = 0;
     let couponDoc: any = null;
@@ -113,8 +121,9 @@ export class OrderService {
     const order = await this.orderModel.create({
       userId:      new Types.ObjectId(userId),
       isWholesale: isWholesaleUser,
+      orderType:   dto.orderType ?? 'retail',
       orderNumber: this.genOrderNumber(),
-      items: cart.items.map((i) => ({
+      items: itemsToOrder.map((i) => ({
         productId:    new Types.ObjectId(i.productId),
         variantId:    i.variantId,
         sku:          i.sku,
@@ -142,7 +151,7 @@ export class OrderService {
     });
 
     await this.productService.bulkAdjustStock(
-      cart.items.map((item) => ({
+      itemsToOrder.map((item) => ({
         productId: item.productId,
         variantId: item.variantId,
         delta: -item.quantity,
@@ -164,7 +173,7 @@ export class OrderService {
       orderNumber: order.orderNumber,
       userId,
       total,
-      itemCount:   cart.items.length,
+      itemCount:   itemsToOrder.length,
     });
 
     const customerName =

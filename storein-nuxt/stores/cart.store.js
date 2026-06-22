@@ -11,6 +11,14 @@ export const useCartStore = defineStore('cart', () => {
   const totalItems = computed(() => items.value.reduce((s, i) => s + i.quantity, 0))
   const totalPrice = computed(() => items.value.reduce((s, i) => s + i.price * i.quantity, 0))
 
+  const wholesaleItems = computed(() => items.value.filter(i => i.isWholesalePrice))
+  const retailItems    = computed(() => items.value.filter(i => !i.isWholesalePrice))
+  const wholesaleTotal = computed(() => wholesaleItems.value.reduce((s, i) => s + i.price * i.quantity, 0))
+  const retailTotal    = computed(() => retailItems.value.reduce((s, i) => s + i.price * i.quantity, 0))
+  const hasWholesaleItems = computed(() => wholesaleItems.value.length > 0)
+  const hasRetailItems    = computed(() => retailItems.value.length > 0)
+  const hasMixedCart      = computed(() => hasWholesaleItems.value && hasRetailItems.value)
+
   async function fetchCart() {
     if (loading.value) return
     loading.value = true
@@ -61,5 +69,11 @@ export const useCartStore = defineStore('cart', () => {
     items.value = []
   }
 
-  return { items, loading, totalItems, totalPrice, fetchCart, addItem, updateItem, removeItem, clearCart }
+  return {
+    items, loading,
+    totalItems, totalPrice,
+    wholesaleItems, retailItems, wholesaleTotal, retailTotal,
+    hasWholesaleItems, hasRetailItems, hasMixedCart,
+    fetchCart, addItem, updateItem, removeItem, clearCart,
+  }
 })
