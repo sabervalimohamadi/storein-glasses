@@ -15,6 +15,7 @@ import { CreateVariantDto } from './dto/create-variant.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { BulkDiscountDto } from './dto/bulk-discount.dto';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
+import { TimeDiscountService } from '../time-discount/time-discount.service';
 
 @Injectable()
 export class ProductService {
@@ -23,6 +24,7 @@ export class ProductService {
     @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
     @InjectModel(Color.name)     private colorModel:     Model<ColorDocument>,
     private readonly logger: AppLoggerService,
+    private readonly timeDiscountService: TimeDiscountService,
   ) {
     this.logger.setContext('ProductService');
   }
@@ -99,8 +101,8 @@ export class ProductService {
       category, minPrice, maxPrice, inStock,
       sort, page = 1, limit = 20,
       gender, frameShape, frameMaterial,
-      hasWholesalePrice,
-    } = query;
+      hasWholesalePrice, hasDiscount,
+    } = query as any;
 
     const filter: Record<string, any> = {
       status: ProductStatus.ACTIVE,
@@ -145,6 +147,25 @@ export class ProductService {
     // When sorting by discount, only return products that actually have a discount
     if (sort === 'discount') {
       filter.$expr = { $gt: ['$maxComparePrice', '$minPrice'] };
+    }
+
+    // hasDiscount=true → only products that have an active time-discount
+    if (hasDiscount === 'true' || hasDiscount === true) {
+      const activeDiscounts = await this.timeDiscountService.getActiveDiscounts();
+      const allProductIds = activeDiscounts.flatMap((d) =>
+        d.targetType === 'products' ? d.targetIds.map((id) => id.toString()) : [],
+      );
+      const allCategoryIds = activeDiscounts.flatMap((d) =>
+        d.targetType === 'categories' ? d.targetIds.map((id) => id.toString()) : [],
+      );
+      const hasAll = activeDiscounts.some((d) => d.targetType === 'all');
+      if (!hasAll) {
+        const orConditions: any[] = [];
+        if (allProductIds.length) orConditions.push({ _id: { $in: allProductIds.map((id) => new Types.ObjectId(id)) } });
+        if (allCategoryIds.length) orConditions.push({ category: { $in: allCategoryIds.map((id) => new Types.ObjectId(id)) } });
+        if (!orConditions.length) filter._id = { $exists: false };
+        else filter.$or = [...(filter.$or ?? []), ...orConditions];
+      }
     }
 
     const sortMap: Record<string, any> = {
@@ -203,7 +224,22 @@ export class ProductService {
       colorMap = Object.fromEntries(colors.map((c) => [c.name, c.hex]));
     }
 
-    return { ...product, colorMap };
+    // Attach time-discount pricing
+    const categoryId = (product.category as any)?._id?.toString() ?? (product.category as any)?.toString() ?? '';
+    const priceInfo = await this.timeDiscountService.calculateDiscountedPrice(
+      product.minPrice,
+      (product._id as any).toString(),
+      categoryId,
+    );
+
+    return {
+      ...product,
+      colorMap,
+      finalPrice: priceInfo.finalPrice,
+      discountAmount: priceInfo.discountAmount,
+      discountPercentage: priceInfo.discountPercentage,
+      activeDiscountId: priceInfo.activeDiscountId ?? null,
+    };
   }
 
   async findRelated(slug: string, limit = 8): Promise<ProductDocument[]> {

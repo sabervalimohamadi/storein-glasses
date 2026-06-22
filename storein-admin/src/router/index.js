@@ -88,6 +88,24 @@ const routes = [
     meta: { layout: 'admin', title: 'کدهای تخفیف', permission: 'discounts' },
   },
   {
+    path: '/time-discounts',
+    name: 'time-discounts',
+    component: () => import('@/views/time-discounts/DiscountList.vue'),
+    meta: { layout: 'admin', title: 'تخفیف‌ها', permission: 'discounts' },
+  },
+  {
+    path: '/time-discounts/create',
+    name: 'time-discount-create',
+    component: () => import('@/views/time-discounts/DiscountForm.vue'),
+    meta: { layout: 'admin', title: 'تخفیف جدید', permission: 'discounts' },
+  },
+  {
+    path: '/time-discounts/:id/edit',
+    name: 'time-discount-edit',
+    component: () => import('@/views/time-discounts/DiscountForm.vue'),
+    meta: { layout: 'admin', title: 'ویرایش تخفیف', permission: 'discounts' },
+  },
+  {
     path: '/banners',
     name: 'banners',
     component: () => import('@/views/banners/BannersView.vue'),

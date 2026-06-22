@@ -3,6 +3,8 @@ import { ConfigModule } from '@nestjs/config';
 import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { ScheduleModule } from '@nestjs/schedule';
+import { TimeDiscountModule } from './modules/time-discount/time-discount.module';
 import * as Joi from 'joi';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
@@ -75,6 +77,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
         PAYMENT_CALLBACK_URL:    Joi.string().uri().required(),
       }),
     }),
+    ScheduleModule.forRoot(),
     EventEmitterModule.forRoot({
       wildcard:          false,
       delimiter:         '.',
@@ -97,6 +100,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     ReviewModule,
     WishlistModule,
     DiscountModule,
+    TimeDiscountModule,
     NotificationModule,
     AdminModule,
     UploadModule,

@@ -28,13 +28,27 @@
         :name="product?.name || ''"
         :loading="pending"
       />
-      <ProductInfo
-        ref="infoRef"
-        :product="product"
-        :loading="pending"
-        @add-to-cart="onAddToCart"
-        @variant-change="onVariantChange"
-      />
+      <div class="flex flex-col gap-4">
+        <ProductInfo
+          ref="infoRef"
+          :product="product"
+          :loading="pending"
+          @add-to-cart="onAddToCart"
+          @variant-change="onVariantChange"
+        />
+        <template v-if="product && !pending">
+          <DiscountBadge :discount="discountBadge" />
+          <PriceDisplay
+            :original-price="product.minPrice"
+            :final-price="product.finalPrice ?? product.minPrice"
+            :discount-amount="product.discountAmount ?? 0"
+          />
+          <DiscountCountdown
+            v-if="product.activeDiscountId && activeDiscountEndDate"
+            :end-date="activeDiscountEndDate"
+          />
+        </template>
+      </div>
     </div>
 
     <ProductTabs
@@ -77,11 +91,14 @@
 import { useIntersectionObserver } from '@vueuse/core'
 import { reviewService }   from '~/services/review.service'
 import { formatPrice }     from '~/utils/formatters'
-import ProductGallery  from '~/components/product-detail/ProductGallery.vue'
-import ProductInfo     from '~/components/product-detail/ProductInfo.vue'
-import ProductTabs     from '~/components/product-detail/ProductTabs.vue'
-import RelatedProducts from '~/components/product-detail/RelatedProducts.vue'
-import BaseButton      from '~/components/common/BaseButton.vue'
+import ProductGallery      from '~/components/product-detail/ProductGallery.vue'
+import ProductInfo         from '~/components/product-detail/ProductInfo.vue'
+import ProductTabs         from '~/components/product-detail/ProductTabs.vue'
+import RelatedProducts     from '~/components/product-detail/RelatedProducts.vue'
+import BaseButton          from '~/components/common/BaseButton.vue'
+import DiscountBadge       from '~/components/product/DiscountBadge.vue'
+import PriceDisplay        from '~/components/product/PriceDisplay.vue'
+import DiscountCountdown   from '~/components/product/DiscountCountdown.vue'
 
 definePageMeta({ layout: 'default' })
 
@@ -169,6 +186,21 @@ const showStickyBar   = ref(false)
 const reviewStats     = ref(null)
 const reviewsLoading  = ref(false)
 
+// Discount
+const { getDiscountBadge } = useDiscount()
+const discountBadge = computed(() => getDiscountBadge(product.value))
+const activeDiscountEndDate = ref(null)
+
+const fetchActiveDiscountEndDate = async () => {
+  if (!product.value?.activeDiscountId) return
+  try {
+    const res = await $fetch('/api/v1/time-discounts/active')
+    const active = res?.data ?? []
+    const match = active.find((d) => d._id === product.value.activeDiscountId)
+    if (match) activeDiscountEndDate.value = match.endDate
+  } catch { /* non-critical */ }
+}
+
 const isInStock = computed(() =>
   selectedVariant.value ? selectedVariant.value.stock > 0 : (product.value?.totalStock ?? 0) > 0
 )
@@ -202,6 +234,7 @@ async function quickAddToCart() {
 onMounted(async () => {
   wishlistStore.fetchWishlist()
   setTimeout(setupStickyObserver, 300)
+  fetchActiveDiscountEndDate()
   if (product.value?._id) {
     try {
       reviewsLoading.value = true

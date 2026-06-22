@@ -75,33 +75,37 @@ import BaseSkeleton    from '~/components/common/BaseSkeleton.vue'
 const cartStore     = useCartStore()
 const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
+const { getTimeRemaining } = useDiscount()
 
-const products = ref([])
-const loading  = ref(true)
-const timeLeft = ref({ hours: 0, minutes: 0, seconds: 0 })
-let timerInterval = null
+const products      = ref([])
+const loading       = ref(true)
+const flashEndDate  = ref(null)
+const timeLeft      = ref(null)
+let timerInterval   = null
 
-const endOfDay = () => {
-  const d = new Date()
-  d.setHours(23, 59, 59, 0)
-  return d.getTime()
-}
+const timerUnits = computed(() => {
+  if (!timeLeft.value) return []
+  return [
+    { key: 'hours',   value: String(timeLeft.value.hours).padStart(2, '0'),   label: 'ساعت' },
+    { key: 'minutes', value: String(timeLeft.value.minutes).padStart(2, '0'), label: 'دقیقه' },
+    { key: 'seconds', value: String(timeLeft.value.seconds).padStart(2, '0'), label: 'ثانیه' },
+  ]
+})
 
 function updateTimer() {
-  const diff = endOfDay() - Date.now()
-  if (diff <= 0) { timeLeft.value = { hours: 0, minutes: 0, seconds: 0 }; return }
-  timeLeft.value = {
-    hours:   Math.floor(diff / 3600000),
-    minutes: Math.floor((diff % 3600000) / 60000),
-    seconds: Math.floor((diff % 60000) / 1000),
+  if (flashEndDate.value) {
+    timeLeft.value = getTimeRemaining(flashEndDate.value)
+  } else {
+    // fallback: end of day
+    const d = new Date(); d.setHours(23, 59, 59, 0)
+    const diff = d.getTime() - Date.now()
+    timeLeft.value = diff > 0 ? {
+      hours:   Math.floor(diff / 3600000),
+      minutes: Math.floor((diff % 3600000) / 60000),
+      seconds: Math.floor((diff % 60000) / 1000),
+    } : null
   }
 }
-
-const timerUnits = computed(() => [
-  { key: 'hours',   value: String(timeLeft.value.hours).padStart(2, '0'),   label: 'ساعت' },
-  { key: 'minutes', value: String(timeLeft.value.minutes).padStart(2, '0'), label: 'دقیقه' },
-  { key: 'seconds', value: String(timeLeft.value.seconds).padStart(2, '0'), label: 'ثانیه' },
-])
 
 async function handleAddToCart(product) {
   const variant = product.variants?.find(v => v.stock > 0 && v.isActive !== false) ?? product.variants?.[0]
@@ -118,8 +122,18 @@ onMounted(async () => {
   updateTimer()
   timerInterval = setInterval(updateTimer, 1000)
   try {
-    const { data } = await productService.getAll({ sort: 'discount', inStock: true, limit: 10, status: 'active' })
-    products.value = data?.products ?? data?.items ?? []
+    const [productRes, activeRes] = await Promise.all([
+      productService.getAll({ hasDiscount: true, inStock: true, limit: 8, status: 'active' }),
+      $fetch('/api/v1/time-discounts/active').catch(() => ({ data: [] })),
+    ])
+    products.value = productRes?.data?.products ?? productRes?.data?.items ?? []
+    const actives = activeRes?.data ?? []
+    if (actives.length) {
+      flashEndDate.value = actives.reduce((earliest, d) =>
+        !earliest || new Date(d.endDate) < new Date(earliest) ? d.endDate : earliest,
+        null,
+      )
+    }
   } catch {
     products.value = []
   } finally {
