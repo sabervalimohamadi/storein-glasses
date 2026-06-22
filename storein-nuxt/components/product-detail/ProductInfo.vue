@@ -156,6 +156,72 @@
 
       <!-- ⑥ Action buttons -->
       <div ref="cartButtonRef" class="flex flex-col gap-3">
+
+        <!-- Wholesale order panel — only for wholesale users with a wholesale price -->
+        <div
+          v-if="auth.isWholesale && selectedVariant?.wholesalePrice"
+          class="rounded-2xl p-4 flex flex-col gap-3"
+          style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3);"
+        >
+          <!-- Label + running total -->
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-1.5">
+              <span style="font-size:15px;">🏪</span>
+              <span style="font-weight:700; color:#b45309; font-size:14px;">سفارش عمده</span>
+              <span style="font-size:12px; color:#d97706; opacity:0.8;">حداقل {{ formatNumber(wholesaleMinQty) }} عدد</span>
+            </div>
+            <span style="font-size:13px; color:#b45309;" class="font-fanum font-bold">
+              {{ formatPrice(wholesaleLineTotal) }} تومان
+            </span>
+          </div>
+
+          <!-- Stepper + add button -->
+          <div class="flex gap-3 items-center">
+            <div
+              class="flex items-center rounded-xl overflow-hidden shrink-0"
+              style="border:1.5px solid rgba(245,158,11,0.4); background:var(--color-bg);"
+            >
+              <button
+                type="button"
+                @click="decreaseWholesaleQty"
+                class="flex items-center justify-center transition-colors"
+                style="width:40px; height:44px; font-size:22px; color:#b45309;"
+              >−</button>
+              <span
+                class="font-bold font-fanum text-center"
+                style="min-width:52px; font-size:15px; color:var(--color-text-primary);"
+              >{{ formatNumber(wholesaleQty) }}</span>
+              <button
+                type="button"
+                @click="wholesaleQty += wholesaleMinQty"
+                class="flex items-center justify-center transition-colors"
+                style="width:40px; height:44px; font-size:22px; color:#b45309;"
+              >+</button>
+            </div>
+
+            <button
+              type="button"
+              :disabled="!isInStock || addingToCartWholesale"
+              @click="handleAddToCartWholesale"
+              class="flex-1 flex items-center justify-center gap-2 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
+              style="height:44px; font-size:15px;
+                     background:linear-gradient(135deg,#f59e0b,#d97706);
+                     box-shadow:0 4px 14px rgba(245,158,11,0.35);"
+            >
+              <span
+                v-if="addingToCartWholesale"
+                class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
+              />
+              <template v-else>
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                </svg>
+                افزودن به سبد عمده
+              </template>
+            </button>
+          </div>
+        </div>
+
         <BaseButton
           variant="primary"
           size="lg"
@@ -168,7 +234,7 @@
             <svg class="w-5 h-5 ml-2" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
               <path stroke-linecap="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
             </svg>
-            افزودن به سبد خرید
+            {{ auth.isWholesale && selectedVariant?.wholesalePrice ? 'خرید تکی' : 'افزودن به سبد خرید' }}
           </template>
           <template v-else>ناموجود</template>
         </BaseButton>
@@ -256,9 +322,10 @@ const wishlistStore = useWishlistStore()
 const ui            = useUiStore()
 const auth          = useAuthStore()
 
-const addingToCart  = ref(false)
-const cartButtonRef = ref(null)
-const shareCopied   = ref(false)
+const addingToCart         = ref(false)
+const addingToCartWholesale = ref(false)
+const cartButtonRef        = ref(null)
+const shareCopied          = ref(false)
 
 // ── Variants ──────────────────────────────────────────────────────
 const colorVariants  = computed(() => props.product?.variants ?? [])
@@ -267,6 +334,20 @@ const selectedVariant = ref(null)
 watch(() => props.product, (p) => {
   if (p?.variants?.length) selectedVariant.value = p.variants[0]
 }, { immediate: true })
+
+// ── Wholesale qty stepper ─────────────────────────────────────────
+const wholesaleMinQty = computed(() => selectedVariant.value?.wholesaleMinQty || 10)
+const wholesaleQty    = ref(10)
+const wholesaleLineTotal = computed(() =>
+  (selectedVariant.value?.wholesalePrice ?? 0) * wholesaleQty.value
+)
+
+watch(wholesaleMinQty, (v) => { wholesaleQty.value = v }, { immediate: true })
+
+function decreaseWholesaleQty() {
+  const next = wholesaleQty.value - wholesaleMinQty.value
+  if (next >= wholesaleMinQty.value) wholesaleQty.value = next
+}
 
 function selectVariant(variant) {
   if (variant.stock === 0) return
@@ -334,6 +415,20 @@ async function handleAddToCart() {
     ui.addToast('خطا در افزودن به سبد. دوباره تلاش کنید', 'error')
   } finally {
     addingToCart.value = false
+  }
+}
+
+async function handleAddToCartWholesale() {
+  if (!isInStock.value || addingToCartWholesale.value) return
+  addingToCartWholesale.value = true
+  try {
+    await cartStore.addItem(props.product._id, selectedVariant.value?._id, wholesaleQty.value)
+    ui.addToast(`${formatNumber(wholesaleQty.value)} عدد به سبد عمده افزوده شد ✓`, 'success')
+    emit('add-to-cart', selectedVariant.value?._id)
+  } catch (e) {
+    ui.addToast(e?.response?.data?.message || 'خطا در افزودن به سبد عمده', 'error')
+  } finally {
+    addingToCartWholesale.value = false
   }
 }
 
