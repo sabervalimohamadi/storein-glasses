@@ -14,7 +14,7 @@ export class TimeDiscount {
   @Prop({ required: true, min: 0 })
   value: number;
 
-  @Prop({ default: null })
+  @Prop({ type: Number, default: null })
   maxDiscountAmount: number | null;
 
   @Prop({ required: true })
@@ -29,10 +29,10 @@ export class TimeDiscount {
   @Prop({ type: [{ type: Types.ObjectId }], default: [] })
   targetIds: Types.ObjectId[];
 
-  @Prop({ default: null })
+  @Prop({ type: Number, default: null })
   minOrderAmount: number | null;
 
-  @Prop({ default: null })
+  @Prop({ type: Number, default: null })
   maxUsageCount: number | null;
 
   @Prop({ default: 0 })

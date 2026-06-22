@@ -170,13 +170,13 @@ describe('BulkDiscountModal — apply', () => {
   })
 
   it('logs info before calling API', async () => {
-    productService.bulkDiscount.mockResolvedValue({ data: { updated: 1 } })
+    productService.bulkDiscount.mockResolvedValue({ data: { updated: 1, mode: 'permanent' } })
     const wrapper = factory({ initialProducts: [PRODUCTS[0]] })
     wrapper.vm.discountPct = 20
     await wrapper.vm.apply()
     expect(logger.info).toHaveBeenCalledWith(
       'BulkDiscountModal: applying discount',
-      { productCount: 1, discountPct: 20 },
+      expect.objectContaining({ productCount: 1, discountPct: 20, mode: 'permanent' }),
       'BulkDiscountModal'
     )
   })
@@ -190,7 +190,7 @@ describe('BulkDiscountModal — apply', () => {
     expect(logger.error).toHaveBeenCalledWith(
       'BulkDiscountModal: apply failed',
       err,
-      { productCount: 1, discountPct: 15 },
+      expect.objectContaining({ productCount: 1, discountPct: 15, mode: 'permanent' }),
       'BulkDiscountModal'
     )
   })
