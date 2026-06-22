@@ -280,7 +280,8 @@ export class AdminService {
   }
 
   async getWholesaleOrdersCount(status = 'pending') {
-    return this.orderModel.countDocuments({ isWholesale: true, status });
+    const filter: any = { isWholesale: true, status };
+    return this.orderModel.countDocuments(filter);
   }
 
   // ── Wholesale Requests ────────────────────────────────────────
