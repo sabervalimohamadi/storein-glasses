@@ -15,7 +15,7 @@ import { TimeDiscountService } from './time-discount.service';
 import { CreateTimeDiscountDto } from './dto/create-time-discount.dto';
 import { UpdateTimeDiscountDto } from './dto/update-time-discount.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { AdminGuard } from '../admin/guards/admin.guard';
+import { AdminGuard } from '../../common/guards/admin.guard';
 
 @Controller('time-discounts')
 export class TimeDiscountController {

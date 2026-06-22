@@ -121,7 +121,7 @@ export class ProductService {
 
     // Gender filter — resolve via category.gender field (includes descendants)
     if (gender) {
-      const genders = gender.split(',').map(s => s.trim()).filter(Boolean);
+      const genders = gender.split(',').map((s: string) => s.trim()).filter(Boolean);
       const genderCats = await this.categoryModel
         .find({ gender: { $in: genders } })
         .select('_id')
@@ -140,8 +140,8 @@ export class ProductService {
 
     // Tag-based filters for frame attributes
     const tagConditions: any[] = [];
-    if (frameShape)    tagConditions.push({ tags: { $in: frameShape.split(',').map(s => s.trim()).filter(Boolean) } });
-    if (frameMaterial) tagConditions.push({ tags: { $in: frameMaterial.split(',').map(s => s.trim()).filter(Boolean) } });
+    if (frameShape)    tagConditions.push({ tags: { $in: frameShape.split(',').map((s: string) => s.trim()).filter(Boolean) } });
+    if (frameMaterial) tagConditions.push({ tags: { $in: frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean) } });
     if (tagConditions.length) filter.$and = [...(filter.$and ?? []), ...tagConditions];
 
     // When sorting by discount, only return products that actually have a discount
