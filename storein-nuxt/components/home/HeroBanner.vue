@@ -4,10 +4,16 @@
     <Transition name="hero">
       <div :key="current" class="hero__slide" :style="slideStyle(slides[current])">
 
-        <!-- Background image with ken-burns -->
+        <!-- Background image — desktop (hidden on mobile if mobileImageUrl exists) -->
         <div v-if="slides[current].imageUrl"
              class="hero__img"
+             :class="slides[current].mobileImageUrl ? 'hero__img--desktop-only' : ''"
              :style="{ backgroundImage: `url(${slides[current].imageUrl})` }" />
+
+        <!-- Background image — mobile crop (only rendered when mobileImageUrl is set) -->
+        <div v-if="slides[current].mobileImageUrl"
+             class="hero__img hero__img--mobile-only"
+             :style="{ backgroundImage: `url(${slides[current].mobileImageUrl})` }" />
 
         <!-- Gradient veil for text readability -->
         <div class="hero__veil" />
@@ -108,6 +114,9 @@
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
 import { bannerService } from '~/services/banner.service'
+import { logger } from '~/utils/logger'
+
+const CTX = 'HeroBanner'
 
 const STATIC_SLIDES = [
   {
@@ -176,9 +185,11 @@ onMounted(async () => {
     if (Array.isArray(data) && data.length > 0) {
       slides.value = data
       current.value = 0
+      const withMobile = data.filter(s => s.mobileImageUrl).length
+      logger.info(`hero: loaded ${data.length} slides (${withMobile} with mobile image)`, {}, CTX)
     }
-  } catch {
-    // stay with static fallback silently
+  } catch (err) {
+    logger.warn('hero: failed to load banners, using static fallback', { err }, CTX)
   }
 })
 
@@ -219,6 +230,13 @@ onUnmounted(() => clearInterval(autoTimer))
   background-size: cover;
   background-position: center 20%;
   animation: kb 14s ease-in-out infinite alternate;
+}
+
+/* Desktop image hidden on mobile when a mobile-specific image exists */
+.hero__img--desktop-only { display: none; }
+@media (min-width: 768px) {
+  .hero__img--desktop-only { display: block; }
+  .hero__img--mobile-only  { display: none;  }
 }
 @keyframes kb {
   from { transform: scale(1) translate(0, 0); }

@@ -18,7 +18,9 @@ export class Banner {
   @Prop({ default: '#FFD700' }) accent:   string;
 
   // optional full-width background image (overrides gradient when set)
-  @Prop({ default: '' }) imageUrl: string;
+  @Prop({ default: '' }) imageUrl:       string;
+  // separate crop for mobile (≤767 px); falls back to imageUrl when empty
+  @Prop({ default: '' }) mobileImageUrl: string;
 
   @Prop({ enum: ['sun', 'rx', 'lens', 'none'], default: 'sun' }) glasses: string;
 

@@ -49,7 +49,7 @@ export class BannerService {
     const type      = dto.type ?? 'hero';
     const count     = await this.bannerModel.countDocuments({ type });
     const sortOrder = dto.sortOrder ?? count;
-    const banner    = await this.bannerModel.create({ ...dto, type, sortOrder });
+    const banner    = await this.bannerModel.create({ mobileImageUrl: '', ...dto, type, sortOrder });
     this.logger.log('Banner created', {
       bannerId: String(banner._id), title: banner.title, type, sortOrder,
     });

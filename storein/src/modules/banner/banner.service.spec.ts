@@ -11,20 +11,21 @@ const id1 = new Types.ObjectId().toHexString();
 const id2 = new Types.ObjectId().toHexString();
 
 const makeBanner = (overrides: Record<string, unknown> = {}) => ({
-  _id:       new Types.ObjectId(),
-  title:     'بنر آفتابی',
-  eyebrow:   'تابستان ۱۴۰۴',
-  subtitle:  '',
-  cta:       'مشاهده محصولات',
-  ctaLink:   '/',
-  bgFrom:    '#0F3D73',
-  bgTo:      '#1B4F8A',
-  accent:    '#FFD700',
-  imageUrl:  '',
-  glasses:   'sun',
-  type:      'hero',
-  isActive:  true,
-  sortOrder: 0,
+  _id:            new Types.ObjectId(),
+  title:          'بنر آفتابی',
+  eyebrow:        'تابستان ۱۴۰۴',
+  subtitle:       '',
+  cta:            'مشاهده محصولات',
+  ctaLink:        '/',
+  bgFrom:         '#0F3D73',
+  bgTo:           '#1B4F8A',
+  accent:         '#FFD700',
+  imageUrl:       '',
+  mobileImageUrl: '',
+  glasses:        'sun',
+  type:           'hero',
+  isActive:       true,
+  sortOrder:      0,
   ...overrides,
 });
 
@@ -225,6 +226,21 @@ describe('BannerService', () => {
           type:      'hero',
           sortOrder: expect.any(Number),
         }),
+      )
+    })
+
+    it('passes mobileImageUrl through when provided', async () => {
+      const url = 'https://cdn.example.com/mobile-banner.jpg'
+      await service.create({ title: 'بنر', mobileImageUrl: url } as any)
+      expect(model.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mobileImageUrl: url }),
+      )
+    })
+
+    it('passes empty mobileImageUrl when not provided', async () => {
+      await service.create({ title: 'بنر' } as any)
+      expect(model.create).toHaveBeenCalledWith(
+        expect.objectContaining({ mobileImageUrl: '' }),
       )
     })
   })

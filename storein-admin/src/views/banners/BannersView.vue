@@ -282,24 +282,23 @@
                   </div>
                 </div>
 
-                <!-- تصویر پس‌زمینه -->
+                <!-- تصویر پس‌زمینه دسکتاپ -->
                 <div>
                   <div class="flex items-center justify-between mb-2">
-                    <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">تصویر پس‌زمینه</h3>
-                    <span class="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-mono font-semibold select-all">
-                      <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4"/>
-                      </svg>
+                    <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                      🖥 تصویر دسکتاپ
+                    </h3>
+                    <span class="inline-flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-lg font-mono font-semibold">
                       {{ form.type === 'hero' ? '1440 × 560' : '720 × 400' }} px
                     </span>
                   </div>
                   <p class="text-xs text-text-secondary mb-3">
-                    در صورت آپلود، گرادیان با تصویر جایگزین می‌شود
-                    — فرمت پیشنهادی: <span class="font-mono text-text-primary">JPG / WebP</span>
+                    گرادیان را جایگزین می‌کند — <span class="font-mono text-text-primary">JPG / WebP</span>
+                    — نسبت تصویر <span class="font-mono text-text-primary">{{ form.type === 'hero' ? '16:6' : '9:5' }}</span>
                   </p>
                   <div v-if="form.imageUrl" class="flex items-center gap-3 mb-3 p-3 bg-surface rounded-xl">
                     <img :src="form.imageUrl" class="w-20 h-12 rounded-lg object-cover flex-shrink-0" />
-                    <p class="flex-1 text-xs text-text-secondary truncate">{{ form.imageUrl }}</p>
+                    <p class="flex-1 text-xs text-text-secondary truncate dir-ltr">{{ form.imageUrl }}</p>
                     <button @click="form.imageUrl = ''"
                       class="text-error hover:bg-error/10 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm transition-colors">✕</button>
                   </div>
@@ -311,6 +310,39 @@
                   </div>
                   <input ref="imageFileInput" type="file" accept="image/jpeg,image/png,image/webp"
                          class="hidden" @change="onImageFileChange" />
+                </div>
+
+                <!-- تصویر موبایل (اختیاری) -->
+                <div v-if="form.type === 'hero'" class="border border-dashed border-border rounded-xl p-4 space-y-3">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                      <h3 class="text-sm font-semibold text-text-secondary uppercase tracking-wide">
+                        📱 تصویر موبایل
+                      </h3>
+                      <span class="text-[10px] bg-amber-500/15 text-amber-600 border border-amber-500/30 px-1.5 py-0.5 rounded font-medium">اختیاری</span>
+                    </div>
+                    <span class="inline-flex items-center gap-1.5 text-xs bg-amber-500/10 text-amber-600 border border-amber-500/20 px-2.5 py-1 rounded-lg font-mono font-semibold">
+                      800 × 600 px
+                    </span>
+                  </div>
+                  <p class="text-xs text-text-secondary">
+                    اگر خالی باشد، تصویر دسکتاپ روی موبایل هم نمایش داده می‌شود.
+                    برای موبایل تصویر <span class="font-mono text-text-primary">4:3</span> یا <span class="font-mono text-text-primary">1:1</span> بهتر است.
+                  </p>
+                  <div v-if="form.mobileImageUrl" class="flex items-center gap-3 p-3 bg-surface rounded-xl">
+                    <img :src="form.mobileImageUrl" class="w-16 h-12 rounded-lg object-cover flex-shrink-0" />
+                    <p class="flex-1 text-xs text-text-secondary truncate dir-ltr">{{ form.mobileImageUrl }}</p>
+                    <button @click="form.mobileImageUrl = ''"
+                      class="text-error hover:bg-error/10 w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 text-sm transition-colors">✕</button>
+                  </div>
+                  <div class="flex gap-2">
+                    <AdminInput v-model="form.mobileImageUrl" dir="ltr" placeholder="https://... (اختیاری)" class="flex-1" />
+                    <AdminButton variant="secondary" :loading="uploadingMobile" @click="triggerMobileImageUpload">
+                      📱 آپلود
+                    </AdminButton>
+                  </div>
+                  <input ref="mobileImageFileInput" type="file" accept="image/jpeg,image/png,image/webp"
+                         class="hidden" @change="onMobileImageFileChange" />
                 </div>
 
                 <!-- وضعیت -->
@@ -436,10 +468,14 @@
                   <template v-if="form.type === 'hero'">
                     <p class="flex items-center gap-1.5">
                       <span class="font-mono bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[10px] font-bold">1440 × 560 px</span>
-                      سایز پیشنهادی تصویر
+                      سایز دسکتاپ
                     </p>
+                    <p class="flex items-center gap-1.5">
+                      <span class="font-mono bg-amber-500/15 text-amber-600 px-1.5 py-0.5 rounded text-[10px] font-bold">800 × 600 px</span>
+                      سایز موبایل — نسبت 4:3
+                    </p>
+                    <p>• اگر تصویر موبایل نداشتید، تصویر دسکتاپ fallback می‌شود</p>
                     <p>• حداکثر ۵ اسلایدر فعال توصیه می‌شود</p>
-                    <p>• زیرعنوان در موبایل مخفی می‌شود</p>
                     <p>• تصویر پس‌زمینه گرادیان را جایگزین می‌کند</p>
                   </template>
                   <template v-else>
@@ -495,16 +531,18 @@ const ui = useUiStore()
 
 // ── State ──────────────────────────────────────────────────
 const allBanners      = ref([])
-const loading         = ref(false)
-const saving          = ref(false)
-const deleting        = ref(false)
-const uploading       = ref(false)
-const modalOpen       = ref(false)
-const editingBanner   = ref(null)
-const deleteDialogOpen = ref(false)
-const deletingBanner  = ref(null)
-const imageFileInput  = ref(null)
-const activeTab       = ref('hero')
+const loading              = ref(false)
+const saving               = ref(false)
+const deleting             = ref(false)
+const uploading            = ref(false)
+const uploadingMobile      = ref(false)
+const modalOpen            = ref(false)
+const editingBanner        = ref(null)
+const deleteDialogOpen     = ref(false)
+const deletingBanner       = ref(null)
+const imageFileInput       = ref(null)
+const mobileImageFileInput = ref(null)
+const activeTab            = ref('hero')
 
 const draggingIdx = ref(null)
 const dragOverIdx = ref(null)
@@ -541,18 +579,19 @@ const glassesOptions = [
 ]
 
 const defaultForm = () => ({
-  type:     'hero',
-  title:    '',
-  eyebrow:  '',
-  subtitle: '',
-  cta:      'مشاهده محصولات',
-  ctaLink:  '/',
-  bgFrom:   '#0F3D73',
-  bgTo:     '#1B4F8A',
-  accent:   '#FFD700',
-  imageUrl: '',
-  glasses:  'sun',
-  isActive: true,
+  type:           'hero',
+  title:          '',
+  eyebrow:        '',
+  subtitle:       '',
+  cta:            'مشاهده محصولات',
+  ctaLink:        '/',
+  bgFrom:         '#0F3D73',
+  bgTo:           '#1B4F8A',
+  accent:         '#FFD700',
+  imageUrl:       '',
+  mobileImageUrl: '',
+  glasses:        'sun',
+  isActive:       true,
 })
 
 const form = reactive(defaultForm())
@@ -588,18 +627,19 @@ function openCreate() {
 function openEdit(banner) {
   editingBanner.value = banner
   Object.assign(form, {
-    type:     banner.type     ?? 'hero',
-    title:    banner.title    ?? '',
-    eyebrow:  banner.eyebrow  ?? '',
-    subtitle: banner.subtitle ?? '',
-    cta:      banner.cta      ?? 'مشاهده محصولات',
-    ctaLink:  banner.ctaLink  ?? '/',
-    bgFrom:   banner.bgFrom   ?? '#0F3D73',
-    bgTo:     banner.bgTo     ?? '#1B4F8A',
-    accent:   banner.accent   ?? '#FFD700',
-    imageUrl: banner.imageUrl ?? '',
-    glasses:  banner.glasses  ?? 'sun',
-    isActive: banner.isActive ?? true,
+    type:           banner.type           ?? 'hero',
+    title:          banner.title          ?? '',
+    eyebrow:        banner.eyebrow        ?? '',
+    subtitle:       banner.subtitle       ?? '',
+    cta:            banner.cta            ?? 'مشاهده محصولات',
+    ctaLink:        banner.ctaLink        ?? '/',
+    bgFrom:         banner.bgFrom         ?? '#0F3D73',
+    bgTo:           banner.bgTo           ?? '#1B4F8A',
+    accent:         banner.accent         ?? '#FFD700',
+    imageUrl:       banner.imageUrl       ?? '',
+    mobileImageUrl: banner.mobileImageUrl ?? '',
+    glasses:        banner.glasses        ?? 'sun',
+    isActive:       banner.isActive       ?? true,
   })
   modalOpen.value = true
 }
@@ -614,18 +654,19 @@ async function saveModal() {
   saving.value = true
   try {
     const dto = {
-      type:     form.type,
-      title:    form.title.trim(),
-      eyebrow:  form.eyebrow.trim(),
-      subtitle: form.subtitle.trim(),
-      cta:      form.cta.trim() || 'مشاهده محصولات',
-      ctaLink:  form.ctaLink.trim() || '/',
-      bgFrom:   form.bgFrom,
-      bgTo:     form.bgTo,
-      accent:   form.accent,
-      imageUrl: form.imageUrl.trim(),
-      glasses:  form.glasses,
-      isActive: form.isActive,
+      type:           form.type,
+      title:          form.title.trim(),
+      eyebrow:        form.eyebrow.trim(),
+      subtitle:       form.subtitle.trim(),
+      cta:            form.cta.trim() || 'مشاهده محصولات',
+      ctaLink:        form.ctaLink.trim() || '/',
+      bgFrom:         form.bgFrom,
+      bgTo:           form.bgTo,
+      accent:         form.accent,
+      imageUrl:       form.imageUrl.trim(),
+      mobileImageUrl: form.mobileImageUrl.trim(),
+      glasses:        form.glasses,
+      isActive:       form.isActive,
     }
 
     if (editingBanner.value) {
@@ -722,7 +763,8 @@ async function onDrop(targetIdx) {
 }
 
 // ── Image upload ───────────────────────────────────────────
-function triggerImageUpload() { imageFileInput.value?.click() }
+function triggerImageUpload()       { imageFileInput.value?.click() }
+function triggerMobileImageUpload() { mobileImageFileInput.value?.click() }
 
 async function onImageFileChange(e) {
   const file = e.target.files?.[0]
@@ -731,11 +773,27 @@ async function onImageFileChange(e) {
   try {
     const { data } = await uploadService.uploadImage(file, 'banners')
     form.imageUrl = data?.original?.url || data?.url || ''
-    ui.addToast('تصویر آپلود شد ✓', 'success')
+    ui.addToast('تصویر دسکتاپ آپلود شد ✓', 'success')
   } catch {
     ui.addToast('خطا در آپلود تصویر', 'error')
   } finally {
     uploading.value = false
+    e.target.value = ''
+  }
+}
+
+async function onMobileImageFileChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  uploadingMobile.value = true
+  try {
+    const { data } = await uploadService.uploadImage(file, 'banners')
+    form.mobileImageUrl = data?.original?.url || data?.url || ''
+    ui.addToast('تصویر موبایل آپلود شد ✓', 'success')
+  } catch {
+    ui.addToast('خطا در آپلود تصویر موبایل', 'error')
+  } finally {
+    uploadingMobile.value = false
     e.target.value = ''
   }
 }

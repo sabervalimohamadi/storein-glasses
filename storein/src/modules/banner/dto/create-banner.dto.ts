@@ -16,7 +16,8 @@ export class CreateBannerDto {
   @IsOptional() @IsString() @MaxLength(7) bgTo?: string;
   @IsOptional() @IsString() @MaxLength(7) accent?: string;
 
-  @IsOptional() @IsString() imageUrl?: string;
+  @IsOptional() @IsString() imageUrl?:       string;
+  @IsOptional() @IsString() mobileImageUrl?: string;
 
   @IsOptional() @IsIn(['sun', 'rx', 'lens', 'none']) glasses?: string;
   @IsOptional() @IsIn(['hero', 'promo'])             type?: string;
