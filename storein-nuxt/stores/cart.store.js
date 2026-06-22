@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import { cartService } from '~/services/cart.service'
 import { logger } from '~/utils/logger'
+import { withRetry } from '~/utils/retry'
 
 export const useCartStore = defineStore('cart', () => {
   const items   = ref([])
@@ -11,13 +12,18 @@ export const useCartStore = defineStore('cart', () => {
   const totalPrice = computed(() => items.value.reduce((s, i) => s + i.price * i.quantity, 0))
 
   async function fetchCart() {
+    if (loading.value) return
     loading.value = true
     try {
-      const { data } = await cartService.get()
-      items.value = data.items ?? []
+      await withRetry(async () => {
+        const { data } = await cartService.get()
+        items.value = data.items ?? []
+      }, 3, 1500)
     } catch (error) {
       logger.error('cart: fetchCart failed', error, {}, 'CartStore')
-    } finally { loading.value = false }
+    } finally {
+      loading.value = false
+    }
   }
 
   async function addItem(productId, variantId, quantity = 1) {

@@ -2,6 +2,7 @@
 import { ref }         from 'vue'
 import http            from '~/services/http.service'
 import { logger }      from '~/utils/logger'
+import { withRetry }   from '~/utils/retry'
 
 const CTX = 'NotificationStore'
 
@@ -14,9 +15,11 @@ export const useNotificationStore = defineStore('notification', () => {
 
   async function fetchUnreadCount() {
     try {
-      const { data } = await http.get('/notifications/unread-count')
-      unreadCount.value = data?.count ?? 0
-      logger.debug('notification: unread count fetched', { count: unreadCount.value }, CTX)
+      await withRetry(async () => {
+        const { data } = await http.get('/notifications/unread-count')
+        unreadCount.value = data?.count ?? 0
+        logger.debug('notification: unread count fetched', { count: unreadCount.value }, CTX)
+      }, 3, 1500)
     } catch (err) {
       logger.warn('notification: failed to fetch unread count', { error: err?.message }, CTX)
     }

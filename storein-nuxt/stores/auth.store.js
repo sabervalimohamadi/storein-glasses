@@ -57,6 +57,9 @@ export const useAuthStore = defineStore('auth', () => {
 
   // ── Post-login background sync ────────────────────────────────
   async function _postLoginSync() {
+    // Small delay so AppHeader.onMounted fires first; the loading guard in each
+    // store then prevents a duplicate in-flight request.
+    await new Promise(r => setTimeout(r, 100))
     const { useCartStore }     = await import('~/stores/cart.store')
     const { useWishlistStore } = await import('~/stores/wishlist.store')
     Promise.allSettled([

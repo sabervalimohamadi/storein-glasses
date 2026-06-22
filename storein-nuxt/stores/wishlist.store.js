@@ -4,6 +4,7 @@ import { wishlistService } from '~/services/wishlist.service'
 import { useAuthStore } from '~/stores/auth.store'
 import { useUiStore } from '~/stores/ui.store'
 import { logger } from '~/utils/logger'
+import { withRetry } from '~/utils/retry'
 
 export const useWishlistStore = defineStore('wishlist', () => {
   // Set of product _id strings for O(1) lookup
@@ -17,13 +18,16 @@ export const useWishlistStore = defineStore('wishlist', () => {
   async function fetchWishlist() {
     const auth = useAuthStore()
     if (!auth.isLoggedIn) return
+    if (loading.value) return
     loading.value = true
     try {
-      const { data } = await wishlistService.getAll()
-      const ids = (data?.products ?? data?.items ?? []).map((p) => String(p._id ?? p))
-      wishlistIds.value = new Set(ids)
+      await withRetry(async () => {
+        const { data } = await wishlistService.getAll()
+        const ids = (data?.products ?? data?.items ?? []).map((p) => String(p._id ?? p))
+        wishlistIds.value = new Set(ids)
+      }, 3, 1500)
     } catch {
-      // silent — wishlist is non-critical
+      // all retries failed — wishlist stays empty, non-critical
     } finally {
       loading.value = false
     }
