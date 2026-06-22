@@ -132,6 +132,27 @@ export class NotificationsGateway
     this.logger.debug(`Emitted notification to user:${userId} — ${payload.title}`);
   }
 
+  emitNewWholesaleOrder(payload: {
+    orderId:      string;
+    orderNumber:  string;
+    total:        number;
+    customerName: string;
+    createdAt:    string;
+  }) {
+    this.server.to('admins').emit('new_wholesale_order', payload);
+    this.logger.log(`Emitted new_wholesale_order: ${payload.orderNumber}`);
+  }
+
+  emitNewWholesaleRequest(payload: {
+    userId:      string;
+    userName:    string;
+    companyName: string;
+    createdAt:   string;
+  }) {
+    this.server.to('admins').emit('new_wholesale_request', payload);
+    this.logger.log(`Emitted new_wholesale_request from: ${payload.userName}`);
+  }
+
   // Emits a single real-time event to ALL connected regular users (broadcast room).
   // Called after adminBroadcast insertMany so clients see the toast without polling.
   emitBroadcast(payload: {

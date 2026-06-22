@@ -91,7 +91,22 @@ export class AdminController {
     return this.adminService.demoteFromAdmin(id);
   }
 
-  // ── Wholesale ─────────────────────────────────────────────────
+  // ── Wholesale Orders ──────────────────────────────────────────
+  @Get('wholesale-orders')
+  getWholesaleOrders(
+    @Query('page')   page  = 1,
+    @Query('limit')  limit = 20,
+    @Query('status') status?: string,
+  ) {
+    return this.adminService.getWholesaleOrders(+page, +limit, status);
+  }
+
+  @Get('wholesale-orders/count')
+  getWholesaleOrdersCount(@Query('status') status = 'pending') {
+    return this.adminService.getWholesaleOrdersCount(status);
+  }
+
+  // ── Wholesale Requests ────────────────────────────────────────
   @Get('wholesale-requests')
   getWholesaleRequests(@Query('status') status?: string) {
     return this.adminService.getWholesaleRequests(status);

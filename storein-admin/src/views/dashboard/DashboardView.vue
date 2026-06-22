@@ -38,6 +38,7 @@
       :pending-orders="ui.pendingOrdersCount"
       :pending-reviews="ui.pendingReviewsCount"
       :pending-wholesale="ui.pendingWholesaleCount"
+      :pending-wholesale-orders="ui.pendingWholesaleOrderCount"
     />
 
     <!-- ③ Stat cards -->
@@ -182,10 +183,22 @@ async function loadPendingWholesale() {
   }
 }
 
+async function loadPendingWholesaleOrders() {
+  try {
+    const count = await wholesaleService.getWholesaleOrdersCount()
+    ui.setPendingWholesaleOrderCount(count)
+  } catch { /* non-critical */ }
+}
+
 async function loadAll() {
   loading.value = true
   try {
-    await Promise.allSettled([loadStats(), loadPendingReviews(), loadPendingWholesale()])
+    await Promise.allSettled([
+      loadStats(),
+      loadPendingReviews(),
+      loadPendingWholesale(),
+      loadPendingWholesaleOrders(),
+    ])
   } catch {
     ui.addToast('خطا در بارگذاری داشبورد', 'error')
   } finally {
@@ -193,12 +206,15 @@ async function loadAll() {
   }
 }
 
-// Poll wholesale count every 30 s for real-time badge update
+// Poll wholesale counts every 30 s for real-time badge update
 let _wholesaleTimer = null
 
 onMounted(() => {
   loadAll()
-  _wholesaleTimer = setInterval(loadPendingWholesale, 30_000)
+  _wholesaleTimer = setInterval(() => {
+    loadPendingWholesale()
+    loadPendingWholesaleOrders()
+  }, 30_000)
   logger.debug('Wholesale polling started (30s)', {}, CTX)
 })
 

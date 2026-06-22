@@ -258,7 +258,32 @@ export class AdminService {
       .lean<UserDocument[]>();
   }
 
-  // ── Wholesale ─────────────────────────────────────────────────
+  // ── Wholesale Orders ──────────────────────────────────────────
+  async getWholesaleOrders(page = 1, limit = 20, status?: string) {
+    const filter: Record<string, any> = { isWholesale: true };
+    if (status) filter.status = status;
+    const skip = (page - 1) * limit;
+
+    const [items, total] = await Promise.all([
+      this.orderModel
+        .find(filter)
+        .select('-__v')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .populate('userId', 'phone firstName lastName wholesaleCompanyName')
+        .lean<OrderDocument[]>(),
+      this.orderModel.countDocuments(filter),
+    ]);
+
+    return { items, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async getWholesaleOrdersCount(status = 'pending') {
+    return this.orderModel.countDocuments({ isWholesale: true, status });
+  }
+
+  // ── Wholesale Requests ────────────────────────────────────────
   async getWholesaleRequests(status = 'pending') {
     return this.userModel
       .find({ wholesaleStatus: status })

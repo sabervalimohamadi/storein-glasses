@@ -10,6 +10,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { CreateAddressDto } from './dto/create-address.dto';
 import { UpdateAddressDto } from './dto/update-address.dto';
 import { WholesaleRequestDto } from './dto/wholesale-request.dto';
+import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 
 const MAX_ADDRESSES = 10;
 
@@ -21,6 +22,7 @@ export class UserService {
     @InjectModel(User.name)   private userModel:   Model<UserDocument>,
     @InjectModel(Order.name)  private orderModel:  Model<OrderDocument>,
     @InjectModel(Review.name) private reviewModel: Model<ReviewDocument>,
+    private readonly gateway: NotificationsGateway,
   ) {}
 
   // ── Profile ───────────────────────────────────────────────────
@@ -204,6 +206,14 @@ export class UserService {
     user.wholesaleNationalId  = dto.nationalId;
     user.wholesaleDescription = dto.description;
     await user.save();
+
+    const userName = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() || (user.phone ?? '');
+    this.gateway.emitNewWholesaleRequest({
+      userId:      (user._id as any).toString(),
+      userName,
+      companyName: dto.companyName,
+      createdAt:   new Date().toISOString(),
+    });
 
     return { message: 'درخواست شما با موفقیت ثبت شد و در حال بررسی است' };
   }

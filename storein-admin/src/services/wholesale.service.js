@@ -40,4 +40,28 @@ export const wholesaleService = {
     logger.info('handleRequest', { userId, action }, CTX)
     return http.patch(`/admin/wholesale-requests/${userId}`, { action, reason })
   },
+
+  /**
+   * Fetch paginated wholesale orders (orders placed by wholesale users).
+   */
+  async getWholesaleOrders({ page = 1, limit = 20, status } = {}) {
+    logger.debug('getWholesaleOrders', { page, limit, status }, CTX)
+    return http.get('/admin/wholesale-orders', { params: { page, limit, status } })
+  },
+
+  /**
+   * Count of pending wholesale orders — used for badge.
+   */
+  async getWholesaleOrdersCount(status = 'pending') {
+    logger.debug('getWholesaleOrdersCount', { status }, CTX)
+    try {
+      const res = await http.get('/admin/wholesale-orders/count', {
+        params: { status },
+        skipErrorLog: true,
+      })
+      return typeof res.data === 'number' ? res.data : 0
+    } catch {
+      return 0
+    }
+  },
 }

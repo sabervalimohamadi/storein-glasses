@@ -83,18 +83,50 @@ function onNewReview(payload) {
   logger.info('App: new_review event received', { product: payload.productName }, CTX)
 }
 
+function onNewWholesaleOrder(payload) {
+  ui.addNotification({
+    id:      payload.orderId,
+    type:    'new_wholesale_order',
+    title:   `سفارش عمده #${payload.orderNumber}`,
+    message: `${payload.customerName} — ${Number(payload.total).toLocaleString('fa-IR')} تومان`,
+    time:    payload.createdAt,
+  })
+  ui.incrementPendingWholesaleOrders()
+  ui.addToast(`سفارش عمده جدید #${payload.orderNumber} از ${payload.customerName}`, 'info', 7000)
+  playPing()
+  logger.info('App: new_wholesale_order event received', { orderNumber: payload.orderNumber }, CTX)
+}
+
+function onNewWholesaleRequest(payload) {
+  ui.addNotification({
+    id:      payload.userId,
+    type:    'new_wholesale_request',
+    title:   'درخواست عضویت عمده',
+    message: `${payload.userName} — ${payload.companyName}`,
+    time:    payload.createdAt,
+  })
+  ui.incrementPendingWholesale()
+  ui.addToast(`درخواست عمده جدید از ${payload.userName}`, 'info', 7000)
+  playPing()
+  logger.info('App: new_wholesale_request event received', { user: payload.userName }, CTX)
+}
+
 // ── Socket lifecycle: connect when admin is logged in, disconnect on logout ───
 watch(
   isLoggedIn,
   (loggedIn) => {
     if (loggedIn && token.value) {
       socketService.connect(token.value)
-      socketService.on('new_order',  onNewOrder)
-      socketService.on('new_review', onNewReview)
+      socketService.on('new_order',             onNewOrder)
+      socketService.on('new_review',            onNewReview)
+      socketService.on('new_wholesale_order',   onNewWholesaleOrder)
+      socketService.on('new_wholesale_request', onNewWholesaleRequest)
       logger.debug('App: socket connected for admin session', {}, CTX)
     } else {
-      socketService.off('new_order',  onNewOrder)
-      socketService.off('new_review', onNewReview)
+      socketService.off('new_order',             onNewOrder)
+      socketService.off('new_review',            onNewReview)
+      socketService.off('new_wholesale_order',   onNewWholesaleOrder)
+      socketService.off('new_wholesale_request', onNewWholesaleRequest)
       socketService.disconnect()
     }
   },
@@ -102,7 +134,9 @@ watch(
 )
 
 onUnmounted(() => {
-  socketService.off('new_order',  onNewOrder)
-  socketService.off('new_review', onNewReview)
+  socketService.off('new_order',             onNewOrder)
+  socketService.off('new_review',            onNewReview)
+  socketService.off('new_wholesale_order',   onNewWholesaleOrder)
+  socketService.off('new_wholesale_request', onNewWholesaleRequest)
 })
 </script>

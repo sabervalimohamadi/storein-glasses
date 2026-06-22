@@ -46,7 +46,7 @@ export class OrderService {
 
     const user = await this.userModel
       .findById(userId)
-      .select('addresses firstName lastName phone')
+      .select('addresses firstName lastName phone role')
       .lean<UserDocument>();
     if (!user) throw new NotFoundException('کاربر یافت نشد');
 
@@ -108,8 +108,11 @@ export class OrderService {
 
     const total = subtotal - discount;
 
+    const isWholesaleUser = (user as any).role === 'wholesale';
+
     const order = await this.orderModel.create({
-      userId:  new Types.ObjectId(userId),
+      userId:      new Types.ObjectId(userId),
+      isWholesale: isWholesaleUser,
       orderNumber: this.genOrderNumber(),
       items: cart.items.map((i) => ({
         productId:    new Types.ObjectId(i.productId),
@@ -168,13 +171,18 @@ export class OrderService {
       `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim() ||
       (user.phone ?? '').slice(0, -4) + '****';
 
-    this.gateway.emitNewOrder({
+    const orderPayload = {
       orderId:      (order._id as any).toString(),
       orderNumber:  order.orderNumber,
       total:        order.total,
       customerName,
       createdAt:    (order as any).createdAt?.toISOString() ?? new Date().toISOString(),
-    });
+    };
+
+    this.gateway.emitNewOrder(orderPayload);
+    if (isWholesaleUser) {
+      this.gateway.emitNewWholesaleOrder(orderPayload);
+    }
 
     return order.toObject();
   }

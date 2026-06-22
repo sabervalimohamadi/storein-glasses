@@ -245,7 +245,8 @@ const navGroups = computed(() => {
       label: 'مدیریت',
       items: [
         { name: 'users',              perm: 'users',   icon: 'users',     label: 'کاربران' },
-        { name: 'wholesale-requests', perm: 'users',   icon: 'wholesale', label: 'فروش عمده' },
+        { name: 'wholesale-requests', perm: 'users',   icon: 'wholesale', label: 'درخواست‌های عمده' },
+        { name: 'wholesale-orders',   perm: 'orders',  icon: 'wholesale', label: 'سفارشات عمده' },
         { name: 'reviews',            perm: 'reviews', icon: 'reviews',   label: 'نظرات' },
         ...(auth.isAdmin ? [
           { name: 'popups',             perm: null, icon: 'popups',        label: 'پاپ‌آپ سایت' },

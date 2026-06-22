@@ -165,6 +165,12 @@ const routes = [
     component: () => import('@/views/wholesale/WholesaleRequestsView.vue'),
     meta: { layout: 'admin', title: 'درخواست‌های عمده', permission: 'users' },
   },
+  {
+    path: '/wholesale-orders',
+    name: 'wholesale-orders',
+    component: () => import('@/views/wholesale/WholesaleOrdersView.vue'),
+    meta: { layout: 'admin', title: 'سفارشات عمده', permission: 'orders' },
+  },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
 
