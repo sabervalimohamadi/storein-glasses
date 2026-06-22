@@ -36,21 +36,14 @@ export class SearchService {
     const match: Record<string, any> = { status: ProductStatus.ACTIVE };
 
     if (q?.trim()) {
-      const term = q.trim();
-      if (term.length < 3) {
-        const regex = new RegExp(this.escapeRegex(term), 'i');
-        match.$or = [
-          { name:             { $regex: regex } },
-          { tags:             { $elemMatch: { $regex: regex } } },
-          { shortDescription: { $regex: regex } },
-        ];
-      } else {
-        match.$or = [
-          { $text: { $search: term } },
-          { name:  { $regex: new RegExp(this.escapeRegex(term), 'i') } },
-          { tags:  { $elemMatch: { $regex: new RegExp(this.escapeRegex(term), 'i') } } },
-        ];
-      }
+      const term  = q.trim();
+      const regex = new RegExp(this.escapeRegex(term), 'i');
+      match.$or = [
+        { name:             { $regex: regex } },
+        { shortDescription: { $regex: regex } },
+        { tags:             { $elemMatch: { $regex: regex } } },
+        { description:      { $regex: regex } },
+      ];
     }
 
     if (category) {
@@ -83,7 +76,7 @@ export class SearchService {
       price_desc: { minPrice: -1 },
       popular:    { soldCount: -1, createdAt: -1 },
       mostViewed: { viewCount: -1, createdAt: -1 },
-      relevant:   { score: { $meta: 'textScore' }, soldCount: -1 },
+      relevant:   { soldCount: -1, createdAt: -1 },
     };
     const resolvedSort = sort ?? (q ? 'relevant' : 'newest');
     const sortStage = sortMap[resolvedSort];
@@ -91,7 +84,7 @@ export class SearchService {
 
     const skip = (page - 1) * limit;
 
-    const hasTextSearch = q?.trim() && q.trim().length >= 3;
+    const hasTextSearch = false; // regex-only: no textScore needed
     const projectFields = {
       name: 1, slug: 1, thumbnail: 1, images: 1,
       minPrice: 1, maxPrice: 1, maxComparePrice: 1, totalStock: 1,

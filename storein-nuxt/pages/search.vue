@@ -138,7 +138,6 @@ import BasePagination   from '~/components/common/BasePagination.vue'
 import http             from '~/services/http.service'
 
 definePageMeta({ layout: 'default' })
-useSeoMeta({ title: () => searchQuery.value ? `جستجو: ${searchQuery.value}` : 'جستجو', robots: 'noindex' })
 
 const route  = useRoute()
 const router = useRouter()
@@ -157,6 +156,7 @@ const selectedAttrs = ref([])
 const LIMIT         = 24
 
 const searchQuery = computed(() => String(route.query.q || '').trim())
+useSeoMeta({ title: () => searchQuery.value ? `جستجو: ${searchQuery.value}` : 'جستجو', robots: 'noindex' })
 const totalPages  = computed(() => Math.max(1, Math.ceil(total.value / LIMIT)))
 
 async function fetchSearch() {
