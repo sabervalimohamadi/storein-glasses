@@ -98,43 +98,57 @@
       </div>
 
       <!-- Bottom: qty stepper + add to cart -->
-      <div v-if="wholesaleVariant" class="flex gap-1.5 sm:gap-2 mt-auto" @click.stop>
+      <div v-if="wholesaleVariant" class="flex flex-col gap-1 mt-auto" @click.stop>
+        <div class="flex gap-1.5 sm:gap-2">
 
-        <!-- Qty stepper -->
-        <div
-          class="flex items-center border rounded-xl overflow-hidden shrink-0"
-          style="border-color: var(--color-border); background: var(--color-bg);"
-        >
+          <!-- Qty stepper -->
+          <div
+            class="flex items-center border rounded-xl overflow-hidden shrink-0"
+            :style="{ borderColor: qtyExceedsStock ? '#dc2626' : 'var(--color-border)', background: 'var(--color-bg)' }"
+          >
+            <button
+              type="button"
+              class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
+              style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
+              @click="qty = Math.max(minQty, qty - minQty)"
+            >−</button>
+            <input
+              type="number"
+              v-model.number="qty"
+              @change="onQtyChange"
+              @blur="onQtyChange"
+              class="qty-input font-bold font-fanum text-center bg-transparent border-none outline-none"
+              style="min-width: clamp(28px, 8vw, 40px); width: clamp(28px, 8vw, 40px); font-size: clamp(10px, 2.8vw, 13px); color: var(--color-text-primary);"
+              :min="minQty"
+            />
+            <button
+              type="button"
+              class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
+              style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
+              @click="qty += minQty"
+            >+</button>
+          </div>
+
+          <!-- Add to cart -->
           <button
             type="button"
-            class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
-            style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
-            @click="qty = Math.max(minQty, qty - minQty)"
-          >−</button>
-          <span
-            class="font-bold font-fanum text-center"
-            style="min-width: clamp(22px, 6vw, 32px); font-size: clamp(10px, 2.8vw, 13px); color: var(--color-text-primary);"
-          >{{ formatNumber(qty) }}</span>
-          <button
-            type="button"
-            class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
-            style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
-            @click="qty += minQty"
-          >+</button>
+            class="flex-1 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+            style="padding: clamp(6px, 2vw, 10px) 4px; font-size: clamp(10px, 2.8vw, 13px);
+                   background: linear-gradient(135deg, #f59e0b, #d97706); min-height: clamp(32px, 9vw, 40px);"
+            :disabled="product.totalStock === 0 || addingToCart || qtyExceedsStock"
+            @click.stop="addToCart"
+          >
+            <span v-if="addingToCart" class="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+            <span v-else>{{ isInCart ? '✓ در سبد' : 'افزودن به سبد' }}</span>
+          </button>
+
         </div>
 
-        <!-- Add to cart -->
-        <button
-          type="button"
-          class="flex-1 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-          style="padding: clamp(6px, 2vw, 10px) 4px; font-size: clamp(10px, 2.8vw, 13px);
-                 background: linear-gradient(135deg, #f59e0b, #d97706); min-height: clamp(32px, 9vw, 40px);"
-          :disabled="product.totalStock === 0 || addingToCart"
-          @click.stop="addToCart"
-        >
-          <span v-if="addingToCart" class="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-          <span v-else>{{ isInCart ? '✓ در سبد' : 'افزودن به سبد' }}</span>
-        </button>
+        <!-- Stock warning -->
+        <p
+          v-if="qtyExceedsStock"
+          style="font-size: clamp(9px, 2.2vw, 11px); color: #dc2626; text-align: center; font-weight: 600;"
+        >فقط {{ wholesaleVariant.stock }} عدد موجود است</p>
 
       </div>
     </div>
@@ -172,6 +186,17 @@ const savings = computed(() =>
 const qty = ref(10)
 watch(minQty, v => { qty.value = v }, { immediate: true })
 
+const qtyExceedsStock = computed(() => {
+  const stock = wholesaleVariant.value?.stock ?? Infinity
+  return qty.value > stock
+})
+
+function onQtyChange() {
+  const stock = wholesaleVariant.value?.stock ?? Infinity
+  if (!qty.value || qty.value < minQty.value) qty.value = minQty.value
+  else if (qty.value > stock) qty.value = stock
+}
+
 const isInCart = computed(() =>
   cart.items.some(i => i.productId === props.product._id)
 )
@@ -204,3 +229,9 @@ function goToProduct() {
   if (props.product.slug) router.push(`/product/${props.product.slug}`)
 }
 </script>
+
+<style scoped>
+.qty-input::-webkit-inner-spin-button,
+.qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.qty-input { -moz-appearance: textfield; appearance: textfield; }
+</style>

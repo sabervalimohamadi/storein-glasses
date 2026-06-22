@@ -176,10 +176,11 @@
           </div>
 
           <!-- Stepper + add button -->
+          <div class="flex flex-col gap-1">
           <div class="flex gap-3 items-center">
             <div
               class="flex items-center rounded-xl overflow-hidden shrink-0"
-              style="border:1.5px solid rgba(245,158,11,0.4); background:var(--color-bg);"
+              :style="{ border: wholesaleQtyExceedsStock ? '1.5px solid #dc2626' : '1.5px solid rgba(245,158,11,0.4)', background: 'var(--color-bg)' }"
             >
               <button
                 type="button"
@@ -187,10 +188,15 @@
                 class="flex items-center justify-center transition-colors"
                 style="width:40px; height:44px; font-size:22px; color:#b45309;"
               >−</button>
-              <span
-                class="font-bold font-fanum text-center"
-                style="min-width:52px; font-size:15px; color:var(--color-text-primary);"
-              >{{ formatNumber(wholesaleQty) }}</span>
+              <input
+                type="number"
+                v-model.number="wholesaleQty"
+                @change="onWholesaleQtyChange"
+                @blur="onWholesaleQtyChange"
+                class="pi-qty-input font-bold font-fanum text-center bg-transparent border-none outline-none"
+                style="width:52px; font-size:15px; color:var(--color-text-primary);"
+                :min="wholesaleMinQty"
+              />
               <button
                 type="button"
                 @click="wholesaleQty += wholesaleMinQty"
@@ -201,7 +207,7 @@
 
             <button
               type="button"
-              :disabled="!isInStock || addingToCartWholesale"
+              :disabled="!isInStock || addingToCartWholesale || wholesaleQtyExceedsStock"
               @click="handleAddToCartWholesale"
               class="flex-1 flex items-center justify-center gap-2 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
               style="height:44px; font-size:15px;
@@ -219,6 +225,11 @@
                 افزودن به سبد عمده
               </template>
             </button>
+          </div>
+          <p v-if="wholesaleQtyExceedsStock"
+             style="font-size:12px; color:#dc2626; font-weight:600; text-align:center;">
+            فقط {{ selectedVariant?.stock }} عدد موجود است
+          </p>
           </div>
         </div>
 
@@ -344,9 +355,23 @@ const wholesaleLineTotal = computed(() =>
 
 watch(wholesaleMinQty, (v) => { wholesaleQty.value = v }, { immediate: true })
 
+const wholesaleQtyExceedsStock = computed(() => {
+  const stock = selectedVariant.value?.stock ?? Infinity
+  return wholesaleQty.value > stock
+})
+
 function decreaseWholesaleQty() {
   const next = wholesaleQty.value - wholesaleMinQty.value
   if (next >= wholesaleMinQty.value) wholesaleQty.value = next
+}
+
+function onWholesaleQtyChange() {
+  const stock = selectedVariant.value?.stock ?? Infinity
+  if (!wholesaleQty.value || wholesaleQty.value < wholesaleMinQty.value) {
+    wholesaleQty.value = wholesaleMinQty.value
+  } else if (wholesaleQty.value > stock) {
+    wholesaleQty.value = stock
+  }
 }
 
 function selectVariant(variant) {
@@ -469,3 +494,9 @@ const guarantees = [
 
 defineExpose({ cartButtonRef })
 </script>
+
+<style scoped>
+.pi-qty-input::-webkit-inner-spin-button,
+.pi-qty-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.pi-qty-input { -moz-appearance: textfield; appearance: textfield; }
+</style>
