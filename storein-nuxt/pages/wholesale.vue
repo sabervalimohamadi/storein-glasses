@@ -189,24 +189,94 @@
 
       <!-- B4: New request form -->
       <div v-else-if="auth.isLoggedIn">
-        <!-- How it works steps -->
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin-bottom:32px;">
-          <div v-for="(step, i) in howItWorks" :key="i"
-               style="background:var(--color-card); border:1px solid var(--color-border);
-                      border-radius:14px; padding:16px 12px; text-align:center;">
-            <div style="width:32px; height:32px; border-radius:50%; background:rgba(99,102,241,0.1);
-                        color:var(--color-brand); font-weight:700; font-size:14px;
-                        display:flex; align-items:center; justify-content:center; margin:0 auto 10px;">
-              {{ i + 1 }}
+
+        <!-- Step tracker -->
+        <div style="margin-bottom: 36px;">
+          <div style="display:flex; align-items:flex-start; justify-content:center; gap:0; position:relative;">
+            <div v-for="(step, i) in howItWorks" :key="i"
+                 style="display:flex; flex-direction:column; align-items:center; flex:1; max-width:160px; position:relative;">
+
+              <!-- Connector line (before this step, except first) -->
+              <div v-if="i > 0"
+                   style="position:absolute; top:20px; right:50%; left:0; height:2px;
+                          background: linear-gradient(to left, rgba(99,102,241,0.35), rgba(99,102,241,0.12));
+                          transform: translateY(-50%); z-index:0;" />
+
+              <!-- Circle -->
+              <div :style="`
+                position:relative; z-index:1;
+                width:40px; height:40px; border-radius:50%;
+                display:flex; align-items:center; justify-content:center;
+                font-size:15px; font-weight:800;
+                background: ${i === 0
+                  ? 'linear-gradient(135deg,#7c3aed,#6d28d9)'
+                  : 'var(--color-surface)'};
+                color: ${i === 0 ? '#fff' : 'var(--color-text-secondary)'};
+                border: 2px solid ${i === 0 ? 'transparent' : 'var(--color-border)'};
+                box-shadow: ${i === 0 ? '0 4px 14px rgba(109,40,217,0.35)' : 'none'};
+                margin-bottom:10px;
+              `">
+                <span v-if="i === 0" style="font-size:17px;">✦</span>
+                <span v-else>{{ i + 1 }}</span>
+              </div>
+
+              <!-- Label -->
+              <p :style="`
+                font-size:clamp(11px,2.8vw,13px); font-weight:600; text-align:center;
+                line-height:1.4; padding:0 4px;
+                color: ${i === 0 ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};
+              `">{{ step }}</p>
             </div>
-            <div style="font-size:12px; font-weight:600; color:var(--color-text-primary); line-height:1.4;">{{ step }}</div>
           </div>
         </div>
-        <h2 style="font-size:1.2rem; font-weight:700; text-align:center;
-                   color:var(--color-text-primary); margin-bottom:20px;">
-          فرم درخواست عمده‌فروشی
-        </h2>
-        <WholesaleRequestForm @submitted="onSubmitted" />
+
+        <!-- Form card -->
+        <div style="
+          background: var(--color-card);
+          border: 1px solid var(--color-border);
+          border-radius: 24px;
+          overflow: hidden;
+          box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+        ">
+          <!-- Card header -->
+          <div style="
+            background: linear-gradient(135deg, rgba(109,40,217,0.12) 0%, rgba(109,40,217,0.04) 100%);
+            border-bottom: 1px solid rgba(109,40,217,0.15);
+            padding: 24px 28px 20px;
+            display: flex; align-items: center; gap: 14px;
+          ">
+            <div style="
+              width:48px; height:48px; border-radius:14px; flex-shrink:0;
+              background:linear-gradient(135deg,#7c3aed,#6d28d9);
+              display:flex; align-items:center; justify-content:center;
+              font-size:22px;
+              box-shadow: 0 4px 14px rgba(109,40,217,0.35);
+            ">🏪</div>
+            <div>
+              <h2 style="font-size:1.1rem; font-weight:800; color:var(--color-text-primary); margin-bottom:2px;">
+                درخواست عضویت عمده‌فروشی
+              </h2>
+              <p style="font-size:12px; color:var(--color-text-secondary); line-height:1.5;">
+                اطلاعات کسب‌وکار خود را وارد کنید
+              </p>
+            </div>
+          </div>
+
+          <!-- Form body -->
+          <div style="padding: 24px 24px 28px;">
+            <WholesaleRequestForm @submitted="onSubmitted" />
+          </div>
+        </div>
+
+        <!-- Trust badges -->
+        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:20px;">
+          <span v-for="badge in trustBadges" :key="badge"
+                style="font-size:11px; color:var(--color-text-secondary);
+                       background:var(--color-surface); border:1px solid var(--color-border);
+                       padding:4px 12px; border-radius:20px;">
+            {{ badge }}
+          </span>
+        </div>
       </div>
 
     </div>
@@ -242,8 +312,9 @@ const features = [
   { icon: '🚚', label: 'ارسال رایگان',   sub: 'برای سفارش‌های عمده' },
   { icon: '🤝', label: 'پشتیبانی B2B',   sub: 'اختصاصی و سریع' },
 ]
-const steps      = ['ثبت', 'بررسی', 'تأیید']
-const howItWorks = ['فرم را تکمیل کنید', 'منتظر تأیید بمانید', 'با قیمت عمده بخرید']
+const steps       = ['ثبت', 'بررسی', 'تأیید']
+const howItWorks  = ['فرم را تکمیل کنید', 'منتظر تأیید بمانید', 'با قیمت عمده بخرید']
+const trustBadges = ['🔒 اطلاعات محفوظ است', '⚡ بررسی تا ۲۴ ساعت', '✓ بدون تعهد']
 
 // ── Wholesale status ─────────────────────────────────────────
 const wholesaleStatus = ref(null)
