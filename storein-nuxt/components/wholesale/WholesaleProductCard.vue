@@ -2,11 +2,11 @@
   <!-- Skeleton -->
   <div v-if="loading" class="rounded-2xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
     <div class="aspect-square" style="background-color: var(--color-surface, #f3f4f6);" />
-    <div class="p-4 space-y-3">
-      <div class="h-4 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
-      <div class="h-4 rounded w-3/4" style="background-color: var(--color-surface, #f3f4f6);" />
-      <div class="h-20 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
-      <div class="h-10 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
+    <div class="p-2.5 sm:p-4 space-y-2 sm:space-y-3">
+      <div class="h-3 sm:h-4 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
+      <div class="h-3 sm:h-4 rounded w-3/4" style="background-color: var(--color-surface, #f3f4f6);" />
+      <div class="h-16 sm:h-20 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
+      <div class="h-9 sm:h-10 rounded" style="background-color: var(--color-surface, #f3f4f6);" />
     </div>
   </div>
 
@@ -17,17 +17,14 @@
     style="background-color: var(--color-card);"
     @click="goToProduct"
   >
-    <!-- Image area -->
-    <div class="aspect-square relative shrink-0 overflow-hidden p-3" style="background-color: var(--color-card);">
-
-      <!-- Wholesale badge — top-start (right in RTL) -->
-      <div class="absolute top-2 start-2 z-10">
-        <span style="background: rgba(245,158,11,0.15); color: #b45309; font-size: 11px; font-weight: 700;
-                     padding: 2px 8px; border-radius: 20px; border: 1px solid rgba(245,158,11,0.3);">
-          🏪 عمده
-        </span>
+    <!-- Image -->
+    <div class="aspect-square relative shrink-0 overflow-hidden p-1.5 sm:p-3" style="background-color: var(--color-card);">
+      <div class="absolute top-1.5 start-1.5 sm:top-2 sm:start-2 z-10">
+        <span
+          class="text-[9px] sm:text-[11px] font-bold px-1.5 sm:px-2 py-0.5 rounded-full"
+          style="background: rgba(245,158,11,0.15); color: #b45309; border: 1px solid rgba(245,158,11,0.3);"
+        >🏪 عمده</span>
       </div>
-
       <img
         :src="imgSrc"
         :alt="product.name"
@@ -35,87 +32,93 @@
         loading="lazy"
         @error="imgError = true"
       />
-
-      <!-- Out of stock overlay -->
       <div v-if="product.totalStock === 0" class="absolute inset-0 bg-white/75 flex items-center justify-center">
-        <span class="text-gray-700 font-semibold text-sm px-3 py-1.5 bg-white rounded-full shadow-sm">ناموجود</span>
+        <span class="text-gray-700 font-semibold text-xs px-2 py-1 bg-white rounded-full shadow-sm">ناموجود</span>
       </div>
     </div>
 
     <!-- Body -->
-    <div class="p-4 flex flex-col gap-3 flex-1">
+    <div class="p-2 sm:p-4 flex flex-col gap-2 sm:gap-3 flex-1">
 
       <!-- Name -->
-      <h3 class="text-sm font-bold line-clamp-2 leading-relaxed" style="color: var(--color-text-primary); min-height: 2.5rem;">
+      <h3
+        class="font-bold line-clamp-2 leading-relaxed"
+        style="color: var(--color-text-primary); font-size: clamp(11px, 3vw, 14px); min-height: 2.4em;"
+      >
         {{ product.name }}
       </h3>
 
       <!-- Price block -->
       <div
         v-if="wholesaleVariant"
-        style="background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); border-radius: 12px; padding: 10px 12px;"
+        class="rounded-xl"
+        style="background: rgba(245,158,11,0.07); border: 1px solid rgba(245,158,11,0.2); padding: clamp(6px, 2vw, 10px) clamp(8px, 2.5vw, 12px);"
       >
-        <!-- Row 1: Wholesale price -->
-        <div class="flex items-baseline justify-between mb-1">
-          <span style="font-size: 11px; color: var(--color-text-secondary);">قیمت عمده</span>
-          <span style="font-size: 17px; font-weight: 700; color: #b45309; font-family: var(--font-fanum);">
-            {{ formatPrice(wholesaleVariant.wholesalePrice) }}
-          </span>
+        <!-- Wholesale price row -->
+        <div class="flex items-baseline justify-between mb-0.5 sm:mb-1">
+          <span style="font-size: clamp(9px, 2.3vw, 11px); color: var(--color-text-secondary);">قیمت عمده</span>
+          <span
+            class="font-bold font-fanum"
+            style="font-size: clamp(12px, 3.5vw, 17px); color: #b45309; line-height: 1.3;"
+          >{{ formatPrice(wholesaleVariant.wholesalePrice) }}</span>
         </div>
 
-        <!-- Row 2: Retail price strikethrough -->
-        <div class="flex items-baseline justify-between mb-2">
-          <span style="font-size: 11px; color: var(--color-text-secondary);">قیمت تکی</span>
-          <span style="font-size: 13px; text-decoration: line-through; color: var(--color-text-secondary); font-family: var(--font-fanum);">
-            {{ formatPrice(wholesaleVariant.price) }}
-          </span>
+        <!-- Retail price row -->
+        <div class="flex items-baseline justify-between mb-1.5 sm:mb-2">
+          <span style="font-size: clamp(9px, 2.3vw, 11px); color: var(--color-text-secondary);">قیمت تکی</span>
+          <span
+            class="font-fanum"
+            style="font-size: clamp(10px, 2.8vw, 13px); text-decoration: line-through; color: var(--color-text-secondary);"
+          >{{ formatPrice(wholesaleVariant.price) }}</span>
         </div>
 
         <!-- Divider -->
-        <div style="border-top: 1px solid rgba(245,158,11,0.2); margin-bottom: 8px;" />
+        <div style="border-top: 1px solid rgba(245,158,11,0.2); margin-bottom: 6px;" />
 
-        <!-- Row 3: Savings + MinQty -->
-        <div class="flex items-center justify-between">
-          <span style="font-size: 11px; font-weight: 600; color: #16a34a;
-                       background: rgba(34,197,94,0.1); padding: 2px 8px;
-                       border-radius: 20px; font-family: var(--font-fanum);">
-            {{ formatPrice(savings) }} ارزان‌تر
-          </span>
-          <span style="font-size: 11px; font-weight: 700; color: #b45309;
-                       background: rgba(245,158,11,0.15); padding: 2px 10px;
-                       border-radius: 20px; border: 1px solid rgba(245,158,11,0.25);">
-            حداقل {{ formatNumber(minQty) }} عدد
-          </span>
+        <!-- Savings + MinQty — stacks on very small cards -->
+        <div class="flex flex-wrap items-center justify-between gap-1">
+          <span
+            class="font-bold font-fanum"
+            style="font-size: clamp(9px, 2.3vw, 11px); color: #16a34a;
+                   background: rgba(34,197,94,0.1); padding: 2px 6px;
+                   border-radius: 20px;"
+          >{{ formatPrice(savings) }} ارزان‌تر</span>
+          <span
+            class="font-bold font-fanum"
+            style="font-size: clamp(9px, 2.3vw, 11px); color: #b45309;
+                   background: rgba(245,158,11,0.15); padding: 2px 6px;
+                   border-radius: 20px; border: 1px solid rgba(245,158,11,0.25);"
+          >حداقل {{ formatNumber(minQty) }} عدد</span>
         </div>
       </div>
 
       <!-- Fallback: no wholesale price -->
-      <div v-else class="text-sm text-center py-3" style="color: var(--color-text-secondary);">
+      <div v-else class="text-xs text-center py-3" style="color: var(--color-text-secondary);">
         قیمت عمده تعیین نشده
       </div>
 
-      <!-- Quantity selector + Add to cart -->
-      <div v-if="wholesaleVariant" class="flex gap-2 mt-auto" @click.stop>
+      <!-- Bottom: qty stepper + add to cart -->
+      <div v-if="wholesaleVariant" class="flex gap-1.5 sm:gap-2 mt-auto" @click.stop>
 
-        <!-- Qty stepper (steps by minQty) -->
+        <!-- Qty stepper -->
         <div
           class="flex items-center border rounded-xl overflow-hidden shrink-0"
           style="border-color: var(--color-border); background: var(--color-bg);"
         >
           <button
             type="button"
-            class="px-2.5 py-2 text-lg font-bold transition-colors hover:bg-surface"
-            style="color: var(--color-text-primary);"
+            class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
+            style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
             @click="qty = Math.max(minQty, qty - minQty)"
           >−</button>
           <span
-            class="px-2 text-sm font-bold min-w-[2rem] text-center font-fanum"
-            style="color: var(--color-text-primary);"
+            class="font-bold font-fanum text-center"
+            style="min-width: clamp(22px, 6vw, 32px); font-size: clamp(10px, 2.8vw, 13px); color: var(--color-text-primary);"
           >{{ formatNumber(qty) }}</span>
           <button
             type="button"
-            class="px-2.5 py-2 text-lg font-bold transition-colors hover:bg-surface"
-            style="color: var(--color-text-primary);"
+            class="flex items-center justify-center font-bold transition-colors hover:bg-surface"
+            style="width: clamp(24px, 7vw, 32px); height: clamp(32px, 9vw, 40px); font-size: clamp(14px, 4vw, 18px); color: var(--color-text-primary);"
             @click="qty += minQty"
           >+</button>
         </div>
@@ -123,16 +126,17 @@
         <!-- Add to cart -->
         <button
           type="button"
-          class="flex-1 py-2.5 rounded-xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-          style="background: linear-gradient(135deg, #f59e0b, #d97706);"
+          class="flex-1 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+          style="padding: clamp(6px, 2vw, 10px) 4px; font-size: clamp(10px, 2.8vw, 13px);
+                 background: linear-gradient(135deg, #f59e0b, #d97706); min-height: clamp(32px, 9vw, 40px);"
           :disabled="product.totalStock === 0 || addingToCart"
           @click.stop="addToCart"
         >
-          <span v-if="addingToCart" class="inline-block w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+          <span v-if="addingToCart" class="inline-block w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
           <span v-else>{{ isInCart ? '✓ در سبد' : 'افزودن به سبد' }}</span>
         </button>
-      </div>
 
+      </div>
     </div>
   </article>
 </template>
