@@ -190,16 +190,17 @@ onUnmounted(() => clearInterval(autoTimer))
 .hero {
   position: relative;
   width: 100%;
-  height: 280px;
+  height: 360px;
   overflow: hidden;
   border-radius: 0;
-  margin-top: 0.75rem;
+  margin-top: 0;
 }
 
 @media (min-width: 768px) {
   .hero {
-    height: 420px;
+    height: 460px;
     border-radius: 20px;
+    margin-top: 0.75rem;
   }
 }
 
@@ -216,7 +217,7 @@ onUnmounted(() => clearInterval(autoTimer))
   position: absolute;
   inset: -4%;
   background-size: cover;
-  background-position: center;
+  background-position: center 20%;
   animation: kb 14s ease-in-out infinite alternate;
 }
 @keyframes kb {
@@ -224,11 +225,11 @@ onUnmounted(() => clearInterval(autoTimer))
   to   { transform: scale(1.07) translate(-1%, -1%); }
 }
 
-/* Gradient overlay for readability */
+/* Gradient overlay for readability — RTL: text is on physical right, so darken right side */
 .hero__veil {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to left, rgba(0,0,0,0.08) 0%, rgba(0,0,0,0.55) 65%, rgba(0,0,0,0.7) 100%);
+  background: linear-gradient(to right, rgba(0,0,0,0.05) 0%, rgba(0,0,0,0.45) 50%, rgba(0,0,0,0.72) 100%);
 }
 
 /* Dot mesh texture */
@@ -260,6 +261,13 @@ onUnmounted(() => clearInterval(autoTimer))
 .hero__copy {
   max-width: 440px;
   animation: copy-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  padding-top: 0;
+}
+
+@media (max-width: 767px) {
+  .hero__copy {
+    max-width: 100%;
+  }
 }
 @keyframes copy-in {
   from { opacity: 0; transform: translateY(22px); }
@@ -283,12 +291,12 @@ onUnmounted(() => clearInterval(autoTimer))
 
 /* Title */
 .hero__title {
-  font-size: 1.625rem;
+  font-size: 1.5rem;
   font-weight: 900;
   color: #ffffff;
   line-height: 1.3;
   margin: 0 0 12px;
-  text-shadow: 0 2px 20px rgba(0,0,0,0.35);
+  text-shadow: 0 2px 20px rgba(0,0,0,0.5);
 }
 @media (min-width: 768px) {
   .hero__title { font-size: 2.375rem; margin-bottom: 14px; }
@@ -296,14 +304,14 @@ onUnmounted(() => clearInterval(autoTimer))
 
 /* Subtitle */
 .hero__sub {
-  display: none;
-  font-size: 0.9rem;
-  color: rgba(255,255,255,0.68);
-  line-height: 1.7;
-  margin: 0 0 26px;
+  display: block;
+  font-size: 0.78rem;
+  color: rgba(255,255,255,0.72);
+  line-height: 1.65;
+  margin: 0 0 16px;
 }
 @media (min-width: 768px) {
-  .hero__sub { display: block; }
+  .hero__sub { font-size: 0.9rem; margin-bottom: 26px; }
 }
 
 /* CTA button */
