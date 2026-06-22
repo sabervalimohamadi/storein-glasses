@@ -18,6 +18,9 @@ export class ProductQueryDto {
   @IsOptional() @Transform(({ value }) => value === 'true')
   inStock?: boolean;
 
+  @IsOptional() @Transform(({ value }) => value === 'true')
+  hasWholesalePrice?: boolean;
+
   @IsOptional() @IsEnum(ProductStatus)
   status?: ProductStatus;
 

@@ -99,6 +99,7 @@ export class ProductService {
       category, minPrice, maxPrice, inStock,
       sort, page = 1, limit = 20,
       gender, frameShape, frameMaterial,
+      hasWholesalePrice,
     } = query;
 
     const filter: Record<string, any> = {
@@ -110,6 +111,11 @@ export class ProductService {
     if (minPrice !== undefined) filter.minPrice = { $gte: minPrice };
     if (maxPrice !== undefined) filter.maxPrice = { ...filter.maxPrice, $lte: maxPrice };
     if (inStock) filter.totalStock = { $gt: 0 };
+    if (hasWholesalePrice) {
+      filter['variants'] = {
+        $elemMatch: { wholesalePrice: { $gt: 0 }, isActive: { $ne: false } },
+      };
+    }
 
     // Gender filter — resolve via category.gender field (includes descendants)
     if (gender) {

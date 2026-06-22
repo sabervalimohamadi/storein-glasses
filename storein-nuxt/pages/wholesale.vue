@@ -5,7 +5,9 @@
     <section class="py-16 px-4 text-center" style="background: linear-gradient(135deg, var(--color-brand) 0%, var(--color-brand-dark, #1a4fbd) 100%);">
       <div class="max-w-3xl mx-auto text-white">
         <div class="text-5xl mb-4">🏪</div>
-        <h1 class="text-3xl md:text-4xl font-black mb-3">فروش عمده استورین</h1>
+        <h1 class="text-3xl md:text-4xl font-black mb-3">
+          فروش عمده {{ settingsStore.siteName }}
+        </h1>
         <p class="text-lg text-white/80 mb-8">قیمت‌های ویژه · حداقل سفارش مشخص · پشتیبانی اختصاصی B2B</p>
         <div class="flex flex-wrap justify-center gap-6 text-sm text-white/90">
           <div class="flex items-center gap-2">
@@ -108,12 +110,15 @@
 <script setup>
 import WholesaleRequestForm from '~/components/wholesale/WholesaleRequestForm.vue'
 import WholesaleProductGrid from '~/components/wholesale/WholesaleProductGrid.vue'
-import { useAuthStore } from '~/stores/auth.store'
+import { useAuthStore }     from '~/stores/auth.store'
+import { useSettingsStore } from '~/stores/settings.store'
 import http from '~/services/http.service'
 
 definePageMeta({ layout: 'default' })
+
+const settingsStore = useSettingsStore()
 useSeoMeta({
-  title:       'فروش عمده | استورین',
+  title:       () => `فروش عمده | ${settingsStore.siteName}`,
   description: 'ثبت درخواست عمده‌فروشی و خرید عینک با قیمت ویژه عمده',
 })
 
@@ -123,14 +128,18 @@ const wholesaleProducts = ref([])
 const productsLoading   = ref(false)
 
 async function fetchWholesaleProducts() {
+  if (!wholesaleStatus.value?.isWholesale) return
   productsLoading.value = true
   try {
     const { data } = await http.get('/products', {
-      params: { status: 'active', hasWholesalePrice: true, limit: 24 },
+      params: { status: 'active', hasWholesalePrice: true, limit: 24, sort: 'newest' },
     })
     wholesaleProducts.value = data?.items ?? data?.products ?? []
-  } catch {}
-  finally { productsLoading.value = false }
+  } catch (e) {
+    console.error('Failed to fetch wholesale products', e)
+  } finally {
+    productsLoading.value = false
+  }
 }
 
 onMounted(async () => {
@@ -138,13 +147,17 @@ onMounted(async () => {
   try {
     const { data } = await http.get('/users/me/wholesale-status')
     wholesaleStatus.value = data
-    if (data?.isWholesale) fetchWholesaleProducts()
   } catch {}
 })
 
-watch(() => wholesaleStatus.value?.isWholesale, (approved) => {
-  if (approved) fetchWholesaleProducts()
-})
+watch(
+  () => wholesaleStatus.value?.isWholesale,
+  async (isWholesale) => {
+    if (!isWholesale) return
+    await fetchWholesaleProducts()
+  },
+  { immediate: true },
+)
 
 function onSubmitted() {
   wholesaleStatus.value = { status: 'pending' }
