@@ -10,9 +10,11 @@
         :data-testid="`quick-${link.name}`"
         :class="[
           'flex items-center gap-1.5 px-3.5 py-1.5 text-sm font-semibold rounded-full whitespace-nowrap transition-all duration-200',
-          isLinkActive(link)
-            ? 'bg-brand text-white shadow-sm'
-            : 'text-text-secondary hover:text-brand hover:bg-brand/10',
+          link.name === 'wholesale'
+            ? 'bg-amber-500 text-white shadow-sm hover:bg-amber-600 hover:shadow-md'
+            : isLinkActive(link)
+              ? 'bg-brand text-white shadow-sm'
+              : 'text-text-secondary hover:text-brand hover:bg-brand/10',
         ]"
       >
         {{ link.label }}
