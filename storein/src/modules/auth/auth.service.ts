@@ -217,7 +217,12 @@ export class AuthService {
       throw new UnauthorizedException('کاربر یافت نشد');
     }
 
-    await this.rtModel.findByIdAndUpdate(doc._id, { isRevoked: true });
+    // Do NOT revoke the old token here — token rotation via immediate revocation causes
+    // logout on page refresh if the new Set-Cookie header is stripped by a reverse proxy
+    // (e.g. nginx proxy_hide_header). Old tokens expire naturally after 30 days.
+    // Explicit logout still revokes all tokens via logoutAll().
+    // Clean up already-expired tokens to prevent DB growth.
+    await this.rtModel.deleteMany({ userId, expiresAt: { $lte: new Date() } });
     return this.issueTokens(user, meta);
   }
 

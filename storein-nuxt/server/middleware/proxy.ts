@@ -14,7 +14,6 @@ export default defineEventHandler(async (event) => {
   const target = base + url.pathname + url.search
 
   return proxyRequest(event, target, {
-    fetch: $fetch.native,
     headers: {
       'x-forwarded-host':  event.node.req.headers.host ?? '',
       'x-forwarded-proto': 'https',
