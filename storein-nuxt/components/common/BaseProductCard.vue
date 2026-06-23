@@ -24,8 +24,7 @@
     <!-- Image area -->
     <div
       class="aspect-square relative shrink-0 overflow-hidden"
-      :class="featured ? '' : 'p-3'"
-      :class="featured ? 'bg-white' : 'bg-card'"
+      :class="featured ? 'bg-white' : 'p-3 bg-card'"
     >
 
       <!-- Wishlist: top-end (physically left in RTL) -->
