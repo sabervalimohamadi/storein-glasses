@@ -14,7 +14,6 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { CartService } from '../cart/cart.service';
 import { ProductService } from '../product/product.service';
-import { DiscountService } from '../discount/discount.service';
 import {
   EVENTS,
   OrderStatusChangedEvent,
@@ -31,7 +30,6 @@ export class OrderService {
     @InjectModel(User.name)  private userModel: Model<UserDocument>,
     private cartService: CartService,
     private productService: ProductService,
-    private discountService: DiscountService,
     private eventEmitter: EventEmitter2,
     private readonly logger: AppLoggerService,
     private readonly gateway: NotificationsGateway,
@@ -94,25 +92,7 @@ export class OrderService {
 
     const subtotal = itemsToOrder.reduce((s, i) => s + i.price * i.quantity, 0);
 
-    let discount   = 0;
-    let couponDoc: any = null;
-
-    if (dto.couponCode) {
-      const result = await this.discountService.validate(
-        userId, dto.couponCode, subtotal,
-      );
-      if (!result.isValid) {
-        this.logger.warn('Order blocked: coupon invalid', {
-          userId, couponCode: dto.couponCode, reason: result.message,
-        });
-        throw new BadRequestException(result.message);
-      }
-      discount  = result.discountAmount;
-      couponDoc = result.coupon;
-      this.logger.log('Coupon applied', {
-        userId, couponCode: dto.couponCode, discountAmount: discount,
-      });
-    }
+    let discount = 0;
 
     const total = subtotal - discount;
 
@@ -146,8 +126,7 @@ export class OrderService {
       subtotal,
       discount,
       total,
-      couponCode: dto.couponCode,
-      note:       dto.note,
+      note: dto.note,
     });
 
     await this.productService.bulkAdjustStock(
@@ -158,15 +137,6 @@ export class OrderService {
       })),
     );
     await this.cartService.clearCart(userId);
-
-    if (couponDoc && discount > 0) {
-      await this.discountService.recordUsage(
-        couponDoc._id,
-        userId,
-        (order._id as any).toString(),
-        discount,
-      );
-    }
 
     this.logger.log('Order created', {
       orderId:     (order._id as any).toString(),

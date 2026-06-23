@@ -15,7 +15,7 @@ import { CreateVariantDto } from './dto/create-variant.dto';
 import { ProductQueryDto } from './dto/product-query.dto';
 import { BulkDiscountDto } from './dto/bulk-discount.dto';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
-import { TimeDiscountService } from '../time-discount/time-discount.service';
+import { DiscountsService } from '../../discounts/discounts.service';
 
 @Injectable()
 export class ProductService {
@@ -24,7 +24,7 @@ export class ProductService {
     @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
     @InjectModel(Color.name)     private colorModel:     Model<ColorDocument>,
     private readonly logger: AppLoggerService,
-    private readonly timeDiscountService: TimeDiscountService,
+    private readonly discountsService: DiscountsService,
   ) {
     this.logger.setContext('ProductService');
   }
@@ -151,7 +151,7 @@ export class ProductService {
 
     // hasDiscount=true → only products that have an active time-discount
     if (hasDiscount === 'true' || hasDiscount === true) {
-      const activeDiscounts = await this.timeDiscountService.getActiveDiscounts();
+      const activeDiscounts = await this.discountsService.getActiveDiscounts();
       const allProductIds = activeDiscounts.flatMap((d) =>
         d.targetType === 'products' ? d.targetIds.map((id) => id.toString()) : [],
       );
@@ -226,11 +226,11 @@ export class ProductService {
 
     // Attach time-discount pricing
     const categoryId = (product.category as any)?._id?.toString() ?? (product.category as any)?.toString() ?? '';
-    const priceInfo = await this.timeDiscountService.calculateDiscountedPrice(
-      product.minPrice,
-      (product._id as any).toString(),
+    const priceInfo = await this.discountsService.calculateDiscountedPrice({
+      originalPrice: product.minPrice,
+      productId: (product._id as any).toString(),
       categoryId,
-    );
+    });
 
     return {
       ...product,
@@ -238,7 +238,8 @@ export class ProductService {
       finalPrice: priceInfo.finalPrice,
       discountAmount: priceInfo.discountAmount,
       discountPercentage: priceInfo.discountPercentage,
-      activeDiscountId: priceInfo.activeDiscountId ?? null,
+      activeDiscountId: priceInfo.activeDiscount?.id ?? null,
+      activeDiscount: priceInfo.activeDiscount,
     };
   }
 
@@ -420,7 +421,7 @@ export class ProductService {
     const { productIds, discountPct, startDate, endDate, title } = dto;
     const pct = Math.max(0, Math.min(90, discountPct));
 
-    // ── Timed mode: delegate to TimeDiscountService, prices stay untouched ──
+    // ── Timed mode: delegate to DiscountsService, prices stay untouched ──
     if (startDate && endDate) {
       if (new Date(startDate) >= new Date(endDate))
         throw new BadRequestException('تاریخ پایان باید بعد از تاریخ شروع باشد');
@@ -429,7 +430,8 @@ export class ProductService {
         pct, count: productIds.length, startDate, endDate,
       });
 
-      await this.timeDiscountService.create({
+      await this.discountsService.create({
+        kind: 'time_limited',
         title: title?.trim() || `تخفیف گروهی ${pct}٪`,
         discountType: 'percentage',
         value: pct,

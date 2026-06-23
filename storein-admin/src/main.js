@@ -16,6 +16,7 @@ import { logger }            from '@/utils/logger'
 import { setTokenProvider }  from '@/services/http.service'
 import { useAuthStore }      from '@/stores/auth.store'
 import '@/assets/styles/main.css'
+import DatePicker from 'vue3-persian-datetime-picker'
 
 const app = createApp(App)
 
@@ -71,6 +72,7 @@ router.onError((error) => {
 const pinia = createPinia()
 app.use(pinia)
 app.use(router)
+app.component('DatePicker', DatePicker)
 
 // Wire access token from Pinia store into axios (memory-only, never localStorage)
 setTokenProvider(() => useAuthStore().token)

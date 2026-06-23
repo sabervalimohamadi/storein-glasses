@@ -5,7 +5,7 @@ import { ProductService } from './product.service';
 import { Product, ProductSchema } from './entities/product.schema';
 import { Category, CategorySchema } from '../category/entities/category.schema';
 import { Color, ColorSchema } from '../color/entities/color.schema';
-import { TimeDiscountModule } from '../time-discount/time-discount.module';
+import { DiscountsModule } from '../../discounts/discounts.module';
 
 @Module({
   imports: [
@@ -14,7 +14,7 @@ import { TimeDiscountModule } from '../time-discount/time-discount.module';
       { name: Category.name, schema: CategorySchema },
       { name: Color.name,    schema: ColorSchema    },
     ]),
-    TimeDiscountModule,
+    DiscountsModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

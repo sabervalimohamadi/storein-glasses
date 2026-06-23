@@ -4,7 +4,7 @@ import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import { APP_GUARD } from '@nestjs/core';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { ScheduleModule } from '@nestjs/schedule';
-import { TimeDiscountModule } from './modules/time-discount/time-discount.module';
+import { DiscountsModule } from './discounts/discounts.module';
 import * as Joi from 'joi';
 import appConfig from './config/app.config';
 import databaseConfig from './config/database.config';
@@ -24,7 +24,6 @@ import { OrderModule } from './modules/order/order.module';
 import { PaymentModule } from './modules/payment/payment.module';
 import { ReviewModule } from './modules/review/review.module';
 import { WishlistModule } from './modules/wishlist/wishlist.module';
-import { DiscountModule } from './modules/discount/discount.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { UploadModule } from './modules/upload/upload.module';
@@ -99,8 +98,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     PaymentModule,
     ReviewModule,
     WishlistModule,
-    DiscountModule,
-    TimeDiscountModule,
+    DiscountsModule,
     NotificationModule,
     AdminModule,
     UploadModule,

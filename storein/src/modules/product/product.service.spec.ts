@@ -7,17 +7,18 @@ import { Product, ProductStatus } from './entities/product.schema';
 import { Category } from '../category/entities/category.schema';
 import { Color } from '../color/entities/color.schema';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
-import { TimeDiscountService } from '../time-discount/time-discount.service';
+import { DiscountsService } from '../../discounts/discounts.service';
 
 const mockLogger = {
   setContext: jest.fn().mockReturnThis(),
   log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
 };
 
-const mockTimeDiscountService = {
+const mockDiscountsService = {
   create:                   jest.fn(),
-  calculateDiscountedPrice: jest.fn(),
+  calculateDiscountedPrice: jest.fn().mockResolvedValue({ finalPrice: 0, discountAmount: 0, discountPercentage: 0, activeDiscount: null }),
   getActiveDiscounts:       jest.fn().mockResolvedValue([]),
+  invalidateCache:          jest.fn(),
 };
 
 const catId  = new Types.ObjectId().toString();
@@ -91,7 +92,7 @@ describe('ProductService', () => {
         { provide: getModelToken(Category.name), useValue: catModel },
         { provide: getModelToken(Color.name),    useValue: colorModel },
         { provide: AppLoggerService,             useValue: mockLogger },
-        { provide: TimeDiscountService,          useValue: mockTimeDiscountService },
+        { provide: DiscountsService,              useValue: mockDiscountsService },
       ],
     }).compile();
 
@@ -353,8 +354,8 @@ describe('ProductService', () => {
 
     beforeEach(() => jest.clearAllMocks());
 
-    it('delegates to TimeDiscountService when startDate+endDate provided', async () => {
-      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+    it('delegates to DiscountsService when startDate+endDate provided', async () => {
+      mockDiscountsService.create.mockResolvedValue({ _id: new Types.ObjectId() });
 
       const result = await service.bulkDiscount({
         productIds: [prodId],
@@ -363,8 +364,9 @@ describe('ProductService', () => {
         endDate,
       });
 
-      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+      expect(mockDiscountsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
+          kind:         'time_limited',
           discountType: 'percentage',
           value:        25,
           targetType:   'products',
@@ -377,7 +379,7 @@ describe('ProductService', () => {
     });
 
     it('does not query or modify products in timed mode', async () => {
-      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+      mockDiscountsService.create.mockResolvedValue({ _id: new Types.ObjectId() });
 
       await service.bulkDiscount({ productIds: [prodId], discountPct: 20, startDate, endDate });
 
@@ -385,7 +387,7 @@ describe('ProductService', () => {
     });
 
     it('uses custom title when provided', async () => {
-      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+      mockDiscountsService.create.mockResolvedValue({ _id: new Types.ObjectId() });
 
       await service.bulkDiscount({
         productIds: [prodId],
@@ -395,17 +397,17 @@ describe('ProductService', () => {
         title: 'فروش ویژه تابستان',
       });
 
-      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+      expect(mockDiscountsService.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'فروش ویژه تابستان' }),
       );
     });
 
     it('auto-generates title from pct when title is not provided', async () => {
-      mockTimeDiscountService.create.mockResolvedValue({ _id: new Types.ObjectId() });
+      mockDiscountsService.create.mockResolvedValue({ _id: new Types.ObjectId() });
 
       await service.bulkDiscount({ productIds: [prodId], discountPct: 15, startDate, endDate });
 
-      expect(mockTimeDiscountService.create).toHaveBeenCalledWith(
+      expect(mockDiscountsService.create).toHaveBeenCalledWith(
         expect.objectContaining({ title: 'تخفیف گروهی 15٪' }),
       );
     });
@@ -420,7 +422,7 @@ describe('ProductService', () => {
         }),
       ).rejects.toThrow(BadRequestException);
 
-      expect(mockTimeDiscountService.create).not.toHaveBeenCalled();
+      expect(mockDiscountsService.create).not.toHaveBeenCalled();
     });
 
     it('falls back to permanent mode when only startDate is given (no endDate)', async () => {
@@ -433,7 +435,7 @@ describe('ProductService', () => {
         startDate,
       });
 
-      expect(mockTimeDiscountService.create).not.toHaveBeenCalled();
+      expect(mockDiscountsService.create).not.toHaveBeenCalled();
       expect(result.mode).toBe('permanent');
     });
   });
