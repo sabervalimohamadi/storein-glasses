@@ -35,6 +35,7 @@ import { BlogModule }     from './modules/blog/blog.module';
 import { PageModule }           from './modules/page/page.module';
 import { FrameAttributeModule } from './modules/frame-attribute/frame-attribute.module';
 import { PopupModule }          from './modules/popup/popup.module';
+import { TimeDiscountModule }   from './modules/time-discount/time-discount.module';
 import { HealthModule }         from './modules/health/health.module';
 import { SitemapModule }        from './modules/sitemap/sitemap.module';
 import { LoggerModule }          from './common/logger/logger.module';
@@ -110,6 +111,7 @@ import { HttpLoggerMiddleware }  from './common/middleware/http-logger.middlewar
     PageModule,
     FrameAttributeModule,
     PopupModule,
+    TimeDiscountModule,
     HealthModule,
     SitemapModule,
   ],
