@@ -1,8 +1,14 @@
 ﻿<template>
-  <div class="hero">
+  <section class="hero" role="region" aria-label="تبلیغات و بنرها" aria-roledescription="carousel">
 
     <Transition name="hero">
-      <div :key="current" class="hero__slide" :style="slideStyle(slides[current])">
+      <div
+        :key="current"
+        class="hero__slide"
+        :style="slideStyle(slides[current])"
+        role="group"
+        :aria-label="`اسلاید ${current + 1} از ${slides.length}: ${slides[current].title}`"
+      >
 
         <!-- Background image — desktop (hidden on mobile if mobileImageUrl exists) -->
         <div v-if="slides[current].imageUrl"
@@ -58,19 +64,18 @@
         <div class="container-main hero__body">
           <div class="hero__copy">
             <span class="hero__eyebrow">{{ slides[current].eyebrow }}</span>
-            <h2 class="hero__title">{{ slides[current].title }}</h2>
+            <h1 class="hero__title">{{ slides[current].title }}</h1>
             <p class="hero__sub">{{ slides[current].subtitle }}</p>
-            <NuxtLink :to="slides[current].ctaLink || '/'">
-              <button
-                class="hero__btn"
-                :style="{ backgroundColor: slides[current].accent, color: slides[current].bgFrom }"
-              >
-                {{ slides[current].cta || 'مشاهده محصولات' }}
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-                     stroke-width="2.5" stroke="currentColor" class="hero__btn-ico">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
-                </svg>
-              </button>
+            <NuxtLink
+              :to="slides[current].ctaLink || '/'"
+              class="hero__btn"
+              :style="{ backgroundColor: slides[current].accent, color: slides[current].bgFrom }"
+            >
+              {{ slides[current].cta || 'مشاهده محصولات' }}
+              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+                   stroke-width="2.5" stroke="currentColor" class="hero__btn-ico" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/>
+              </svg>
             </NuxtLink>
           </div>
         </div>
@@ -78,6 +83,7 @@
         <!-- Slide progress bar -->
         <div class="hero__prog">
           <div :key="`prog-${current}`" class="hero__prog-fill"
+               :class="{ 'hero__prog-fill--paused': paused }"
                :style="{ backgroundColor: slides[current].accent }" />
         </div>
 
@@ -85,7 +91,7 @@
     </Transition>
 
     <!-- Slide indicators -->
-    <div class="hero__dots" role="tablist" :aria-label="`اسلایدشو — ${slides.length} اسلاید`">
+    <div class="hero__dots" role="tablist" :aria-label="`اسلایدشو — ${slides.length} اسلاید`" dir="ltr">
       <button
         v-for="(s, i) in slides"
         :key="s._id || s.id"
@@ -117,18 +123,18 @@
     <!-- Prev / Next arrows -->
     <button class="hero__arr hero__arr--r" @click="prev" aria-label="قبلی">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+           stroke-width="2.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
       </svg>
     </button>
     <button class="hero__arr hero__arr--l" @click="next" aria-label="بعدی">
       <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-           stroke-width="2.5" stroke="currentColor" class="w-5 h-5">
+           stroke-width="2.5" stroke="currentColor" class="w-5 h-5" aria-hidden="true">
         <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
       </svg>
     </button>
 
-  </div>
+  </section>
 </template>
 
 <script setup>
@@ -359,7 +365,7 @@ onUnmounted(() => clearInterval(autoTimer))
   .hero__sub { font-size: 0.9rem; margin-bottom: 26px; }
 }
 
-/* CTA button */
+/* CTA button — rendered as <a> (NuxtLink) */
 .hero__btn {
   display: inline-flex;
   align-items: center;
@@ -370,6 +376,7 @@ onUnmounted(() => clearInterval(autoTimer))
   border-radius: 12px;
   border: none;
   cursor: pointer;
+  text-decoration: none;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
   box-shadow: 0 4px 24px rgba(0,0,0,0.28);
   margin-top: 14px;
@@ -395,6 +402,9 @@ onUnmounted(() => clearInterval(autoTimer))
   height: 100%;
   width: 0;
   animation: prog 4.5s linear forwards;
+}
+.hero__prog-fill--paused {
+  animation-play-state: paused;
 }
 @keyframes prog {
   to { width: 100%; }

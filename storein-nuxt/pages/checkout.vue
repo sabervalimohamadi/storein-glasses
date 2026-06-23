@@ -8,25 +8,25 @@
     </div>
 
     <!-- Stepper -->
-    <div class="flex items-center justify-center gap-0 mb-10 select-none">
+    <ol class="flex items-center justify-center gap-0 mb-10 select-none list-none p-0 m-0" aria-label="مراحل تکمیل خرید">
       <template v-for="(s, i) in steps" :key="s.key">
-        <div class="flex flex-col items-center gap-1.5">
+        <li class="flex flex-col items-center gap-1.5" :aria-current="currentStep === i ? 'step' : undefined">
           <div :class="[
             'w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300',
             currentStep > i ? 'bg-brand text-white'
               : currentStep === i ? 'bg-brand text-white ring-4 ring-brand/20'
               : 'bg-surface-border text-text-disabled',
-          ]">
+          ]" aria-hidden="true">
             <svg v-if="currentStep > i" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
               <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
             </svg>
             <span v-else>{{ i + 1 }}</span>
           </div>
           <span :class="['text-xs font-medium whitespace-nowrap', currentStep >= i ? 'text-text-primary' : 'text-text-disabled']">{{ s.label }}</span>
-        </div>
-        <div v-if="i < steps.length - 1" :class="['h-0.5 w-16 sm:w-24 mx-1 mb-5 transition-all duration-300', currentStep > i ? 'bg-brand' : 'bg-surface-border']" />
+        </li>
+        <li v-if="i < steps.length - 1" :class="['h-0.5 w-16 sm:w-24 mx-1 mb-5 transition-all duration-300', currentStep > i ? 'bg-brand' : 'bg-surface-border']" aria-hidden="true" />
       </template>
-    </div>
+    </ol>
 
     <!-- Empty cart guard -->
     <div v-if="!checkoutItems.length && !placing" class="text-center py-20">
@@ -42,16 +42,16 @@
 
         <!-- Wholesale order badge -->
         <div v-if="isWholesaleOrder"
-             style="background:rgba(245,158,11,0.1); border:1px solid rgba(245,158,11,0.25);
-                    border-radius:10px; padding:8px 14px;
-                    display:flex; align-items:center; gap:8px;">
-          <span>🏪</span>
-          <span style="font-weight:700; color:#b45309; font-size:13px;">سفارش عمده — ارسال رایگان</span>
+             class="flex items-center gap-2 px-4 py-2 rounded-xl bg-wholesale/10 border border-wholesale-border">
+          <svg class="w-4 h-4 text-wholesale-dark flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+          </svg>
+          <span class="font-bold text-wholesale-dark text-sm">سفارش عمده — ارسال رایگان</span>
         </div>
 
         <!-- STEP 0: آدرس تحویل -->
         <div v-show="currentStep === 0" :inert="currentStep !== 0">
-          <div class="rounded-2xl border border-surface-border p-5 space-y-4" style="background-color: var(--color-card)">
+          <div class="rounded-2xl border border-surface-border p-5 space-y-4 bg-card">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۱</span>
               آدرس تحویل
@@ -63,23 +63,35 @@
 
             <div v-else-if="addresses.length" class="space-y-3">
               <div
-                v-for="addr in addresses" :key="addr._id"
-                @click="selectedAddressId = addr._id"
-                :class="['flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all',
-                  selectedAddressId === addr._id ? 'border-brand bg-brand/5' : 'border-surface-border hover:border-brand/40']"
+                role="radiogroup"
+                aria-labelledby="addr-group-label"
               >
-                <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all',
-                  selectedAddressId === addr._id ? 'border-brand' : 'border-surface-border']">
-                  <div v-if="selectedAddressId === addr._id" class="w-2.5 h-2.5 rounded-full bg-brand" />
-                </div>
-                <div class="flex-1 min-w-0">
-                  <div class="flex items-center gap-2 flex-wrap">
-                    <span class="font-bold text-text-primary text-sm">{{ addr.title }}</span>
-                    <span v-if="addr.isDefault" class="text-[11px] bg-brand/10 text-brand px-2 py-0.5 rounded-full">پیش‌فرض</span>
+                <span id="addr-group-label" class="sr-only">انتخاب آدرس تحویل</span>
+                <div
+                  v-for="addr in addresses" :key="addr._id"
+                  role="radio"
+                  :aria-checked="selectedAddressId === addr._id"
+                  tabindex="0"
+                  @click="selectedAddressId = addr._id"
+                  @keydown.enter.prevent="selectedAddressId = addr._id"
+                  @keydown.space.prevent="selectedAddressId = addr._id"
+                  :class="['flex items-start gap-4 p-4 rounded-xl border-2 cursor-pointer transition-all',
+                    selectedAddressId === addr._id ? 'border-brand bg-brand/5' : 'border-surface-border hover:border-brand/40',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1']"
+                >
+                  <div :class="['w-5 h-5 rounded-full border-2 flex-shrink-0 mt-0.5 flex items-center justify-center transition-all',
+                    selectedAddressId === addr._id ? 'border-brand' : 'border-surface-border']" aria-hidden="true">
+                    <div v-if="selectedAddressId === addr._id" class="w-2.5 h-2.5 rounded-full bg-brand" />
                   </div>
-                  <p class="text-text-primary text-sm mt-1">{{ addr.recipientName }}</p>
-                  <p class="text-text-secondary text-xs mt-0.5 leading-5">{{ addr.province }}، {{ addr.city }}، {{ addr.street }}، {{ addr.detail }}</p>
-                  <p class="text-text-disabled text-xs font-fanum mt-0.5">{{ addr.recipientPhone }} · کد پستی: {{ addr.postalCode }}</p>
+                  <div class="flex-1 min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-bold text-text-primary text-sm">{{ addr.title }}</span>
+                      <span v-if="addr.isDefault" class="text-[11px] bg-brand/10 text-brand px-2 py-0.5 rounded-full">پیش‌فرض</span>
+                    </div>
+                    <p class="text-text-primary text-sm mt-1">{{ addr.recipientName }}</p>
+                    <p class="text-text-secondary text-xs mt-0.5 leading-5">{{ addr.province }}، {{ addr.city }}، {{ addr.street }}، {{ addr.detail }}</p>
+                    <p class="text-text-disabled text-xs font-fanum mt-0.5">{{ addr.recipientPhone }} · کد پستی: {{ addr.postalCode }}</p>
+                  </div>
                 </div>
               </div>
 
@@ -96,12 +108,12 @@
             </div>
 
             <Transition name="expand">
-              <div v-if="showAddressForm" class="border-t border-surface-border pt-5 space-y-5">
+              <form v-if="showAddressForm" class="border-t border-surface-border pt-5 space-y-5" @submit.prevent="saveNewAddress" novalidate>
 
                 <!-- عنوان آدرس — full width with chip presets -->
                 <div class="flex flex-col gap-2">
-                  <label class="form-label">عنوان آدرس <span class="text-error">*</span></label>
-                  <div class="flex gap-2">
+                  <label for="addr-title" class="form-label">عنوان آدرس <span class="text-error" aria-hidden="true">*</span></label>
+                  <div class="flex gap-2" role="group" aria-label="انتخاب سریع عنوان">
                     <button
                       v-for="p in ['خانه', 'محل کار', 'خانه پدری']" :key="p"
                       type="button"
@@ -114,50 +126,50 @@
                       ]"
                     >{{ p }}</button>
                   </div>
-                  <input v-model="addrForm.title" class="form-input" placeholder="یا عنوان دلخواه بنویس..." maxlength="30" />
-                  <p v-if="addrErrors.title" class="text-error text-xs">{{ addrErrors.title }}</p>
+                  <input id="addr-title" v-model="addrForm.title" class="form-input" placeholder="یا عنوان دلخواه بنویس..." maxlength="30" :aria-required="true" />
+                  <p v-if="addrErrors.title" role="alert" class="text-error text-xs">{{ addrErrors.title }}</p>
                 </div>
 
                 <!-- نام + تلفن -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">نام گیرنده <span class="text-error">*</span></label>
-                    <input v-model="addrForm.recipientName" class="form-input" placeholder="نام و نام خانوادگی" />
-                    <p v-if="addrErrors.recipientName" class="text-error text-xs">{{ addrErrors.recipientName }}</p>
+                    <label for="addr-name" class="form-label">نام گیرنده <span class="text-error" aria-hidden="true">*</span></label>
+                    <input id="addr-name" v-model="addrForm.recipientName" class="form-input" placeholder="نام و نام خانوادگی" :aria-required="true" />
+                    <p v-if="addrErrors.recipientName" role="alert" class="text-error text-xs">{{ addrErrors.recipientName }}</p>
                   </div>
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">تلفن گیرنده <span class="text-error">*</span></label>
-                    <input v-model="addrForm.recipientPhone" class="form-input font-fanum" dir="ltr" placeholder="09xxxxxxxxx" />
+                    <label for="addr-phone" class="form-label">تلفن گیرنده <span class="text-error" aria-hidden="true">*</span></label>
+                    <input id="addr-phone" v-model="addrForm.recipientPhone" class="form-input font-fanum" dir="ltr" placeholder="09xxxxxxxxx" type="tel" :aria-required="true" />
                     <button
                       v-if="auth.user?.phone && addrForm.recipientPhone !== auth.user.phone"
                       type="button"
                       @click="addrForm.recipientPhone = auth.user.phone"
                       class="flex items-center gap-1 text-xs text-brand hover:text-brand/70 transition-colors self-start"
                     >
-                      <svg class="w-3 h-3 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                      <svg class="w-3 h-3 flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                         <path stroke-linecap="round" d="M16 3h5m0 0v5m0-5l-6 6M5 3a2 2 0 00-2 2v1c0 8.284 6.716 15 15 15h1a2 2 0 002-2v-3.28a1 1 0 00-.684-.948l-4.493-1.498a1 1 0 00-1.21.502l-1.13 2.257a11.042 11.042 0 01-5.516-5.517l2.257-1.128a1 1 0 00.502-1.21L9.228 3.683A1 1 0 008.279 3H5z"/>
                       </svg>
                       استفاده از شماره خودم ({{ auth.user.phone }})
                     </button>
-                    <p v-if="addrErrors.recipientPhone" class="text-error text-xs">{{ addrErrors.recipientPhone }}</p>
+                    <p v-if="addrErrors.recipientPhone" role="alert" class="text-error text-xs">{{ addrErrors.recipientPhone }}</p>
                   </div>
                 </div>
 
                 <!-- استان + شهر -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">استان <span class="text-error">*</span></label>
+                    <label for="addr-province" class="form-label">استان <span class="text-error" aria-hidden="true">*</span></label>
                     <div class="select-wrapper">
-                      <select v-model="addrForm.province" class="form-input form-select" @change="addrForm.city = ''">
+                      <select id="addr-province" v-model="addrForm.province" class="form-input form-select" @change="addrForm.city = ''" :aria-required="true">
                         <option value="" disabled>انتخاب استان</option>
                         <option v-for="p in PROVINCE_NAMES" :key="p" :value="p">{{ p }}</option>
                       </select>
                     </div>
                   </div>
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">شهر <span class="text-error">*</span></label>
+                    <label for="addr-city" class="form-label">شهر <span class="text-error" aria-hidden="true">*</span></label>
                     <div class="select-wrapper">
-                      <select v-model="addrForm.city" class="form-input form-select" :disabled="!addrForm.province">
+                      <select id="addr-city" v-model="addrForm.city" class="form-input form-select" :disabled="!addrForm.province" :aria-required="true">
                         <option value="" disabled>{{ addrForm.province ? 'انتخاب شهر' : 'ابتدا استان را انتخاب کنید' }}</option>
                         <option v-for="c in addrCities" :key="c" :value="c">{{ c }}</option>
                       </select>
@@ -168,29 +180,29 @@
                 <!-- خیابان + کد پستی -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">خیابان / کوچه <span class="text-error">*</span></label>
-                    <input v-model="addrForm.street" class="form-input" placeholder="خیابان ولیعصر، کوچه بهار" />
+                    <label for="addr-street" class="form-label">خیابان / کوچه <span class="text-error" aria-hidden="true">*</span></label>
+                    <input id="addr-street" v-model="addrForm.street" class="form-input" placeholder="خیابان ولیعصر، کوچه بهار" :aria-required="true" />
                   </div>
                   <div class="flex flex-col gap-1.5">
-                    <label class="form-label">کد پستی <span class="text-error">*</span></label>
-                    <input v-model="addrForm.postalCode" class="form-input font-fanum" dir="ltr" placeholder="1234567890" maxlength="10" />
-                    <p v-if="addrErrors.postalCode" class="text-error text-xs">{{ addrErrors.postalCode }}</p>
+                    <label for="addr-postal" class="form-label">کد پستی <span class="text-error" aria-hidden="true">*</span></label>
+                    <input id="addr-postal" v-model="addrForm.postalCode" class="form-input font-fanum" dir="ltr" placeholder="1234567890" maxlength="10" :aria-required="true" />
+                    <p v-if="addrErrors.postalCode" role="alert" class="text-error text-xs">{{ addrErrors.postalCode }}</p>
                   </div>
                 </div>
 
                 <!-- جزئیات -->
                 <div class="flex flex-col gap-1.5">
-                  <label class="form-label">جزئیات آدرس (پلاک، طبقه، واحد) <span class="text-error">*</span></label>
-                  <textarea v-model="addrForm.detail" class="form-input resize-none" rows="2" placeholder="مثال: پلاک ۱۲، طبقه سوم، واحد ۷" />
+                  <label for="addr-detail" class="form-label">جزئیات آدرس (پلاک، طبقه، واحد) <span class="text-error" aria-hidden="true">*</span></label>
+                  <textarea id="addr-detail" v-model="addrForm.detail" class="form-input resize-none" rows="2" placeholder="مثال: پلاک ۱۲، طبقه سوم، واحد ۷" :aria-required="true" />
                 </div>
 
-                <button @click="saveNewAddress" :disabled="savingAddress" class="btn-brand text-sm px-6 py-3 flex items-center gap-2 disabled:opacity-50 w-full justify-center sm:w-auto">
-                  <svg v-if="savingAddress" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
-                  <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M5 13l4 4L19 7"/></svg>
+                <button type="submit" :disabled="savingAddress" class="btn-brand text-sm px-6 py-3 flex items-center gap-2 disabled:opacity-50 w-full justify-center sm:w-auto">
+                  <svg v-if="savingAddress" class="w-4 h-4 animate-spin" aria-hidden="true" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/></svg>
+                  <svg v-else class="w-4 h-4" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M5 13l4 4L19 7"/></svg>
                   {{ savingAddress ? 'در حال ذخیره...' : 'ذخیره و استفاده از این آدرس' }}
                 </button>
 
-              </div>
+              </form>
             </Transition>
           </div>
 
@@ -204,7 +216,7 @@
 
         <!-- STEP 1: بررسی سفارش -->
         <div v-show="currentStep === 1" :inert="currentStep !== 1">
-          <div class="rounded-2xl border border-surface-border p-5 space-y-4" style="background-color: var(--color-card)">
+          <div class="rounded-2xl border border-surface-border p-5 space-y-4 bg-card">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۲</span>
               بررسی سفارش
@@ -261,7 +273,7 @@
 
         <!-- STEP 2: روش پرداخت -->
         <div v-show="currentStep === 2" :inert="currentStep !== 2">
-          <div class="rounded-2xl border border-surface-border p-5 space-y-5" style="background-color: var(--color-card)">
+          <div class="rounded-2xl border border-surface-border p-5 space-y-5 bg-card">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۳</span>
               روش پرداخت
@@ -358,7 +370,7 @@
       </div>
 
       <!-- Sticky order summary -->
-      <div class="rounded-2xl border border-surface-border p-5 flex flex-col gap-4 lg:sticky lg:top-24" style="background-color: var(--color-card)">
+      <div class="rounded-2xl border border-surface-border p-5 flex flex-col gap-4 lg:sticky lg:top-24 bg-card">
         <h2 class="font-bold text-text-primary text-sm border-b border-surface-border pb-3">خلاصه سبد خرید</h2>
         <div class="space-y-2 max-h-52 overflow-y-auto">
           <div v-for="item in checkoutItems" :key="`${item.productId}-${item.variantId}`" class="flex items-center gap-2">
@@ -373,7 +385,10 @@
         <div class="space-y-2 text-sm border-t border-surface-border pt-3">
           <div class="flex justify-between text-text-secondary"><span>جمع کالاها</span><span class="font-fanum">{{ formatPrice(subtotal) }}</span></div>
           <div v-if="savings > 0" class="flex justify-between text-success"><span>تخفیف</span><span class="font-fanum">− {{ formatPrice(savings) }}</span></div>
-          <div v-if="couponApplied" class="flex justify-between text-success text-xs"><span>کد تخفیف «{{ couponCode }}»</span><span class="font-fanum">اعمال شد ✓</span></div>
+          <div v-if="couponApplied" class="flex justify-between text-success text-xs">
+            <span>کد تخفیف «{{ couponCode }}»</span>
+            <span class="font-fanum">{{ discountAmount > 0 ? `− ${formatPrice(discountAmount)}` : 'اعمال شد ✓' }}</span>
+          </div>
           <div class="flex justify-between text-text-secondary"><span>هزینه ارسال</span><span class="text-success font-medium">رایگان</span></div>
         </div>
         <div class="border-t border-surface-border pt-3">
@@ -384,13 +399,19 @@
           <p v-if="savings > 0" class="text-success text-xs font-fanum text-left mt-1">{{ formatPrice(savings) }} صرفه‌جویی</p>
         </div>
         <div v-if="selectedAddress && currentStep > 0" class="border-t border-surface-border pt-3 text-xs text-text-secondary space-y-0.5">
-          <p class="font-semibold text-text-primary">📍 آدرس تحویل:</p>
+          <p class="font-semibold text-text-primary flex items-center gap-1">
+            <svg class="w-3.5 h-3.5 text-brand flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0zM15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+            </svg>
+            آدرس تحویل:
+          </p>
           <p>{{ selectedAddress.recipientName }}</p>
           <p>{{ selectedAddress.city }}، {{ selectedAddress.street }}</p>
         </div>
         <div class="border-t border-surface-border pt-3 grid grid-cols-2 gap-2">
-          <div v-for="t in trustBadges" :key="t.icon" class="flex items-center gap-1.5 text-[11px] text-text-secondary">
-            <span>{{ t.icon }}</span><span>{{ t.label }}</span>
+          <div v-for="t in trustBadges" :key="t.label" class="flex items-center gap-1.5 text-[11px] text-text-secondary">
+            <component :is="t.icon" class="w-3.5 h-3.5 flex-shrink-0" />
+            <span>{{ t.label }}</span>
           </div>
         </div>
       </div>
@@ -522,16 +543,6 @@ const loadingWallet = ref(false)
 const paymentMethod = ref('gateway')
 const walletAmount  = ref(0)
 
-watch(currentStep, async (n) => {
-  if (n === 2 && walletBalance.value === 0 && !loadingWallet.value) {
-    loadingWallet.value = true
-    try {
-      const { data } = await paymentService.getBalance()
-      walletBalance.value = data.balance ?? 0
-      walletAmount.value  = Math.min(walletBalance.value, checkoutTotal.value - 1)
-    } catch { } finally { loadingWallet.value = false }
-  }
-})
 
 const subtotal = computed(() => checkoutItems.value.reduce((s, i) => s + (i.comparePrice > i.price ? i.comparePrice : i.price) * i.quantity, 0))
 const savings  = computed(() => subtotal.value - checkoutTotal.value)
@@ -568,16 +579,28 @@ async function placeOrder() {
   } finally { placing.value = false }
 }
 
+const IconLock    = { template: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>` }
+const IconReturn  = { template: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>` }
+const IconShield  = { template: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>` }
+const IconTruck   = { template: `<svg fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true"><path stroke-linecap="round" stroke-linejoin="round" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4"/></svg>` }
+
 const trustBadges = [
-  { icon: '🔒', label: 'پرداخت امن' },
-  { icon: '↩️', label: 'ضمانت بازگشت' },
-  { icon: '✅', label: 'اصالت کالا' },
-  { icon: '🚚', label: 'ارسال رایگان' },
+  { icon: IconLock,   label: 'پرداخت امن' },
+  { icon: IconReturn, label: 'ضمانت بازگشت' },
+  { icon: IconShield, label: 'اصالت کالا' },
+  { icon: IconTruck,  label: 'ارسال رایگان' },
 ]
 
 onMounted(async () => {
   await cartStore.fetchCart()
-  await fetchAddresses()
+  loadingWallet.value = true
+  await Promise.all([
+    fetchAddresses(),
+    paymentService.getBalance().then(({ data }) => {
+      walletBalance.value = data.balance ?? 0
+      walletAmount.value  = Math.min(walletBalance.value, checkoutTotal.value - 1)
+    }).catch(() => {}).finally(() => { loadingWallet.value = false }),
+  ])
 })
 </script>
 

@@ -7,7 +7,7 @@
         class="trust__card"
       >
         <div class="trust__ico" :style="{ backgroundColor: item.bgColor }">
-          <span class="trust__emoji" role="img" :aria-label="item.title">{{ item.icon }}</span>
+          <span class="trust__emoji" aria-hidden="true">{{ item.icon }}</span>
         </div>
         <div class="trust__body">
           <h4 class="trust__name">{{ item.title }}</h4>

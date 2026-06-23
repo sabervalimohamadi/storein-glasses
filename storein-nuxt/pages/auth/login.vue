@@ -23,9 +23,10 @@
       </div>
 
       <div class="mb-6">
-        <label class="block text-sm font-medium text-text-primary mb-2">شماره موبایل</label>
+        <label for="phone-input" class="block text-sm font-medium text-text-primary mb-2">شماره موبایل</label>
         <div :class="['flex items-center border-2 rounded-xl overflow-hidden transition-all duration-150', phoneFocused ? 'border-brand ring-2 ring-brand/20' : 'border-surface-border', phoneError ? 'border-error ring-2 ring-error/10' : '']">
           <input
+            id="phone-input"
             v-model="phone"
             ref="phoneInput"
             type="tel"
@@ -40,13 +41,13 @@
             @keydown.enter="submit"
             @input="phoneError = ''; isBlocked = false"
           />
-          <div class="flex items-center gap-1.5 px-3 py-3.5 bg-surface border-r-2 border-surface-border flex-shrink-0">
-            <span class="text-lg leading-none">🇮🇷</span>
-            <span class="text-text-secondary text-sm font-medium">98+</span>
+          <div class="flex items-center gap-1.5 px-3 py-3.5 border-r-2 border-surface-border flex-shrink-0 text-text-secondary select-none" aria-hidden="true">
+            <span class="text-lg leading-none" aria-hidden="true">🇮🇷</span>
+            <span class="text-sm font-medium">98+</span>
           </div>
         </div>
         <Transition name="fade-down">
-          <p v-if="phoneError" class="text-error text-xs mt-1.5 flex items-center gap-1">{{ phoneError }}</p>
+          <p v-if="phoneError" role="alert" class="text-error text-xs mt-1.5 flex items-center gap-1">{{ phoneError }}</p>
         </Transition>
       </div>
 
@@ -67,7 +68,9 @@
       </button>
 
       <p class="text-center text-text-secondary text-xs mt-5 leading-6">
-        با ورود به {{ settingsStore.siteName }}، قوانین و مقررات را می‌پذیرم
+        با ورود به {{ settingsStore.siteName }}،
+        <NuxtLink to="/pages/terms" class="underline hover:text-brand transition-colors">قوانین و مقررات</NuxtLink>
+        را می‌پذیرم
       </p>
     </div>
   </div>

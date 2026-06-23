@@ -96,4 +96,7 @@ onMounted(() => { wishlistStore.fetchWishlist() })
 <style scoped>
 .home { padding-bottom: 2rem; }
 .home__section { margin-bottom: 1.75rem; }
+@media (min-width: 768px) {
+  .home__section { margin-bottom: 3rem; }
+}
 </style>

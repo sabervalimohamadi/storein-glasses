@@ -1,12 +1,16 @@
 <template>
   <div class="container-main py-4">
 
-    <nav aria-label="مسیر صفحه" class="flex items-center gap-2 text-sm text-text-secondary mb-4">
-      <NuxtLink to="/" class="hover:text-brand transition-colors">خانه</NuxtLink>
-      <svg class="w-3 h-3 rotate-180 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-      </svg>
-      <span class="text-text-primary font-medium">همه محصولات</span>
+    <nav aria-label="مسیر صفحه" class="mb-4">
+      <ol class="flex items-center gap-2 text-sm text-text-secondary list-none m-0 p-0">
+        <li><NuxtLink to="/" class="hover:text-brand transition-colors">خانه</NuxtLink></li>
+        <li aria-hidden="true">
+          <svg class="w-3 h-3 rotate-180 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+          </svg>
+        </li>
+        <li><span aria-current="page" class="text-text-primary font-medium">همه محصولات</span></li>
+      </ol>
     </nav>
 
     <h1 class="text-xl font-bold text-text-primary mb-5">همه محصولات</h1>

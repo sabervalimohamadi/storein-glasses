@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex items-center justify-center bg-surface px-4">
     <div class="text-center">
-      <div class="text-6xl mb-4">{{ error.statusCode === 404 ? '🔍' : '⚠️' }}</div>
+      <div class="text-6xl mb-4" aria-hidden="true">{{ error.statusCode === 404 ? '🔍' : '⚠️' }}</div>
       <h1 class="text-2xl font-black text-text-primary mb-2">
         {{ error.statusCode === 404 ? 'صفحه یافت نشد' : 'خطایی رخ داد' }}
       </h1>
@@ -14,6 +14,9 @@
 </template>
 
 <script setup>
-defineProps({ error: Object })
-useSeoMeta({ robots: 'noindex,nofollow' })
+const props = defineProps({ error: Object })
+useSeoMeta({
+  title: props.error?.statusCode === 404 ? 'صفحه یافت نشد' : 'خطا',
+  robots: 'noindex,nofollow',
+})
 </script>

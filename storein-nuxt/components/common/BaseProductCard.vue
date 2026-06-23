@@ -1,6 +1,6 @@
 ﻿<template>
   <!-- Skeleton -->
-  <div v-if="loading" class="rounded-2xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
+  <div v-if="loading" class="rounded-2xl shadow-card overflow-hidden bg-card">
     <BaseSkeleton height="200px" class="rounded-none" />
     <div class="p-4 space-y-3">
       <BaseSkeleton height="1.1rem" />
@@ -13,8 +13,7 @@
   <!-- Product card -->
   <article
     v-else
-    class="rounded-2xl shadow-card overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col h-full"
-    style="background-color: var(--color-card);"
+    class="rounded-2xl shadow-card overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col h-full bg-card"
     @click="handleClick"
     @keydown.enter.prevent="handleClick"
     @keydown.space.prevent="handleClick"
@@ -26,7 +25,7 @@
     <div
       class="aspect-square relative shrink-0 overflow-hidden"
       :class="featured ? '' : 'p-3'"
-      :style="featured ? 'background-color: #fff;' : 'background-color: var(--color-card);'"
+      :class="featured ? 'bg-white' : 'bg-card'"
     >
 
       <!-- Wishlist: top-end (physically left in RTL) -->
