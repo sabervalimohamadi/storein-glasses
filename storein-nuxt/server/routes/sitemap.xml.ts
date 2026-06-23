@@ -7,14 +7,18 @@ export default defineEventHandler(async (event) => {
   const [productsRes, blogsRes, categoriesRes, pagesRes] = await Promise.all([
     $fetch<any>(`${apiUrl}/api/v1/products?limit=1000&fields=slug,updatedAt`).catch(() => null),
     $fetch<any>(`${apiUrl}/api/v1/blog?limit=1000&status=published&fields=slug,updatedAt`).catch(() => null),
-    $fetch<any>(`${apiUrl}/api/v1/categories?fields=slug,updatedAt`).catch(() => null),
+    $fetch<any>(`${apiUrl}/api/v1/categories/tree`).catch(() => null),
     $fetch<any>(`${apiUrl}/api/v1/pages?status=published&fields=slug,updatedAt`).catch(() => null),
   ])
+
+  function flattenTree(nodes: any[]): any[] {
+    return nodes.flatMap(n => [n, ...flattenTree(n.children ?? [])])
+  }
 
   // Backend wraps all responses in { success, statusCode, data }
   const productList  : any[] = productsRes?.data?.items    ?? productsRes?.data?.products ?? []
   const blogList     : any[] = blogsRes?.data?.posts       ?? blogsRes?.data?.items       ?? []
-  const categoryList : any[] = Array.isArray(categoriesRes?.data) ? categoriesRes.data    : []
+  const categoryList : any[] = Array.isArray(categoriesRes?.data) ? flattenTree(categoriesRes.data) : []
   const pageList     : any[] = Array.isArray(pagesRes?.data)      ? pagesRes.data         : []
 
   const staticPages = [
