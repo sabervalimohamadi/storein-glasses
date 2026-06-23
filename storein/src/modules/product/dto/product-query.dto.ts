@@ -21,6 +21,9 @@ export class ProductQueryDto {
   @IsOptional() @Transform(({ value }) => value === 'true')
   hasWholesalePrice?: boolean;
 
+  @IsOptional() @Transform(({ value }) => value === 'true')
+  hasDiscount?: boolean;
+
   @IsOptional() @IsEnum(ProductStatus)
   status?: ProductStatus;
 
