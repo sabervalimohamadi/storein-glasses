@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { RedisModule } from '../redis/redis.module';
 import { Discount, DiscountSchema } from './schemas/discount.schema';
 import { DiscountsController } from './discounts.controller';
 import { DiscountsService } from './discounts.service';
@@ -11,6 +12,7 @@ import { AppLoggerService } from '../common/logger/app-logger.service';
     MongooseModule.forFeature([
       { name: Discount.name, schema: DiscountSchema },
     ]),
+    RedisModule,
   ],
   controllers: [DiscountsController],
   providers: [DiscountsService, DiscountSchedulerService, AppLoggerService],
