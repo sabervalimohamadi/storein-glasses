@@ -250,11 +250,9 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { discountService } from '@/services/discount.service'
 import { productService  } from '@/services/product.service'
+import { categoryService } from '@/services/category.service.js'
 import { useUiStore } from '@/stores/ui.store'
 import PersianDatePicker from '@/components/ui/PersianDatePicker.vue'
-
-let categoryService
-try { categoryService = (await import('@/services/category.service.js')).categoryService } catch {}
 
 const route  = useRoute()
 const router = useRouter()

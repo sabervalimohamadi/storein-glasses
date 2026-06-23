@@ -296,7 +296,7 @@ async function doDelete() {
   deleteDialog.value.loading = true
   const item = deleteDialog.value.item
   try {
-    await discountService.remove(item._id)
+    await discountService.softDelete(item._id)
     discounts.value = discounts.value.filter(d => d._id !== item._id)
     total.value--
     logger.info('discounts: deleted', { code: item.code }, CTX)
@@ -325,7 +325,7 @@ async function fetchDiscounts() {
       ...(dSearch.value             ? { search:   dSearch.value }        : {}),
       ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-    discounts.value = data?.coupons ?? []
+    discounts.value = data?.discounts ?? []
     total.value     = data?.total   ?? 0
     logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
   } catch (err) {
