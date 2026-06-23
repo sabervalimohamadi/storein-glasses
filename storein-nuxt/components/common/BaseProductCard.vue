@@ -16,6 +16,11 @@
     class="rounded-2xl shadow-card overflow-hidden cursor-pointer hover:shadow-xl hover:-translate-y-1 transition-all duration-200 flex flex-col h-full"
     style="background-color: var(--color-card);"
     @click="handleClick"
+    @keydown.enter.prevent="handleClick"
+    @keydown.space.prevent="handleClick"
+    tabindex="0"
+    role="link"
+    :aria-label="product.name"
   >
     <!-- Image area -->
     <div
@@ -27,9 +32,10 @@
       <!-- Wishlist: top-end (physically left in RTL) -->
       <button
         type="button"
-        class="absolute top-2.5 end-2.5 z-10 w-8 h-8 flex items-center justify-center rounded-full bg-white/90 shadow-sm hover:scale-110 transition-transform duration-150"
+        class="absolute top-2.5 end-2.5 z-10 w-11 h-11 flex items-center justify-center rounded-full bg-white/90 shadow-sm hover:scale-110 transition-transform duration-150"
         @click.stop="$emit('toggle-wish')"
-        :title="wishlist ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
+        :aria-label="wishlist ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
+        :aria-pressed="wishlist"
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"
           :fill="wishlist ? 'currentColor' : 'none'"
@@ -67,7 +73,7 @@
       </div>
 
       <!-- Out of stock overlay -->
-      <div v-if="product.totalStock === 0" class="absolute inset-0 bg-white/75 flex items-center justify-center">
+      <div v-if="product.totalStock === 0" class="absolute inset-0 bg-white/75 flex items-center justify-center" aria-hidden="true">
         <span class="text-gray-700 font-semibold text-sm px-3 py-1.5 bg-white rounded-full shadow-sm">ناموجود</span>
       </div>
     </div>
@@ -106,12 +112,13 @@
       <!-- Add to cart / In cart -->
       <button
         type="button"
-        class="mt-2 w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-        :style="isInCart
-          ? 'background: linear-gradient(135deg, #22c55e, #16a34a);'
-          : 'background: linear-gradient(135deg, #a855f7, #7c3aed);'"
+        :class="[
+          'mt-2 w-full py-2.5 rounded-xl text-sm font-bold text-white transition-all duration-300 active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5',
+          isInCart ? 'bg-success' : 'bg-brand hover:bg-brand-dark',
+        ]"
         :disabled="product.totalStock === 0"
         @click.stop="isInCart ? goToCart() : $emit('add-to-cart')"
+        :aria-label="isInCart ? 'مشاهده در سبد خرید' : `افزودن ${product.name} به سبد خرید`"
       >
         <svg v-if="isInCart" class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M4.5 12.75l6 6 9-13.5"/>

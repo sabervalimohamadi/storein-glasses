@@ -3,16 +3,21 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-6">
       <h1 class="text-xl font-bold text-text-primary">سفارش‌های من</h1>
-      <NuxtLink :to="'/products'" class="text-sm text-brand hover:underline">
-        خرید جدید ←
+      <NuxtLink :to="'/products'" class="flex items-center gap-1 text-sm text-brand hover:underline">
+        خرید جدید
+        <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+          <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
+        </svg>
       </NuxtLink>
     </div>
 
     <!-- Status filter tabs -->
-    <div class="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide">
+    <div class="flex gap-2 overflow-x-auto pb-2 mb-6 scrollbar-hide" role="tablist" aria-label="فیلتر وضعیت سفارش">
       <button
         v-for="tab in statusTabs" :key="tab.value"
         @click="activeStatus = tab.value; fetchOrders()"
+        role="tab"
+        :aria-selected="activeStatus === tab.value"
         :class="[
           'flex-shrink-0 px-4 py-2 rounded-xl text-sm font-medium transition-all border',
           activeStatus === tab.value
@@ -43,10 +48,15 @@
     <div v-else class="flex flex-col gap-4">
       <div
         v-for="order in orders" :key="order._id"
-        class="rounded-2xl border border-surface-border p-5 transition-all hover:border-brand/30 cursor-pointer"
-        style="background-color: var(--color-card)"
-        @click="$router.push('/user/orders/' + order._id)"
+        class="rounded-2xl border border-surface-border p-5 transition-all hover:border-brand/30 relative bg-card"
       >
+        <!-- Stretched link — covers the whole card for pointer/keyboard navigation -->
+        <NuxtLink
+          :to="`/user/orders/${order._id}`"
+          class="absolute inset-0 rounded-2xl focus-visible:ring-2 focus-visible:ring-brand focus-visible:outline-none"
+          :aria-label="`سفارش ${order.orderNumber}، وضعیت: ${statusLabel(order.status)}`"
+        />
+
         <!-- Order header -->
         <div class="mb-4 pb-4 border-b border-surface-border">
           <!-- Row 1: badge + date -->
@@ -64,19 +74,19 @@
             </p>
             <button
               @click.stop="copyOrderNumber(order._id, order.orderNumber)"
-              :title="copiedId === order._id ? 'کپی شد!' : 'کپی شماره سفارش'"
+              :aria-label="copiedId === order._id ? 'کپی شد' : 'کپی شماره سفارش'"
               :class="[
-                'w-7 h-7 rounded-lg flex items-center justify-center transition-all flex-shrink-0',
+                'relative z-10 w-9 h-9 rounded-lg flex items-center justify-center transition-all flex-shrink-0',
                 copiedId === order._id
                   ? 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400'
                   : 'bg-surface text-text-secondary hover:text-brand border border-surface-border',
               ]"
             >
-              <svg v-if="copiedId !== order._id" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <svg v-if="copiedId !== order._id" class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
                 <rect x="9" y="9" width="13" height="13" rx="2"/>
                 <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
-              <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <svg v-else class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
               </svg>
             </button>
@@ -108,7 +118,7 @@
           </div>
         </div>
 
-        <!-- Footer: total + action -->
+        <!-- Footer: total + cancel action -->
         <div class="flex items-center justify-between">
           <div>
             <p class="text-xs text-text-secondary">مبلغ کل</p>
@@ -116,21 +126,13 @@
               {{ formatPrice(order.total) }}
             </p>
           </div>
-          <div class="flex items-center gap-2">
-            <button
-              v-if="canCancel(order.status)"
-              @click.stop="openCancel(order)"
-              class="text-xs text-error border border-error/40 px-3 py-1.5 rounded-lg hover:bg-error/5 transition-colors"
-            >
-              لغو سفارش
-            </button>
-            <button class="flex items-center gap-1 text-sm text-brand font-medium">
-              جزئیات
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-          </div>
+          <button
+            v-if="canCancel(order.status)"
+            @click.stop="openCancel(order)"
+            class="relative z-10 text-xs text-error border border-error/40 px-3 py-1.5 rounded-lg hover:bg-error/5 transition-colors"
+          >
+            لغو سفارش
+          </button>
         </div>
       </div>
     </div>
@@ -155,15 +157,17 @@
     <Teleport to="body">
       <div
         v-if="cancelTarget"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style="background: rgba(0,0,0,0.5)"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
         @click.self="cancelTarget = null"
+        @keydown.esc="cancelTarget = null"
       >
         <div
-          class="w-full max-w-sm rounded-2xl border border-surface-border p-6 flex flex-col gap-4"
-          style="background-color: var(--color-card)"
+          class="w-full max-w-sm rounded-2xl border border-surface-border p-6 flex flex-col gap-4 bg-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="cancel-dialog-title"
         >
-          <h3 class="font-bold text-text-primary text-base">لغو سفارش</h3>
+          <h3 id="cancel-dialog-title" class="font-bold text-text-primary text-base">لغو سفارش</h3>
           <p class="text-text-secondary text-sm leading-6">
             آیا از لغو سفارش
             <span class="font-bold text-text-primary font-fanum dir-ltr">{{ cancelTarget?.orderNumber }}</span>

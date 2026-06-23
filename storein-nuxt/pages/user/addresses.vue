@@ -69,8 +69,8 @@
             </button>
             <button
               @click="openEdit(addr)"
-              class="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:text-brand hover:bg-brand/5 transition-colors"
-              title="ویرایش"
+              class="w-11 h-11 flex items-center justify-center rounded-lg text-text-secondary hover:text-brand hover:bg-brand/5 transition-colors"
+              :aria-label="`ویرایش آدرس ${addr.title}`"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -78,8 +78,8 @@
             </button>
             <button
               @click="openDelete(addr)"
-              class="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:text-error hover:bg-error/5 transition-colors"
-              title="حذف"
+              class="w-11 h-11 flex items-center justify-center rounded-lg text-text-secondary hover:text-error hover:bg-error/5 transition-colors"
+              :aria-label="`حذف آدرس ${addr.title}`"
             >
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
@@ -113,13 +113,16 @@
           <div
             class="w-full sm:max-w-lg rounded-t-3xl sm:rounded-2xl border border-surface-border flex flex-col max-h-[calc(90dvh-3.5rem)] sm:max-h-[85vh] mb-14 sm:mb-0"
             style="background-color: var(--color-card)"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="address-modal-title"
           >
             <!-- Modal header -->
             <div class="flex items-center justify-between px-6 py-4 border-b border-surface-border flex-shrink-0">
-              <h2 class="font-bold text-text-primary">
+              <h2 id="address-modal-title" class="font-bold text-text-primary">
                 {{ editTarget ? 'ویرایش آدرس' : 'افزودن آدرس جدید' }}
               </h2>
-              <button @click="closeModal" class="w-8 h-8 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary transition-colors">
+              <button @click="closeModal" class="w-11 h-11 flex items-center justify-center rounded-lg text-text-secondary hover:text-text-primary transition-colors" aria-label="بستن">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                   <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
                 </svg>
@@ -230,7 +233,12 @@
               <!-- Default toggle -->
               <label class="flex items-center gap-3 cursor-pointer select-none py-1">
                 <div
+                  role="switch"
+                  :aria-checked="form.isDefault"
+                  tabindex="0"
                   @click="form.isDefault = !form.isDefault"
+                  @keydown.space.prevent="form.isDefault = !form.isDefault"
+                  @keydown.enter.prevent="form.isDefault = !form.isDefault"
                   :class="[
                     'w-11 h-6 rounded-full transition-colors relative flex-shrink-0',
                     form.isDefault ? 'bg-brand' : 'bg-surface-border',
@@ -275,13 +283,15 @@
     <Teleport to="body">
       <div
         v-if="deleteTarget"
-        class="fixed inset-0 z-50 flex items-center justify-center p-4"
-        style="background: rgba(0,0,0,0.5)"
+        class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50"
         @click.self="deleteTarget = null"
+        @keydown.esc="deleteTarget = null"
       >
         <div
-          class="w-full max-w-sm rounded-2xl border border-surface-border p-6 flex flex-col gap-4"
-          style="background-color: var(--color-card)"
+          class="w-full max-w-sm rounded-2xl border border-surface-border p-6 flex flex-col gap-4 bg-card"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-addr-title"
         >
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-full bg-error/10 flex items-center justify-center flex-shrink-0">
@@ -290,7 +300,7 @@
               </svg>
             </div>
             <div>
-              <p class="font-bold text-text-primary">حذف آدرس</p>
+              <p id="delete-addr-title" class="font-bold text-text-primary">حذف آدرس</p>
               <p class="text-sm text-text-secondary mt-0.5">«{{ deleteTarget?.title }}»</p>
             </div>
           </div>

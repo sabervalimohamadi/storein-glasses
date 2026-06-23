@@ -1,7 +1,7 @@
 <template>
   <div class="container-main py-4">
 
-    <nav class="flex items-center gap-2 text-sm text-text-secondary mb-4">
+    <nav class="flex items-center gap-2 text-sm text-text-secondary mb-4" aria-label="مسیر صفحه">
       <NuxtLink to="/" class="hover:text-brand transition-colors">خانه</NuxtLink>
       <svg class="w-3 h-3 rotate-180 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
@@ -9,7 +9,7 @@
       <span class="text-text-primary font-medium">نتایج جستجو</span>
     </nav>
 
-    <div class="rounded-xl shadow-card px-5 py-4 mb-4" style="background-color: var(--color-card);">
+    <div class="rounded-xl shadow-card px-5 py-4 mb-4 bg-card">
       <div class="flex items-center gap-3 flex-wrap">
         <svg class="w-5 h-5 text-brand flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0"/>
@@ -30,27 +30,29 @@
       <aside v-if="facets && total > 0" class="hidden lg:block w-60 flex-shrink-0">
         <div class="sticky top-24 space-y-4">
 
-          <div v-if="facets.priceRange" class="rounded-xl p-4 shadow-card" style="background: var(--color-card);">
-            <h3 class="font-semibold text-sm mb-3">محدوده قیمت</h3>
-            <div class="flex gap-2 text-xs text-text-secondary font-fanum">
+          <div v-if="facets.priceRange" class="rounded-xl p-4 shadow-card bg-card">
+            <h3 id="price-filter-label" class="font-semibold text-sm mb-3">محدوده قیمت</h3>
+            <div class="flex gap-2 text-xs text-text-secondary font-fanum" aria-hidden="true">
               <span>{{ formatNumber(facets.priceRange.min) }} ت</span>
               <span class="mr-auto">{{ formatNumber(facets.priceRange.max) }} ت</span>
             </div>
-            <div class="flex gap-2 mt-2">
+            <div class="flex gap-2 mt-2" role="group" aria-labelledby="price-filter-label">
+              <label class="sr-only" for="price-min">حداقل قیمت</label>
               <input
+                id="price-min"
                 v-model.number="priceMin"
                 type="number"
                 placeholder="از"
-                class="w-full border rounded-lg px-2 py-1 text-xs font-fanum"
-                style="background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-primary);"
+                class="w-full border border-surface-border rounded-lg px-2 py-1 text-xs font-fanum bg-bg text-text-primary"
                 @change="onFilterChange"
               />
+              <label class="sr-only" for="price-max">حداکثر قیمت</label>
               <input
+                id="price-max"
                 v-model.number="priceMax"
                 type="number"
                 placeholder="تا"
-                class="w-full border rounded-lg px-2 py-1 text-xs font-fanum"
-                style="background: var(--color-bg); border-color: var(--color-border); color: var(--color-text-primary);"
+                class="w-full border border-surface-border rounded-lg px-2 py-1 text-xs font-fanum bg-bg text-text-primary"
                 @change="onFilterChange"
               />
             </div>
@@ -59,8 +61,7 @@
           <div
             v-for="attr in facets.attributes"
             :key="attr.key"
-            class="rounded-xl p-4 shadow-card"
-            style="background: var(--color-card);"
+            class="rounded-xl p-4 shadow-card bg-card"
           >
             <h3 class="font-semibold text-sm mb-3">{{ attr.key }}</h3>
             <div class="space-y-2">
@@ -81,9 +82,9 @@
             </div>
           </div>
 
-          <div class="rounded-xl p-4 shadow-card" style="background: var(--color-card);">
+          <div class="rounded-xl p-4 shadow-card bg-card">
             <label class="flex items-center gap-2 cursor-pointer text-sm font-medium">
-              <input type="checkbox" v-model="inStock" class="accent-brand" @change="onFilterChange" />
+              <input type="checkbox" v-model="inStock" class="accent-brand w-4 h-4" @change="onFilterChange" />
               <span>فقط موجود</span>
             </label>
           </div>

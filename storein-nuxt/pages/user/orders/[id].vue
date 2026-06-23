@@ -34,8 +34,7 @@
 
       <!-- ── Header card ── -->
       <div
-        class="rounded-2xl border border-surface-border p-5"
-        style="background-color: var(--color-card)"
+        class="rounded-2xl border border-surface-border p-5 bg-card"
       >
         <div class="flex flex-wrap items-start justify-between gap-4">
           <div>
@@ -74,9 +73,9 @@
 
         <!-- Status stepper (non-cancelled) -->
         <div v-if="order.status !== 'cancelled'" class="mt-6">
-          <div class="flex items-center gap-0">
+          <div class="flex items-center gap-0" role="list" aria-label="مراحل پردازش سفارش">
             <template v-for="(step, i) in statusSteps" :key="step.value">
-              <div class="flex flex-col items-center gap-1.5 flex-shrink-0">
+              <div class="flex flex-col items-center gap-1.5 flex-shrink-0" role="listitem" :aria-label="`${step.label}: ${stepState(step.value) === 'done' ? 'انجام شده' : stepState(step.value) === 'current' ? 'در حال انجام' : 'در انتظار'}`">
                 <div
                   :class="[
                     'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold transition-all',
@@ -116,8 +115,7 @@
 
       <!-- ── Items ── -->
       <div
-        class="rounded-2xl border border-surface-border p-5"
-        style="background-color: var(--color-card)"
+        class="rounded-2xl border border-surface-border p-5 bg-card"
       >
         <h2 class="font-bold text-text-primary mb-4 pb-3 border-b border-surface-border">
           کالاهای سفارش
@@ -163,8 +161,7 @@
 
         <!-- Financial summary -->
         <div
-          class="rounded-2xl border border-surface-border p-5"
-          style="background-color: var(--color-card)"
+          class="rounded-2xl border border-surface-border p-5 bg-card"
         >
           <h2 class="font-bold text-text-primary mb-4 pb-3 border-b border-surface-border">
             خلاصه مالی
@@ -190,8 +187,7 @@
 
         <!-- Shipping address -->
         <div
-          class="rounded-2xl border border-surface-border p-5"
-          style="background-color: var(--color-card)"
+          class="rounded-2xl border border-surface-border p-5 bg-card"
         >
           <h2 class="font-bold text-text-primary mb-4 pb-3 border-b border-surface-border">
             آدرس تحویل

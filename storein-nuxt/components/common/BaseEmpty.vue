@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
-    <div class="text-5xl mb-4 select-none">{{ icon }}</div>
+    <div class="text-5xl mb-4 select-none" aria-hidden="true">{{ icon }}</div>
     <h3 class="text-lg font-semibold text-text-primary mb-2">{{ title }}</h3>
     <p v-if="subtitle" class="text-text-secondary text-sm mb-6 max-w-xs leading-relaxed">{{ subtitle }}</p>
     <template v-if="action">
