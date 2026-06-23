@@ -1,5 +1,5 @@
 ﻿<template>
-  <aside class="w-64 flex-shrink-0">
+  <aside class="w-64 flex-shrink-0" aria-label="فیلتر محصولات">
     <div class="rounded-xl shadow-card overflow-hidden" style="background-color: var(--color-card);">
 
       <!-- Header -->
@@ -20,15 +20,17 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.category"
+          aria-controls="filter-panel-category"
           @click="open.category = !open.category"
         >
           دسته‌بندی
           <svg :class="['w-4 h-4 transition-transform duration-200', open.category ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.category" class="pb-3 space-y-0.5">
+        <div id="filter-panel-category" v-show="open.category" class="pb-3 space-y-0.5">
           <label class="flex items-center gap-2 cursor-pointer group px-4 py-1">
             <input
               type="radio"
@@ -66,15 +68,17 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.brand"
+          aria-controls="filter-panel-brand"
           @click="open.brand = !open.brand"
         >
           برند
           <svg :class="['w-4 h-4 transition-transform duration-200', open.brand ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.brand" class="pb-3 space-y-0.5">
+        <div id="filter-panel-brand" v-show="open.brand" class="pb-3 space-y-0.5">
           <label class="flex items-center gap-2 cursor-pointer group px-4 py-1">
             <input
               type="radio"
@@ -110,15 +114,17 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.gender"
+          aria-controls="filter-panel-gender"
           @click="open.gender = !open.gender"
         >
           جنسیت
           <svg :class="['w-4 h-4 transition-transform duration-200', open.gender ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.gender" class="px-4 pb-3 space-y-2">
+        <div id="filter-panel-gender" v-show="open.gender" class="px-4 pb-3 space-y-2">
           <label
             v-for="opt in GENDER_OPTIONS"
             :key="opt.value"
@@ -144,15 +150,17 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.frameShape"
+          aria-controls="filter-panel-shape"
           @click="open.frameShape = !open.frameShape"
         >
           شکل فریم
           <svg :class="['w-4 h-4 transition-transform duration-200', open.frameShape ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.frameShape" class="px-4 pb-3">
+        <div id="filter-panel-shape" v-show="open.frameShape" class="px-4 pb-3">
           <div class="grid grid-cols-2 gap-2">
             <button
               v-for="shape in FRAME_SHAPES"
@@ -177,15 +185,17 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.frameMaterial"
+          aria-controls="filter-panel-material"
           @click="open.frameMaterial = !open.frameMaterial"
         >
           جنس فریم
           <svg :class="['w-4 h-4 transition-transform duration-200', open.frameMaterial ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.frameMaterial" class="px-4 pb-3 space-y-2">
+        <div id="filter-panel-material" v-show="open.frameMaterial" class="px-4 pb-3 space-y-2">
           <label
             v-for="mat in FRAME_MATERIALS"
             :key="mat.value"
@@ -211,19 +221,22 @@
           class="w-full flex items-center justify-between px-4 py-3
                  text-sm font-medium text-text-primary hover:text-brand
                  transition-colors duration-150"
+          :aria-expanded="open.price"
+          aria-controls="filter-panel-price"
           @click="open.price = !open.price"
         >
           محدوده قیمت
           <svg :class="['w-4 h-4 transition-transform duration-200', open.price ? 'rotate-180' : '']"
-               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+               fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
             <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5"/>
           </svg>
         </button>
-        <div v-show="open.price" class="px-4 pb-4 space-y-3">
+        <div id="filter-panel-price" v-show="open.price" class="px-4 pb-4 space-y-3">
           <div class="flex gap-2">
             <div class="flex-1">
-              <label class="text-xs text-text-secondary block mb-1">از (تومان)</label>
+              <label for="filter-price-min" class="text-xs text-text-secondary block mb-1">از (تومان)</label>
               <input
+                id="filter-price-min"
                 type="text"
                 inputmode="numeric"
                 :value="filters.minPrice ? formatNumber(filters.minPrice) : ''"
@@ -232,11 +245,13 @@
                 class="w-full border border-surface-border rounded-lg px-2 py-1.5
                        text-xs text-center font-fanum focus:border-brand
                        focus:ring-1 focus:ring-brand/20 outline-none"
+                :class="priceError ? 'border-error' : ''"
               />
             </div>
             <div class="flex-1">
-              <label class="text-xs text-text-secondary block mb-1">تا (تومان)</label>
+              <label for="filter-price-max" class="text-xs text-text-secondary block mb-1">تا (تومان)</label>
               <input
+                id="filter-price-max"
                 type="text"
                 inputmode="numeric"
                 :value="filters.maxPrice ? formatNumber(filters.maxPrice) : ''"
@@ -245,9 +260,11 @@
                 class="w-full border border-surface-border rounded-lg px-2 py-1.5
                        text-xs text-center font-fanum focus:border-brand
                        focus:ring-1 focus:ring-brand/20 outline-none"
+                :class="priceError ? 'border-error' : ''"
               />
             </div>
           </div>
+          <p v-if="priceError" role="alert" class="text-xs text-error">{{ priceError }}</p>
         </div>
       </div>
 
@@ -269,7 +286,7 @@
 </template>
 
 <script setup>
-import { computed, reactive } from 'vue'
+import { computed, reactive, ref } from 'vue'
 import { useCategoryStore } from '~/stores/category.store'
 import { GENDER_OPTIONS, FRAME_SHAPES, FRAME_MATERIALS } from '~/utils/constants'
 import { formatNumber } from '~/utils/formatters'
@@ -290,6 +307,8 @@ const open = reactive({
   frameMaterial: false,
   price:         true,
 })
+
+const priceError = ref('')
 
 const allCategories = computed(() =>
   [...categoryStore.categories].sort((a, b) => (a.depth || 0) - (b.depth || 0) || a.name.localeCompare(b.name, 'fa'))
@@ -329,6 +348,14 @@ function onPriceInput(type, event) {
   const val = raw ? Number(raw) : null
   if (type === 'min') props.filters.minPrice = val
   else                props.filters.maxPrice = val
+
+  const min = props.filters.minPrice
+  const max = props.filters.maxPrice
+  if (min && max && min > max) {
+    priceError.value = 'حداقل قیمت نباید از حداکثر بیشتر باشد'
+    return
+  }
+  priceError.value = ''
   emit('change')
 }
 

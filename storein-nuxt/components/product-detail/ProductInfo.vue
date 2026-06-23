@@ -164,76 +164,74 @@
         <!-- Wholesale order panel — only for wholesale users with a wholesale price -->
         <div
           v-if="auth.isWholesale && selectedVariant?.wholesalePrice"
-          class="rounded-2xl p-4 flex flex-col gap-3"
-          style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.3);"
+          class="rounded-2xl p-4 flex flex-col gap-3 bg-wholesale/10 border border-wholesale-border"
         >
           <!-- Label + running total -->
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-1.5">
-              <span style="font-size:15px;">🏪</span>
-              <span style="font-weight:700; color:#b45309; font-size:14px;">سفارش عمده</span>
-              <span style="font-size:12px; color:#d97706; opacity:0.8;">حداقل {{ formatNumber(wholesaleMinQty) }} عدد</span>
+              <svg class="w-4 h-4 text-wholesale-dark flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <span class="font-bold text-wholesale-dark text-sm">سفارش عمده</span>
+              <span class="text-xs text-warning opacity-80">حداقل {{ formatNumber(wholesaleMinQty) }} عدد</span>
             </div>
-            <span style="font-size:13px; color:#b45309;" class="font-fanum font-bold">
+            <span class="text-sm text-wholesale-dark font-fanum font-bold">
               {{ formatPrice(wholesaleLineTotal) }} تومان
             </span>
           </div>
 
           <!-- Stepper + add button -->
           <div class="flex flex-col gap-1">
-          <div class="flex gap-3 items-center">
-            <div
-              class="flex items-center rounded-xl overflow-hidden shrink-0"
-              :style="{ border: wholesaleQtyExceedsStock ? '1.5px solid #dc2626' : '1.5px solid rgba(245,158,11,0.4)', background: 'var(--color-bg)' }"
-            >
-              <button
-                type="button"
-                @click="decreaseWholesaleQty"
-                class="flex items-center justify-center transition-colors"
-                style="width:40px; height:44px; font-size:22px; color:#b45309;"
-              >−</button>
-              <input
-                type="number"
-                v-model.number="wholesaleQty"
-                @change="onWholesaleQtyChange"
-                @blur="onWholesaleQtyChange"
-                class="pi-qty-input font-bold font-fanum text-center bg-transparent border-none outline-none"
-                style="width:52px; font-size:15px; color:var(--color-text-primary);"
-                :min="wholesaleMinQty"
-              />
-              <button
-                type="button"
-                @click="wholesaleQty += wholesaleMinQty"
-                class="flex items-center justify-center transition-colors"
-                style="width:40px; height:44px; font-size:22px; color:#b45309;"
-              >+</button>
-            </div>
+            <div class="flex gap-3 items-center">
+              <div
+                class="flex items-center rounded-xl overflow-hidden shrink-0 bg-bg"
+                :class="wholesaleQtyExceedsStock ? 'border border-error' : 'border border-wholesale/40'"
+              >
+                <button
+                  type="button"
+                  @click="decreaseWholesaleQty"
+                  class="w-10 h-11 flex items-center justify-center text-2xl text-wholesale-dark transition-colors hover:bg-wholesale/10"
+                  aria-label="کاهش تعداد"
+                >−</button>
+                <input
+                  type="number"
+                  v-model.number="wholesaleQty"
+                  @change="onWholesaleQtyChange"
+                  @blur="onWholesaleQtyChange"
+                  class="pi-qty-input w-14 text-[15px] font-bold font-fanum text-center bg-transparent border-none outline-none text-text-primary"
+                  :min="wholesaleMinQty"
+                  :aria-label="`تعداد، حداقل ${wholesaleMinQty}`"
+                />
+                <button
+                  type="button"
+                  @click="wholesaleQty += wholesaleMinQty"
+                  class="w-10 h-11 flex items-center justify-center text-2xl text-wholesale-dark transition-colors hover:bg-wholesale/10"
+                  aria-label="افزایش تعداد"
+                >+</button>
+              </div>
 
-            <button
-              type="button"
-              :disabled="!isInStock || addingToCartWholesale || wholesaleQtyExceedsStock"
-              @click="handleAddToCartWholesale"
-              class="flex-1 flex items-center justify-center gap-2 rounded-xl font-bold text-white transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed"
-              style="height:44px; font-size:15px;
-                     background:linear-gradient(135deg,#f59e0b,#d97706);
-                     box-shadow:0 4px 14px rgba(245,158,11,0.35);"
-            >
-              <span
-                v-if="addingToCartWholesale"
-                class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
-              />
-              <template v-else>
-                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                </svg>
-                افزودن به سبد عمده
-              </template>
-            </button>
-          </div>
-          <p v-if="wholesaleQtyExceedsStock"
-             style="font-size:12px; color:#dc2626; font-weight:600; text-align:center;">
-            فقط {{ selectedVariant?.stock }} عدد موجود است
-          </p>
+              <button
+                type="button"
+                :disabled="!isInStock || addingToCartWholesale || wholesaleQtyExceedsStock"
+                @click="handleAddToCartWholesale"
+                class="flex-1 h-11 flex items-center justify-center gap-2 rounded-xl font-bold text-sm text-white bg-wholesale hover:bg-wholesale-dark transition-all active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_4px_14px_rgba(245,158,11,0.35)]"
+              >
+                <span
+                  v-if="addingToCartWholesale"
+                  class="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin"
+                  aria-hidden="true"
+                />
+                <template v-else>
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" aria-hidden="true">
+                    <path stroke-linecap="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                  </svg>
+                  افزودن به سبد عمده
+                </template>
+              </button>
+            </div>
+            <p v-if="wholesaleQtyExceedsStock" class="text-xs text-error font-semibold text-center">
+              فقط {{ selectedVariant?.stock }} عدد موجود است
+            </p>
           </div>
         </div>
 
@@ -303,11 +301,14 @@
       <div class="grid grid-cols-3 gap-3 pt-2">
         <div
           v-for="g in guarantees"
-          :key="g.icon"
+          :key="g.label"
           class="flex flex-col items-center gap-1.5 text-center"
         >
           <div class="w-10 h-10 rounded-xl bg-surface flex items-center justify-center">
-            <span class="text-xl">{{ g.icon }}</span>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"
+                 class="w-5 h-5 text-brand" aria-hidden="true">
+              <path :d="g.svgPath"/>
+            </svg>
           </div>
           <span class="text-text-secondary text-xs leading-4">{{ g.label }}</span>
         </div>
@@ -494,9 +495,9 @@ function getColorHex(name) {
 }
 
 const guarantees = [
-  { icon: '🔒', label: 'پرداخت امن' },
-  { icon: '↩️', label: 'ضمانت ۷ روزه' },
-  { icon: '✅', label: 'اصالت کالا' },
+  { icon: '🔒', label: 'پرداخت امن',  svgPath: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z' },
+  { icon: '↩️', label: 'ضمانت ۷ روزه', svgPath: 'M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15' },
+  { icon: '✅', label: 'اصالت کالا',  svgPath: 'M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z' },
 ]
 
 defineExpose({ cartButtonRef })

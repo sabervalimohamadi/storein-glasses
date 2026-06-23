@@ -1,17 +1,20 @@
 <template>
   <button
+    type="button"
     :class="[
       'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors duration-200',
+      'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-2',
       sizeClasses[size] || sizeClasses.md,
       variantClasses[variant] || variantClasses.primary,
       block ? 'w-full' : '',
       disabled || loading ? 'opacity-50 cursor-not-allowed pointer-events-none' : 'cursor-pointer',
     ]"
     :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
     v-bind="$attrs"
     @click="$emit('click', $event)"
   >
-    <BaseSpinner v-if="loading" size="sm" :color="variant === 'primary' || variant === 'danger' ? 'white' : 'brand'" />
+    <BaseSpinner v-if="loading" size="sm" :color="variant === 'primary' || variant === 'danger' || variant === 'wholesale' ? 'white' : 'brand'" />
     <slot />
   </button>
 </template>
@@ -30,10 +33,11 @@ defineProps({
 defineEmits(['click'])
 
 const variantClasses = {
-  primary: 'bg-brand text-white hover:bg-brand-dark',
-  outline: 'border border-brand text-brand hover:bg-brand hover:text-white',
-  ghost:   'text-text-secondary hover:bg-surface-border',
-  danger:  'bg-error text-white hover:bg-red-700',
+  primary:   'bg-brand text-white hover:bg-brand-dark',
+  outline:   'border border-brand text-brand hover:bg-brand hover:text-white',
+  ghost:     'text-text-secondary hover:bg-surface-border',
+  danger:    'bg-error text-white hover:bg-red-700',
+  wholesale: 'bg-amber-500 text-white hover:bg-amber-600',
 }
 
 const sizeClasses = {
