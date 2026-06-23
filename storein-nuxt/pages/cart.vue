@@ -34,17 +34,14 @@
 
     <div v-else>
 
-      <!-- Mixed cart warning -->
-      <div v-if="cartStore.hasMixedCart"
-           style="background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25);
-                  border-radius:14px; padding:14px 18px; margin-bottom:24px;
-                  display:flex; align-items:flex-start; gap:12px;">
-        <span style="font-size:20px; flex-shrink:0;">⚠️</span>
+      <!-- Mixed cart warning (UXID-013) -->
+      <div v-if="cartStore.hasMixedCart" role="alert" class="flex items-start gap-3 bg-amber-50 border border-amber-200 rounded-2xl px-4 py-3.5 mb-6">
+        <svg class="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+          <path stroke-linecap="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+        </svg>
         <div>
-          <p style="font-weight:700; color:#b45309; margin-bottom:4px; font-size:14px;">سبد شما شامل هر دو نوع سفارش است</p>
-          <p style="font-size:13px; color:var(--color-text-secondary); line-height:1.6;">
-            آیتم‌های عمده و تکی باید جداگانه ثبت شوند. از دو دکمه پایین هر بخش برای ثبت سفارش استفاده کنید.
-          </p>
+          <p class="font-bold text-amber-800 mb-1 text-sm">سبد شما شامل هر دو نوع سفارش است</p>
+          <p class="text-text-secondary text-xs leading-relaxed">آیتم‌های عمده و تکی باید جداگانه ثبت شوند. از دو دکمه پایین هر بخش برای ثبت سفارش استفاده کنید.</p>
         </div>
       </div>
 
@@ -53,14 +50,14 @@
         <!-- Items column -->
         <div class="lg:col-span-2 flex flex-col gap-8">
 
-          <!-- Wholesale section -->
-          <div v-if="cartStore.hasWholesaleItems">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;
-                        padding:8px 14px; border-radius:10px;
-                        background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.2);">
-              <span style="font-size:16px;">🏪</span>
-              <span style="font-weight:700; color:#b45309; font-size:15px;">سبد عمده</span>
-              <span style="font-size:13px; color:#d97706; margin-right:4px;">({{ formatNumber(cartStore.wholesaleItems.reduce((s,i)=>s+i.quantity,0)) }} عدد)</span>
+          <!-- Wholesale section (UXID-013) -->
+          <section v-if="cartStore.hasWholesaleItems" aria-label="سبد سفارش عمده">
+            <div class="flex items-center gap-2 mb-3 px-3.5 py-2 rounded-xl bg-amber-50 border border-amber-200">
+              <svg class="w-4 h-4 text-amber-700 flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              <h2 class="font-bold text-amber-800 text-sm">سبد عمده</h2>
+              <span class="text-xs text-amber-600 mr-1 font-fanum">({{ formatNumber(cartStore.wholesaleItems.reduce((s,i)=>s+i.quantity,0)) }} عدد)</span>
             </div>
             <TransitionGroup name="cart-item" tag="div" class="flex flex-col gap-4">
               <div
@@ -91,15 +88,15 @@
                       <div class="text-text-secondary text-xs font-fanum mt-0.5">جمع: {{ formatPrice(item.price * item.quantity) }}</div>
                     </div>
                     <div class="flex items-center gap-3">
-                      <button @click="handleRemove(item)" :disabled="removingKey === itemKey(item)" class="text-text-disabled hover:text-error transition-colors disabled:opacity-50 p-1">
+                      <button @click="handleRemove(item)" :disabled="removingKey === itemKey(item)" :aria-label="`حذف ${item.name} از سبد خرید`" class="text-text-disabled hover:text-error transition-colors disabled:opacity-50 w-11 h-11 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
                       <div class="flex items-center border border-surface-border rounded-xl overflow-hidden">
-                        <button @click="changeQty(item, item.quantity - 1)" :disabled="item.quantity <= 1 || updatingKey === itemKey(item)" class="w-9 h-9 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <button @click="changeQty(item, item.quantity - 1)" :disabled="item.quantity <= 1 || updatingKey === itemKey(item)" class="w-11 h-11 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M20 12H4"/></svg>
                         </button>
-                        <span class="w-10 text-center font-fanum text-sm font-bold text-text-primary select-none">{{ formatNumber(item.quantity) }}</span>
-                        <button @click="changeQty(item, item.quantity + 1)" :disabled="item.quantity >= item.stock || updatingKey === itemKey(item)" class="w-9 h-9 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <span class="w-11 text-center font-fanum text-sm font-bold text-text-primary select-none" aria-live="polite" aria-atomic="true">{{ formatNumber(item.quantity) }}</span>
+                        <button @click="changeQty(item, item.quantity + 1)" :disabled="item.quantity >= item.stock || updatingKey === itemKey(item)" class="w-11 h-11 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
                         </button>
                       </div>
@@ -108,16 +105,16 @@
                 </div>
               </div>
             </TransitionGroup>
-          </div>
+          </section>
 
-          <!-- Retail section -->
-          <div v-if="cartStore.hasRetailItems">
-            <div style="display:flex; align-items:center; gap:8px; margin-bottom:12px;
-                        padding:8px 14px; border-radius:10px;
-                        background:var(--color-surface); border:1px solid var(--color-border);">
-              <span style="font-size:16px;">🛍️</span>
-              <span style="font-weight:700; color:var(--color-text-primary); font-size:15px;">سبد خرده</span>
-              <span style="font-size:13px; color:var(--color-text-secondary); margin-right:4px;">({{ formatNumber(cartStore.retailItems.reduce((s,i)=>s+i.quantity,0)) }} عدد)</span>
+          <!-- Retail section (UXID-013) -->
+          <section v-if="cartStore.hasRetailItems" aria-label="سبد سفارش تکی">
+            <div class="flex items-center gap-2 mb-3 px-3.5 py-2 rounded-xl bg-surface border border-surface-border">
+              <svg class="w-4 h-4 text-text-secondary flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+              </svg>
+              <h2 class="font-bold text-text-primary text-sm">سبد خرده</h2>
+              <span class="text-xs text-text-secondary mr-1 font-fanum">({{ formatNumber(cartStore.retailItems.reduce((s,i)=>s+i.quantity,0)) }} عدد)</span>
             </div>
             <TransitionGroup name="cart-item" tag="div" class="flex flex-col gap-4">
               <div
@@ -147,15 +144,15 @@
                       <div class="text-text-secondary text-xs font-fanum mt-0.5">جمع: {{ formatPrice(item.price * item.quantity) }}</div>
                     </div>
                     <div class="flex items-center gap-3">
-                      <button @click="handleRemove(item)" :disabled="removingKey === itemKey(item)" class="text-text-disabled hover:text-error transition-colors disabled:opacity-50 p-1">
+                      <button @click="handleRemove(item)" :disabled="removingKey === itemKey(item)" :aria-label="`حذف ${item.name} از سبد خرید`" class="text-text-disabled hover:text-error transition-colors disabled:opacity-50 w-11 h-11 flex items-center justify-center">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24"><path stroke-linecap="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                       </button>
                       <div class="flex items-center border border-surface-border rounded-xl overflow-hidden">
-                        <button @click="changeQty(item, item.quantity - 1)" :disabled="item.quantity <= 1 || updatingKey === itemKey(item)" class="w-9 h-9 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <button @click="changeQty(item, item.quantity - 1)" :disabled="item.quantity <= 1 || updatingKey === itemKey(item)" class="w-11 h-11 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M20 12H4"/></svg>
                         </button>
-                        <span class="w-10 text-center font-fanum text-sm font-bold text-text-primary select-none">{{ formatNumber(item.quantity) }}</span>
-                        <button @click="changeQty(item, item.quantity + 1)" :disabled="item.quantity >= item.stock || updatingKey === itemKey(item)" class="w-9 h-9 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
+                        <span class="w-11 text-center font-fanum text-sm font-bold text-text-primary select-none" aria-live="polite" aria-atomic="true">{{ formatNumber(item.quantity) }}</span>
+                        <button @click="changeQty(item, item.quantity + 1)" :disabled="item.quantity >= item.stock || updatingKey === itemKey(item)" class="w-11 h-11 flex items-center justify-center text-text-primary hover:bg-surface disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
                           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
                         </button>
                       </div>
@@ -164,7 +161,7 @@
                 </div>
               </div>
             </TransitionGroup>
-          </div>
+          </section>
 
         </div>
 
@@ -172,42 +169,36 @@
         <div class="flex flex-col gap-4 lg:sticky lg:top-24">
 
           <!-- Wholesale summary -->
-          <div v-if="cartStore.hasWholesaleItems"
-               class="rounded-2xl p-5 flex flex-col gap-4"
-               style="background:var(--color-card); border:1px solid rgba(245,158,11,0.3);">
-            <h2 style="font-weight:700; font-size:15px; color:#b45309;
-                       border-bottom:1px solid rgba(245,158,11,0.2); padding-bottom:12px;
-                       display:flex; align-items:center; gap:6px;">
-              <span>🏪</span> خلاصه سفارش عمده
+          <div v-if="cartStore.hasWholesaleItems" class="rounded-2xl p-5 flex flex-col gap-4 bg-card border border-amber-200">
+            <h2 class="font-bold text-amber-800 text-sm border-b border-amber-100 pb-3 flex items-center gap-2">
+              <svg class="w-4 h-4 flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+              خلاصه سفارش عمده
             </h2>
             <div class="flex flex-col gap-3 text-sm">
               <div class="flex justify-between">
-                <span style="color:var(--color-text-secondary)">تعداد</span>
-                <span class="font-fanum" style="color:var(--color-text-primary)">{{ formatNumber(cartStore.wholesaleItems.reduce((s,i)=>s+i.quantity,0)) }} عدد</span>
+                <span class="text-text-secondary">تعداد</span>
+                <span class="font-fanum text-text-primary">{{ formatNumber(cartStore.wholesaleItems.reduce((s,i)=>s+i.quantity,0)) }} عدد</span>
               </div>
-              <div v-if="wholesaleSavings > 0" class="flex justify-between" style="color:#16a34a;">
+              <div v-if="wholesaleSavings > 0" class="flex justify-between text-success">
                 <span>صرفه‌جویی</span>
                 <span class="font-fanum">− {{ formatPrice(wholesaleSavings) }}</span>
               </div>
               <div class="flex justify-between items-center">
-                <span style="color:var(--color-text-secondary)">ارسال</span>
-                <span style="background:rgba(34,197,94,0.1); color:#16a34a; font-size:12px; font-weight:700; padding:2px 10px; border-radius:20px;">رایگان 🎁</span>
+                <span class="text-text-secondary">ارسال</span>
+                <span class="text-xs font-bold text-success bg-success/10 px-2.5 py-0.5 rounded-full">رایگان</span>
               </div>
             </div>
-            <div style="border-top:1px solid rgba(245,158,11,0.2); padding-top:14px;">
+            <div class="border-t border-amber-100 pt-3.5">
               <div class="flex justify-between items-center">
-                <span style="font-weight:700; color:var(--color-text-primary)">مبلغ قابل پرداخت</span>
-                <span style="color:#b45309; font-size:1.2rem; font-weight:900;" class="font-fanum">{{ formatPrice(cartStore.wholesaleTotal) }}</span>
+                <span class="font-bold text-text-primary">مبلغ قابل پرداخت</span>
+                <span class="text-amber-800 text-xl font-black font-fanum">{{ formatPrice(cartStore.wholesaleTotal) }}</span>
               </div>
             </div>
-            <button
-              @click="navigateTo('/checkout?type=wholesale')"
-              style="width:100%; padding:14px; border-radius:12px; font-weight:700; font-size:15px;
-                     border:none; cursor:pointer; background:linear-gradient(135deg,#f59e0b,#d97706); color:#fff;
-                     transition:opacity 0.2s;"
-              @mouseover="e=>e.currentTarget.style.opacity='0.9'"
-              @mouseout="e=>e.currentTarget.style.opacity='1'"
-            >ثبت سفارش عمده ←</button>
+            <BaseButton variant="primary" block size="lg" @click="navigateTo('/checkout?type=wholesale')" class="!bg-amber-500 hover:!bg-amber-600">
+              ثبت سفارش عمده
+            </BaseButton>
           </div>
 
           <!-- Retail summary -->
@@ -238,7 +229,12 @@
             <BaseButton variant="primary" block size="lg" @click="navigateTo('/checkout?type=retail')">ادامه و پرداخت ←</BaseButton>
           </div>
 
-          <NuxtLink to="/products" class="text-center text-sm text-brand hover:underline block">← ادامه خرید</NuxtLink>
+          <NuxtLink to="/products" class="text-center text-sm text-brand hover:underline block flex items-center justify-center gap-1.5">
+            <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+            ادامه خرید
+          </NuxtLink>
         </div>
 
       </div>

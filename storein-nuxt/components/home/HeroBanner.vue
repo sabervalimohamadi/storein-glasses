@@ -85,14 +85,34 @@
     </Transition>
 
     <!-- Slide indicators -->
-    <div class="hero__dots">
+    <div class="hero__dots" role="tablist" :aria-label="`اسلایدشو — ${slides.length} اسلاید`">
       <button
         v-for="(s, i) in slides"
         :key="s._id || s.id"
-        :class="['hero__dot', current === i && 'hero__dot--on']"
+        role="tab"
+        :aria-label="`اسلاید ${i + 1} از ${slides.length}`"
+        :aria-selected="current === i"
+        class="hero__dot-btn"
         @click="goTo(i)"
-      />
+      >
+        <span :class="['hero__dot', current === i && 'hero__dot--on']" aria-hidden="true" />
+      </button>
     </div>
+
+    <!-- Pause / Play toggle (WCAG 2.2.2) -->
+    <button
+      class="hero__pause"
+      @click="togglePause"
+      :aria-label="paused ? 'شروع اسلایدشو' : 'توقف اسلایدشو'"
+      :title="paused ? 'شروع' : 'توقف'"
+    >
+      <svg v-if="paused" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+        <path d="M8 5v14l11-7z"/>
+      </svg>
+      <svg v-else xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" class="w-4 h-4">
+        <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
+      </svg>
+    </button>
 
     <!-- Prev / Next arrows -->
     <button class="hero__arr hero__arr--r" @click="prev" aria-label="قبلی">
@@ -162,6 +182,7 @@ const STATIC_SLIDES = [
 
 const slides  = ref([...STATIC_SLIDES])
 const current = ref(0)
+const paused  = ref(false)
 let autoTimer = null
 
 function slideStyle(slide) {
@@ -169,13 +190,19 @@ function slideStyle(slide) {
   return { background: `linear-gradient(135deg, ${slide.bgFrom} 0%, ${slide.bgTo} 100%)` }
 }
 
-function next()     { current.value = (current.value + 1) % slides.value.length }
-function prev()     { current.value = (current.value - 1 + slides.value.length) % slides.value.length }
-function goTo(i)    { current.value = i; resetTimer() }
+function next()  { current.value = (current.value + 1) % slides.value.length }
+function prev()  { current.value = (current.value - 1 + slides.value.length) % slides.value.length }
+function goTo(i) { current.value = i; resetTimer() }
+
+function togglePause() {
+  paused.value = !paused.value
+  if (paused.value) clearInterval(autoTimer)
+  else resetTimer()
+}
 
 function resetTimer() {
   clearInterval(autoTimer)
-  autoTimer = setInterval(next, 4500)
+  if (!paused.value) autoTimer = setInterval(next, 4500)
 }
 
 onMounted(async () => {
@@ -381,23 +408,60 @@ onUnmounted(() => clearInterval(autoTimer))
   transform: translateX(-50%);
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 4px;
   z-index: 10;
 }
+/* Accessible tap wrapper — 44×44px WCAG target */
+.hero__dot-btn {
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.hero__dot-btn:focus-visible {
+  outline: 2px solid rgba(255,255,255,0.8);
+  border-radius: 6px;
+}
 .hero__dot {
+  display: block;
   width: 6px;
   height: 6px;
   border-radius: 99px;
   background: rgba(255,255,255,0.38);
-  border: none;
-  cursor: pointer;
   transition: all 0.3s ease;
-  padding: 0;
+  pointer-events: none;
 }
 .hero__dot--on {
   width: 22px;
   background: rgba(255,255,255,0.9);
 }
+
+/* ── Pause button ──────────────────────────────────── */
+.hero__pause {
+  position: absolute;
+  bottom: 14px;
+  left: 16px;
+  z-index: 10;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.14);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255,255,255,0.22);
+  color: white;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.2s ease;
+}
+.hero__pause:hover { background: rgba(255,255,255,0.26); }
+.hero__pause:focus-visible { outline: 2px solid rgba(255,255,255,0.8); }
 
 /* ── Arrows ────────────────────────────────────────── */
 .hero__arr {

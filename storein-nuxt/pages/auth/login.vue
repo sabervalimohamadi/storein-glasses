@@ -66,7 +66,7 @@
         <span>{{ authStore.loading ? 'در حال ارسال...' : 'دریافت کد تأیید' }}</span>
       </button>
 
-      <p class="text-center text-text-disabled text-xs mt-5 leading-6">
+      <p class="text-center text-text-secondary text-xs mt-5 leading-6">
         با ورود به {{ settingsStore.siteName }}، قوانین و مقررات را می‌پذیرم
       </p>
     </div>

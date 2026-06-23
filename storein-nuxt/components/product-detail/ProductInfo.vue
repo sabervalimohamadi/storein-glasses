@@ -60,6 +60,8 @@
             :key="variant._id"
             @click="selectVariant(variant)"
             :disabled="variant.stock === 0"
+            :aria-label="`رنگ ${getAttr(variant, 'رنگ')}${variant.stock === 0 ? ' — ناموجود' : ''}`"
+            :aria-pressed="selectedVariant?._id === variant._id"
             :class="[
               'flex flex-col items-center gap-1 transition-all duration-150',
               variant.stock === 0 ? 'opacity-40 cursor-not-allowed' : '',
@@ -126,14 +128,16 @@
             </div>
           </template>
 
-          <!-- لینک معرفی قیمت عمده به کاربران غیر-عمده -->
+          <!-- Wholesale teaser for non-wholesale users (UXID-009) -->
           <NuxtLink
             v-if="product.minWholesalePrice"
             to="/wholesale"
-            class="mt-2 text-xs text-brand hover:underline flex items-center gap-1"
+            class="mt-2 inline-flex items-center gap-2 text-xs bg-amber-50 text-amber-800 border border-amber-200 px-3 py-1.5 rounded-lg hover:bg-amber-100 transition-colors"
           >
-            <span>🏪</span>
-            <span>قیمت عمده این محصول: ✦✦✦✦✦ — خرید عمده</span>
+            <svg class="w-3.5 h-3.5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+            </svg>
+            <span>خریداران عمده این محصول را ارزان‌تر می‌خرند — عضویت رایگان</span>
           </NuxtLink>
         </template>
 
@@ -253,6 +257,8 @@
         <div class="flex gap-3">
           <button
             @click="handleWishlist"
+            :aria-label="isWishlisted ? 'حذف از علاقه‌مندی‌ها' : 'افزودن به علاقه‌مندی‌ها'"
+            :aria-pressed="isWishlisted"
             :class="[
               'flex-1 py-3 rounded-xl border-2 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200',
               isWishlisted
@@ -274,6 +280,7 @@
 
           <button
             @click="handleShare"
+            :aria-label="shareCopied ? 'لینک کپی شد' : 'اشتراک‌گذاری محصول'"
             :class="[
               'flex-1 py-3 rounded-xl border-2 font-medium text-sm flex items-center justify-center gap-2 transition-all duration-200',
               shareCopied

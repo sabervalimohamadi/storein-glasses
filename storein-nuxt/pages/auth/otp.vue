@@ -48,7 +48,7 @@
 
       <div class="mt-6 pt-5 border-t border-surface-border text-center">
         <button @click="goBack" class="text-text-secondary text-sm hover:text-brand inline-flex items-center gap-1.5 mx-auto transition-colors duration-150">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7" /></svg>
+          <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" /></svg>
           ویرایش شماره موبایل
         </button>
       </div>

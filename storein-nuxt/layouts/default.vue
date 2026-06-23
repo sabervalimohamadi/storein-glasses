@@ -1,9 +1,15 @@
 <template>
   <div class="min-h-screen flex flex-col bg-surface">
+    <!-- UXID-006: skip navigation for keyboard/screen-reader users -->
+    <a
+      href="#main-content"
+      class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[500] focus:px-4 focus:py-2 focus:bg-brand focus:text-white focus:rounded-lg focus:text-sm focus:font-bold"
+    >رفتن به محتوای اصلی</a>
+
     <AnnouncementBar />
     <AppHeader />
 
-    <main class="flex-1 pb-14 md:pb-0">
+    <main id="main-content" class="flex-1 pb-14 md:pb-0">
       <slot />
     </main>
 

@@ -1,7 +1,7 @@
 <template>
   <button
     :class="[
-      'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-colors duration-200',
+      'inline-flex items-center justify-center gap-2 font-medium rounded-xl transition-colors duration-200',
       sizeClasses[size] || sizeClasses.md,
       variantClasses[variant] || variantClasses.primary,
       block ? 'w-full' : '',

@@ -1,46 +1,38 @@
 <template>
-  <div style="background: var(--color-bg); min-height: 100vh;">
+  <div class="bg-bg min-h-screen">
 
     <!-- ═══════════════════════════════════════════════════════════
          HERO SECTION — shown to all users
     ══════════════════════════════════════════════════════════════ -->
-    <section style="background: linear-gradient(135deg, #1e3a5f 0%, #0f1f35 100%);
-                    padding: 60px 16px 48px; text-align: center; position: relative; overflow: hidden;">
+    <section class="bg-gradient-to-br from-[#1e3a5f] to-[#0f1f35] px-4 pt-16 pb-12 text-center relative overflow-hidden">
 
       <!-- Subtle grid pattern overlay -->
-      <div style="position:absolute;inset:0;opacity:0.04;
-                  background-image:linear-gradient(rgba(255,255,255,0.5) 1px,transparent 1px),
-                                   linear-gradient(90deg,rgba(255,255,255,0.5) 1px,transparent 1px);
-                  background-size:40px 40px; pointer-events:none;" />
+      <div class="absolute inset-0 opacity-[0.04] pointer-events-none"
+           style="background-image:linear-gradient(rgba(255,255,255,.5) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.5) 1px,transparent 1px);background-size:40px 40px;" aria-hidden="true" />
 
-      <div style="max-width:800px; margin:0 auto; position:relative;">
+      <div class="max-w-3xl mx-auto relative">
 
         <!-- Badge -->
-        <div style="display:inline-flex; align-items:center; gap:6px;
-                    background:rgba(245,158,11,0.15); border:1px solid rgba(245,158,11,0.3);
-                    color:#fbbf24; font-size:12px; font-weight:700;
-                    padding:4px 14px; border-radius:20px; margin-bottom:20px;">
+        <div class="inline-flex items-center gap-1.5 bg-amber-400/15 border border-amber-400/30 text-amber-300 text-xs font-bold px-3.5 py-1 rounded-full mb-5">
           <span>B2B</span>
-          <span style="opacity:0.5">|</span>
+          <span class="opacity-50">|</span>
           <span>فروش عمده</span>
         </div>
 
-        <h1 style="font-size:clamp(1.8rem,5vw,2.8rem); font-weight:900; color:#fff;
-                   margin-bottom:12px; line-height:1.2;">
+        <h1 class="text-3xl md:text-[clamp(1.8rem,5vw,2.8rem)] font-black text-white mb-3 leading-tight">
           فروش عمده {{ settingsStore.siteName }}
         </h1>
-        <p style="color:rgba(255,255,255,0.7); font-size:1rem; margin-bottom:40px;">
+        <p class="text-white/70 text-base mb-10">
           قیمت‌های ویژه · حداقل سفارش مشخص · پشتیبانی اختصاصی B2B
         </p>
 
-        <!-- 3 feature cards -->
-        <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:12px; max-width:600px; margin:0 auto;">
+        <!-- 3 feature cards (responsive: 1-col on mobile, 3-col from sm) -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 max-w-xl mx-auto w-full">
           <div v-for="f in features" :key="f.label"
-               style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);
-                      border-radius:12px; padding:16px 12px; text-align:center;">
-            <div style="font-size:1.6rem; margin-bottom:8px;">{{ f.icon }}</div>
-            <div style="color:#fff; font-size:13px; font-weight:600; line-height:1.4;">{{ f.label }}</div>
-            <div style="color:rgba(255,255,255,0.5); font-size:11px; margin-top:4px;">{{ f.sub }}</div>
+               class="bg-white/5 border border-white/10 rounded-xl p-4 text-center">
+            <component :is="f.icon" class="w-7 h-7 mx-auto mb-2 text-amber-300" aria-hidden="true" />
+            <div class="text-white text-sm font-semibold leading-snug">{{ f.label }}</div>
+            <div class="text-white/50 text-xs mt-1">{{ f.sub }}</div>
           </div>
         </div>
       </div>
@@ -50,18 +42,15 @@
          STATUS BAR — only for approved users (compact)
     ══════════════════════════════════════════════════════════════ -->
     <div v-if="wholesaleStatus?.isWholesale"
-         style="background:rgba(34,197,94,0.08); border-bottom:1px solid rgba(34,197,94,0.2);
-                padding:10px 20px; display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap;">
-      <span style="display:inline-flex; align-items:center; gap:5px; background:rgba(34,197,94,0.15);
-                   color:#16a34a; font-size:12px; font-weight:700; padding:3px 10px; border-radius:20px;">
-        ✓ حساب عمده فعال
+         class="bg-success/5 border-b border-success/20 px-5 py-2.5 flex items-center justify-center gap-3 flex-wrap">
+      <span class="inline-flex items-center gap-1.5 bg-success/15 text-success text-xs font-bold px-2.5 py-0.5 rounded-full">
+        <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+        حساب عمده فعال
       </span>
-      <span v-if="wholesaleStatus.companyName"
-            style="font-size:13px; color:var(--color-text-secondary);">
-        شرکت: <strong style="color:var(--color-text-primary);">{{ wholesaleStatus.companyName }}</strong>
+      <span v-if="wholesaleStatus.companyName" class="text-sm text-text-secondary">
+        شرکت: <strong class="text-text-primary">{{ wholesaleStatus.companyName }}</strong>
       </span>
-      <span v-if="wholesaleStatus.approvedAt"
-            style="font-size:12px; color:var(--color-text-secondary);">
+      <span v-if="wholesaleStatus.approvedAt" class="text-xs text-text-secondary">
         تأیید: {{ formatDate(wholesaleStatus.approvedAt) }}
       </span>
     </div>
@@ -126,20 +115,17 @@
     <!-- ═══════════════════════════════════════════════════════════
          LAYOUT B: NON-APPROVED USERS — status + form
     ══════════════════════════════════════════════════════════════ -->
-    <div v-else style="max-width:600px; margin:0 auto; padding:40px 16px;">
+    <div v-else class="max-w-xl mx-auto px-4 py-10">
 
       <!-- B1: Not logged in -->
-      <div v-if="!auth.isLoggedIn"
-           style="background:var(--color-card); border-radius:20px;
-                  border:1px solid var(--color-border); padding:40px 32px; text-align:center;">
-        <div style="width:64px; height:64px; border-radius:50%;
-                    background:rgba(99,102,241,0.1);
-                    display:flex; align-items:center; justify-content:center;
-                    margin:0 auto 20px; font-size:28px;">🔐</div>
-        <h2 style="font-size:1.2rem; font-weight:700; color:var(--color-text-primary); margin-bottom:10px;">
-          برای درخواست عمده وارد شوید
-        </h2>
-        <p style="font-size:14px; color:var(--color-text-secondary); margin-bottom:24px; line-height:1.7;">
+      <div v-if="!auth.isLoggedIn" class="bg-card rounded-2xl border border-surface-border px-8 py-10 text-center">
+        <div class="w-16 h-16 rounded-full bg-indigo-100 flex items-center justify-center mx-auto mb-5">
+          <svg class="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-text-primary mb-2.5">برای درخواست عمده وارد شوید</h2>
+        <p class="text-sm text-text-secondary mb-6 leading-relaxed">
           ابتدا با شماره موبایل وارد شوید، سپس فرم درخواست عمده را تکمیل کنید.
         </p>
         <NuxtLink to="/auth/login?redirect=/wholesale"
@@ -150,40 +136,40 @@
 
       <!-- B2: Pending -->
       <div v-else-if="wholesaleStatus?.status === 'pending'"
-           style="background:var(--color-card); border-radius:20px;
-                  border:1px solid rgba(245,158,11,0.3); padding:40px 32px; text-align:center;">
+           class="bg-card rounded-2xl border border-amber-200 px-8 py-10 text-center">
         <!-- Step tracker -->
-        <div style="display:flex; align-items:center; justify-content:center; gap:0; margin-bottom:32px;">
-          <div v-for="(step, i) in steps" :key="i" style="display:flex; align-items:center;">
-            <div :style="`width:32px; height:32px; border-radius:50%; display:flex;
-                          align-items:center; justify-content:center; font-size:13px; font-weight:700;
-                          background:${i <= 1 ? '#f59e0b' : 'var(--color-surface)'};
-                          color:${i <= 1 ? '#fff' : 'var(--color-text-secondary)'};`">
-              {{ i < 1 ? '✓' : i + 1 }}
+        <div class="flex items-center justify-center gap-0 mb-8" aria-label="مراحل درخواست" role="list">
+          <div v-for="(step, i) in steps" :key="i" class="flex items-center" role="listitem">
+            <div :class="[
+              'w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold',
+              i <= 1 ? 'bg-amber-400 text-white' : 'bg-surface text-text-secondary border border-surface-border',
+            ]">
+              <svg v-if="i < 1" class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+              <span v-else>{{ i + 1 }}</span>
             </div>
             <div v-if="i < steps.length - 1"
-                 :style="`width:40px; height:2px; background:${i < 1 ? '#f59e0b' : 'var(--color-border)'};`" />
+                 :class="['w-10 h-0.5', i < 1 ? 'bg-amber-400' : 'bg-surface-border']" />
           </div>
         </div>
-        <div style="font-size:2.5rem; margin-bottom:16px;">⏳</div>
-        <h2 style="font-size:1.2rem; font-weight:700; color:var(--color-text-primary); margin-bottom:8px;">
-          درخواست شما در حال بررسی است
-        </h2>
-        <p style="font-size:14px; color:var(--color-text-secondary); line-height:1.7;">
+        <div class="w-14 h-14 rounded-full bg-amber-50 flex items-center justify-center mx-auto mb-4">
+          <svg class="w-7 h-7 text-amber-500" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h2 class="text-lg font-bold text-text-primary mb-2">درخواست شما در حال بررسی است</h2>
+        <p class="text-sm text-text-secondary leading-relaxed">
           تیم ما درخواست شما را بررسی می‌کند.<br>
-          معمولاً تا <strong>۲۴ ساعت کاری</strong> نتیجه از طریق پیامک اطلاع‌رسانی می‌شود.
+          معمولاً تا <strong class="text-text-primary">۲۴ ساعت کاری</strong> نتیجه از طریق پیامک اطلاع‌رسانی می‌شود.
         </p>
       </div>
 
       <!-- B3: Rejected -->
       <div v-else-if="wholesaleStatus?.status === 'rejected'">
-        <div style="background:rgba(239,68,68,0.08); border:1px solid rgba(239,68,68,0.2);
-                    border-radius:14px; padding:16px 20px; margin-bottom:24px;">
-          <p style="color:#dc2626; font-weight:600; margin-bottom:4px;">درخواست قبلی رد شد</p>
-          <p style="color:#ef4444; font-size:13px;">{{ wholesaleStatus.rejectedReason || 'اطلاعات کافی ارائه نشده بود.' }}</p>
+        <div class="bg-red-50 border border-red-200 rounded-2xl px-5 py-4 mb-6" role="alert">
+          <p class="text-error font-semibold mb-1">درخواست قبلی رد شد</p>
+          <p class="text-red-500 text-sm">{{ wholesaleStatus.rejectedReason || 'اطلاعات کافی ارائه نشده بود.' }}</p>
         </div>
-        <h2 style="font-size:1.1rem; font-weight:700; text-align:center;
-                   color:var(--color-text-primary); margin-bottom:20px;">ارسال مجدد درخواست</h2>
+        <h2 class="text-lg font-bold text-center text-text-primary mb-5">ارسال مجدد درخواست</h2>
         <WholesaleRequestForm @submitted="onSubmitted" />
       </div>
 
@@ -191,119 +177,61 @@
       <div v-else-if="auth.isLoggedIn">
 
         <!-- Step tracker -->
-        <div style="
-          background: var(--color-card);
-          border: 1px solid var(--color-border);
-          border-radius: 20px;
-          padding: 20px 16px 22px;
-          margin-bottom: 20px;
-        ">
-          <!-- Section label -->
-          <p style="text-align:center; font-size:11px; font-weight:700; letter-spacing:0.1em;
-                    color:var(--color-text-secondary); opacity:0.6; margin-bottom:20px;">
-            مراحل عضویت
-          </p>
+        <div class="bg-card border border-surface-border rounded-2xl px-4 pt-5 pb-6 mb-5">
+          <p class="text-center text-[11px] font-bold tracking-widest text-text-secondary/60 uppercase mb-5">مراحل عضویت</p>
 
-          <!-- Steps row -->
-          <div style="position:relative; display:flex; justify-content:space-between; align-items:flex-start; max-width:420px; margin:0 auto;">
+          <div class="relative flex justify-between items-start max-w-sm mx-auto" aria-label="مراحل ثبت‌نام عمده" role="list">
+            <!-- Track line -->
+            <div class="absolute top-5 right-[calc(100%/6)] left-[calc(100%/6)] h-0.5 bg-gradient-to-l from-surface-border via-violet-300/30 to-surface-border z-0" aria-hidden="true" />
 
-            <!-- Track line (behind circles, 1/6 padding each side to align with circle centers) -->
-            <div style="
-              position:absolute; top:20px;
-              right:calc(100% / 6); left:calc(100% / 6);
-              height:2px;
-              background: linear-gradient(to left, var(--color-border) 0%, rgba(124,58,237,0.25) 50%, var(--color-border) 100%);
-              z-index:0;
-            " />
-
-            <!-- Each step -->
             <div
               v-for="(step, i) in howItWorks"
               :key="i"
-              style="flex:1; display:flex; flex-direction:column; align-items:center; gap:10px; position:relative; z-index:1; padding:0 4px;"
+              class="flex-1 flex flex-col items-center gap-2.5 relative z-10 px-1"
+              role="listitem"
             >
-              <!-- Circle -->
-              <div :style="`
-                width:40px; height:40px; border-radius:50%;
-                display:flex; align-items:center; justify-content:center;
-                font-weight:800;
-                transition: all 0.2s ease;
-                ${i === 0
-                  ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(109,40,217,0.45); border:2px solid transparent;'
-                  : 'background:var(--color-bg); color:var(--color-text-secondary); border:2px solid var(--color-border);'
-                }
-              `">
-                <svg v-if="i === 0" style="width:16px;height:16px;" viewBox="0 0 24 24" fill="currentColor">
+              <div :class="[
+                'w-10 h-10 rounded-full flex items-center justify-center font-extrabold transition-all',
+                i === 0
+                  ? 'bg-gradient-to-br from-violet-600 to-violet-700 text-white shadow-lg shadow-violet-500/40'
+                  : 'bg-bg text-text-secondary border-2 border-surface-border',
+              ]">
+                <svg v-if="i === 0" class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
                   <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 17l-6.2 4.3 2.4-7.4L2 9.4h7.6z"/>
                 </svg>
-                <span v-else style="font-size:14px;">{{ i + 1 }}</span>
+                <span v-else class="text-sm">{{ i + 1 }}</span>
               </div>
-
-              <!-- Label -->
-              <p :style="`
-                font-size: clamp(10px, 2.5vw, 12px);
-                font-weight: ${i === 0 ? '700' : '500'};
-                text-align: center;
-                line-height: 1.5;
-                color: ${i === 0 ? 'var(--color-text-primary)' : 'var(--color-text-secondary)'};
-              `">{{ step }}</p>
-
-              <!-- Active dot indicator -->
-              <div v-if="i === 0" style="
-                width:6px; height:6px; border-radius:50%;
-                background:#7c3aed;
-                box-shadow:0 0 8px rgba(124,58,237,0.6);
-                margin-top:-4px;
-              " />
+              <p :class="['text-[11px] text-center leading-snug', i === 0 ? 'font-bold text-text-primary' : 'font-medium text-text-secondary']">{{ step }}</p>
+              <div v-if="i === 0" class="w-1.5 h-1.5 rounded-full bg-violet-600 shadow-[0_0_8px_rgba(124,58,237,0.6)] -mt-1" aria-hidden="true" />
             </div>
-
           </div>
         </div>
 
         <!-- Form card -->
-        <div style="
-          background: var(--color-card);
-          border: 1px solid var(--color-border);
-          border-radius: 24px;
-          overflow: hidden;
-          box-shadow: 0 8px 40px rgba(0,0,0,0.12);
-        ">
+        <div class="bg-card border border-surface-border rounded-3xl overflow-hidden shadow-modal">
           <!-- Card header -->
-          <div style="
-            background: linear-gradient(135deg, rgba(109,40,217,0.12) 0%, rgba(109,40,217,0.04) 100%);
-            border-bottom: 1px solid rgba(109,40,217,0.15);
-            padding: 24px 28px 20px;
-            display: flex; align-items: center; gap: 14px;
-          ">
-            <div style="
-              width:48px; height:48px; border-radius:14px; flex-shrink:0;
-              background:linear-gradient(135deg,#7c3aed,#6d28d9);
-              display:flex; align-items:center; justify-content:center;
-              font-size:22px;
-              box-shadow: 0 4px 14px rgba(109,40,217,0.35);
-            ">🏪</div>
+          <div class="bg-violet-600/10 border-b border-violet-500/15 px-7 py-6 flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-violet-600 to-violet-700 flex items-center justify-center flex-shrink-0 shadow-lg shadow-violet-500/30">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-2 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+              </svg>
+            </div>
             <div>
-              <h2 style="font-size:1.1rem; font-weight:800; color:var(--color-text-primary); margin-bottom:2px;">
-                درخواست عضویت عمده‌فروشی
-              </h2>
-              <p style="font-size:12px; color:var(--color-text-secondary); line-height:1.5;">
-                اطلاعات کسب‌وکار خود را وارد کنید
-              </p>
+              <h2 class="text-lg font-extrabold text-text-primary mb-0.5">درخواست عضویت عمده‌فروشی</h2>
+              <p class="text-xs text-text-secondary leading-relaxed">اطلاعات کسب‌وکار خود را وارد کنید</p>
             </div>
           </div>
 
           <!-- Form body -->
-          <div style="padding: 24px 24px 28px;">
+          <div class="px-6 py-7">
             <WholesaleRequestForm @submitted="onSubmitted" />
           </div>
         </div>
 
         <!-- Trust badges -->
-        <div style="display:flex; flex-wrap:wrap; gap:10px; justify-content:center; margin-top:20px;">
+        <div class="flex flex-wrap gap-2.5 justify-center mt-5">
           <span v-for="badge in trustBadges" :key="badge"
-                style="font-size:11px; color:var(--color-text-secondary);
-                       background:var(--color-surface); border:1px solid var(--color-border);
-                       padding:4px 12px; border-radius:20px;">
+                class="text-xs text-text-secondary bg-surface border border-surface-border px-3 py-1 rounded-full">
             {{ badge }}
           </span>
         </div>
@@ -337,10 +265,14 @@ useSeoMeta({
 })
 
 // ── Static data ──────────────────────────────────────────────
+const IconPercent = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 14l6-6m-5.5.5h.01m4.99 5h.01M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16l3.5-2 3.5 2 3.5-2 3.5 2z"/></svg>` }
+const IconTruck   = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M5 17H3a2 2 0 01-2-2V5a2 2 0 012-2h11a2 2 0 012 2v3m0 0h3l3 4v3h-3m-3-7v7m0 0H8m0 0a2 2 0 100 4 2 2 0 000-4zm9 0a2 2 0 100 4 2 2 0 000-4z"/></svg>` }
+const IconSupport = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/></svg>` }
+
 const features = [
-  { icon: '💰', label: 'تا ۳۰٪ تخفیف',  sub: 'نسبت به قیمت خرده' },
-  { icon: '🚚', label: 'ارسال رایگان',   sub: 'برای سفارش‌های عمده' },
-  { icon: '🤝', label: 'پشتیبانی B2B',   sub: 'اختصاصی و سریع' },
+  { icon: IconPercent, label: 'تا ۳۰٪ تخفیف', sub: 'نسبت به قیمت خرده' },
+  { icon: IconTruck,   label: 'ارسال رایگان',  sub: 'برای سفارش‌های عمده' },
+  { icon: IconSupport, label: 'پشتیبانی B2B',  sub: 'اختصاصی و سریع' },
 ]
 const steps       = ['ثبت', 'بررسی', 'تأیید']
 const howItWorks  = ['فرم را تکمیل کنید', 'منتظر تأیید بمانید', 'با قیمت عمده بخرید']

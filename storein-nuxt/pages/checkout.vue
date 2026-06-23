@@ -1,6 +1,12 @@
 <template>
   <div class="container-main py-8 min-h-[70vh]">
 
+    <!-- Sticky mobile total bar (UXID-016) -->
+    <div v-if="checkoutItems.length" class="sticky top-14 z-10 lg:hidden bg-card border-b border-surface-border px-4 py-2.5 flex justify-between items-center text-sm shadow-sm -mx-4 mb-4">
+      <span class="text-text-secondary">مبلغ قابل پرداخت</span>
+      <span class="font-fanum font-black text-brand text-base">{{ formatPrice(checkoutTotal) }}</span>
+    </div>
+
     <!-- Stepper -->
     <div class="flex items-center justify-center gap-0 mb-10 select-none">
       <template v-for="(s, i) in steps" :key="s.key">
@@ -44,7 +50,7 @@
         </div>
 
         <!-- STEP 0: آدرس تحویل -->
-        <div v-show="currentStep === 0">
+        <div v-show="currentStep === 0" :inert="currentStep !== 0">
           <div class="rounded-2xl border border-surface-border p-5 space-y-4" style="background-color: var(--color-card)">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۱</span>
@@ -191,13 +197,13 @@
           <div class="flex justify-end mt-4">
             <button @click="goToStep(1)" :disabled="!selectedAddressId" class="btn-brand px-8 py-3 flex items-center gap-2 disabled:opacity-40">
               ادامه — بررسی سفارش
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+              <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
             </button>
           </div>
         </div>
 
         <!-- STEP 1: بررسی سفارش -->
-        <div v-show="currentStep === 1">
+        <div v-show="currentStep === 1" :inert="currentStep !== 1">
           <div class="rounded-2xl border border-surface-border p-5 space-y-4" style="background-color: var(--color-card)">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۲</span>
@@ -243,18 +249,18 @@
           </div>
           <div class="flex justify-between mt-4">
             <button @click="goToStep(0)" class="px-5 py-2.5 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
+              <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
               بازگشت
             </button>
             <button @click="goToStep(2)" class="btn-brand px-8 py-3 flex items-center gap-2">
               ادامه — پرداخت
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+              <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
             </button>
           </div>
         </div>
 
         <!-- STEP 2: روش پرداخت -->
-        <div v-show="currentStep === 2">
+        <div v-show="currentStep === 2" :inert="currentStep !== 2">
           <div class="rounded-2xl border border-surface-border p-5 space-y-5" style="background-color: var(--color-card)">
             <h2 class="font-bold text-text-primary text-base flex items-center gap-2">
               <span class="w-6 h-6 rounded-full bg-brand text-white text-xs flex items-center justify-center">۳</span>
@@ -301,12 +307,35 @@
                   <p class="text-text-secondary text-xs mt-0.5">بخشی از کیف پول، مابقی از درگاه</p>
                   <Transition name="expand">
                     <div v-if="paymentMethod === 'mixed'" class="mt-3 space-y-2">
-                      <label class="form-label text-xs">مبلغ از کیف پول (تومان)</label>
-                      <div class="flex items-center gap-3">
-                        <input type="range" v-model.number="walletAmount" :min="1" :max="walletBalance" :step="1000" class="flex-1 accent-brand" />
-                        <span class="font-fanum text-sm text-brand font-bold w-28 text-left">{{ formatPrice(walletAmount) }}</span>
+                      <label for="wallet-amount-input" class="form-label text-xs">مبلغ از کیف پول (تومان)</label>
+                      <div class="flex items-center gap-2">
+                        <button type="button" @click="walletAmount = Math.max(1, walletAmount - 10000)"
+                          class="w-9 h-9 rounded-lg border border-surface-border flex items-center justify-center text-text-primary hover:bg-surface transition-colors flex-shrink-0"
+                          aria-label="کاهش مبلغ کیف پول">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M20 12H4"/></svg>
+                        </button>
+                        <input
+                          id="wallet-amount-input"
+                          type="number"
+                          v-model.number="walletAmount"
+                          :min="1"
+                          :max="walletBalance"
+                          :step="10000"
+                          class="form-input flex-1 text-center font-fanum font-bold"
+                          dir="ltr"
+                          :aria-label="`مبلغ از کیف پول، حداکثر ${formatPrice(walletBalance)}`"
+                          :aria-valuenow="walletAmount"
+                          :aria-valuemin="1"
+                          :aria-valuemax="walletBalance"
+                          @change="walletAmount = Math.min(walletBalance, Math.max(1, walletAmount))"
+                        />
+                        <button type="button" @click="walletAmount = Math.min(walletBalance, walletAmount + 10000)"
+                          class="w-9 h-9 rounded-lg border border-surface-border flex items-center justify-center text-text-primary hover:bg-surface transition-colors flex-shrink-0"
+                          aria-label="افزایش مبلغ کیف پول">
+                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M12 4v16m8-8H4"/></svg>
+                        </button>
                       </div>
-                      <p class="text-xs text-text-secondary font-fanum">مابقی از درگاه: {{ formatPrice(checkoutTotal - walletAmount) }}</p>
+                      <p class="text-xs text-text-secondary font-fanum">مابقی از درگاه: <strong class="text-text-primary">{{ formatPrice(checkoutTotal - walletAmount) }}</strong></p>
                     </div>
                   </Transition>
                 </div>
@@ -315,7 +344,7 @@
           </div>
           <div class="flex justify-between mt-4">
             <button @click="goToStep(1)" class="px-5 py-2.5 rounded-xl border border-surface-border text-sm text-text-secondary hover:text-text-primary transition-colors flex items-center gap-2">
-              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
+              <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
               بازگشت
             </button>
             <button @click="placeOrder" :disabled="placing" class="btn-brand px-8 py-3 flex items-center gap-2 disabled:opacity-50">

@@ -1,7 +1,7 @@
 <template>
   <div class="container-main py-4">
 
-    <nav class="flex items-center gap-2 text-sm text-text-secondary mb-4">
+    <nav aria-label="مسیر صفحه" class="flex items-center gap-2 text-sm text-text-secondary mb-4">
       <NuxtLink to="/" class="hover:text-brand transition-colors">خانه</NuxtLink>
       <svg class="w-3 h-3 rotate-180 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>

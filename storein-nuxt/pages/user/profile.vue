@@ -13,17 +13,21 @@
           <span v-if="authStore.user?.isAdmin" class="text-xs bg-brand/10 text-brand px-3 py-1 rounded-full font-medium">ادمین</span>
         </div>
 
-        <nav class="rounded-2xl border border-surface-border overflow-hidden" style="background-color: var(--color-card)">
+        <nav aria-label="منوی حساب کاربری" class="rounded-2xl border border-surface-border overflow-hidden" style="background-color: var(--color-card)">
           <NuxtLink
             v-for="link in navLinks" :key="link.path"
             :to="link.path"
             class="flex items-center gap-3 px-4 py-3.5 text-sm border-b border-surface-border last:border-0 transition-colors"
             :class="$route.path === link.path ? 'text-brand bg-brand/5 font-medium' : 'text-text-secondary hover:text-text-primary hover:bg-surface'"
           >
-            <span class="text-base">{{ link.icon }}</span>{{ link.label }}
+            <component :is="link.icon" class="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+            {{ link.label }}
           </NuxtLink>
-          <button @click="handleLogout" class="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-error hover:bg-red-50/5 transition-colors">
-            <span class="text-base">🚪</span> خروج از حساب
+          <button @click="handleLogout" class="w-full flex items-center gap-3 px-4 py-3.5 text-sm text-error hover:bg-red-50 transition-colors">
+            <svg class="w-4 h-4 flex-shrink-0" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+            </svg>
+            خروج از حساب
           </button>
         </nav>
       </aside>
@@ -122,12 +126,19 @@ const initials = computed(() => {
   return '؟'
 })
 
+// SVG icon components for nav links (replaces emoji for cross-platform consistency)
+const IconUser = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>` }
+const IconBox  = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"/></svg>` }
+const IconHeart = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>` }
+const IconHome  = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>` }
+const IconBell  = { template: `<svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>` }
+
 const navLinks = [
-  { path: '/user/profile',       icon: '👤', label: 'اطلاعات شخصی' },
-  { path: '/user/orders',        icon: '📦', label: 'سفارش‌های من' },
-  { path: '/user/favorites',     icon: '❤️', label: 'علاقه‌مندی‌ها' },
-  { path: '/user/addresses',     icon: '🏠', label: 'آدرس‌های من' },
-  { path: '/user/notifications', icon: '🔔', label: 'اعلان‌ها' },
+  { path: '/user/profile',       icon: IconUser,  label: 'اطلاعات شخصی' },
+  { path: '/user/orders',        icon: IconBox,   label: 'سفارش‌های من' },
+  { path: '/user/favorites',     icon: IconHeart, label: 'علاقه‌مندی‌ها' },
+  { path: '/user/addresses',     icon: IconHome,  label: 'آدرس‌های من' },
+  { path: '/user/notifications', icon: IconBell,  label: 'اعلان‌ها' },
 ]
 
 onMounted(() => authStore.fetchProfile())

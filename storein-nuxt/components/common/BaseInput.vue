@@ -1,6 +1,6 @@
 <template>
   <div class="flex flex-col gap-1">
-    <label v-if="label" class="text-sm font-medium text-text-primary">{{ label }}</label>
+    <label v-if="label" :for="uid" class="text-sm font-medium text-text-primary">{{ label }}</label>
     <div class="relative flex items-center">
       <!-- Prepend slot: right side in RTL (reading start) -->
       <div
@@ -11,6 +11,7 @@
       </div>
       <input
         v-bind="$attrs"
+        :id="uid"
         :value="modelValue"
         :type="type"
         :placeholder="placeholder"
@@ -56,4 +57,6 @@ defineProps({
 })
 
 defineEmits(['update:modelValue', 'focus', 'blur', 'enter'])
+
+const uid = `input-${Math.random().toString(36).slice(2, 9)}`
 </script>
