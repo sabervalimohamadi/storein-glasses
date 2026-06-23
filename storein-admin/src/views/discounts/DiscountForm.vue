@@ -198,6 +198,24 @@
               {{ cat.name }}
             </label>
           </div>
+          <p v-if="!loadingCategories && !categories.length" class="text-xs text-text-disabled mt-2">دسته‌بندی‌ای یافت نشد</p>
+        </div>
+
+        <!-- Brands multi-select -->
+        <div v-if="form.targetType === 'brands'">
+          <div v-if="loadingBrands" class="text-xs text-text-disabled">در حال بارگذاری برندها...</div>
+          <div v-else class="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto border border-border rounded-lg p-3">
+            <label v-for="brand in brands" :key="brand._id"
+              class="flex items-center gap-2 text-sm cursor-pointer hover:text-primary">
+              <input type="checkbox" :value="brand._id" v-model="form.targetIds"
+                class="rounded" />
+              <img v-if="brand.logo" :src="brand.logo"
+                class="w-5 h-5 object-contain rounded border border-border flex-shrink-0"
+                @error="e => e.target.style.display='none'" />
+              {{ brand.name }}
+            </label>
+          </div>
+          <p v-if="!loadingBrands && !brands.length" class="text-xs text-text-disabled mt-2">برندی یافت نشد</p>
         </div>
       </div>
 
@@ -246,11 +264,12 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { discountService } from '@/services/discount.service'
 import { productService  } from '@/services/product.service'
 import { categoryService } from '@/services/category.service.js'
+import { brandService    } from '@/services/brand.service.js'
 import { useUiStore } from '@/stores/ui.store'
 import PersianDatePicker from '@/components/ui/PersianDatePicker.vue'
 
@@ -322,11 +341,10 @@ function removeProduct(id) {
 }
 
 // Categories
-const categories       = ref([])
+const categories        = ref([])
 const loadingCategories = ref(false)
 
 async function loadCategories() {
-  if (!categoryService) return
   loadingCategories.value = true
   try {
     const { data } = await categoryService.getAll({ limit: 200 })
@@ -334,11 +352,31 @@ async function loadCategories() {
   } finally { loadingCategories.value = false }
 }
 
+// Brands
+const brands        = ref([])
+const loadingBrands = ref(false)
+
+async function loadBrands() {
+  loadingBrands.value = true
+  try {
+    const { data } = await brandService.getAll()
+    brands.value = data?.brands ?? data ?? []
+  } finally { loadingBrands.value = false }
+}
+
 const targetOpts = [
   { value: 'all',        label: 'همه محصولات' },
   { value: 'products',   label: 'محصولات خاص' },
   { value: 'categories', label: 'دسته‌بندی' },
+  { value: 'brands',     label: 'برند' },
 ]
+
+watch(() => form.targetType, () => {
+  form.targetIds = []
+  selectedProducts.value = []
+  productResults.value   = []
+  productSearch.value    = ''
+})
 
 function validate() {
   let ok = true
@@ -427,7 +465,7 @@ async function loadEdit() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadEdit(), loadCategories()])
+  await Promise.all([loadEdit(), loadCategories(), loadBrands()])
 })
 </script>
 
