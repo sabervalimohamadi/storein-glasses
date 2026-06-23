@@ -1,10 +1,10 @@
 <template>
   <div class="container-main py-16 flex items-center justify-center min-h-[60vh]">
-    <div class="w-full max-w-md text-center">
+    <div class="w-full max-w-md text-center" aria-live="assertive" aria-atomic="true">
 
       <!-- Loading -->
-      <div v-if="verifying" class="space-y-4">
-        <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" />
+      <div v-if="verifying" class="space-y-4" role="status">
+        <div class="w-16 h-16 rounded-full border-4 border-brand/20 border-t-brand animate-spin mx-auto" aria-hidden="true" />
         <p class="text-text-secondary">در حال تأیید پرداخت...</p>
       </div>
 
@@ -21,8 +21,7 @@
           <p v-if="refId" class="text-text-disabled text-xs font-fanum mt-1">کد پیگیری: {{ refId }}</p>
         </div>
 
-        <div class="rounded-2xl border border-surface-border p-5 text-right space-y-3"
-             style="background-color: var(--color-card)">
+        <div class="rounded-2xl border border-surface-border p-5 text-right space-y-3 bg-card">
           <div class="flex justify-between text-sm">
             <span class="text-text-secondary">شماره سفارش</span>
             <span class="font-fanum text-text-primary font-medium">{{ orderNumber || '—' }}</span>

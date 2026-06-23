@@ -18,8 +18,12 @@
         style="background-color: var(--color-card); aspect-ratio: 1 / 1;"
         ref="mainContainer"
         @click="openLightbox"
+        @keydown.enter.prevent="openLightbox"
         @touchstart="onTouchStart"
         @touchend="onTouchEnd"
+        role="button"
+        tabindex="0"
+        :aria-label="`مشاهده تصویر بزرگ: ${name}`"
       >
         <Transition name="gallery-fade" mode="out-in">
           <img
@@ -35,17 +39,19 @@
         <template v-if="normalizedImages.length > 1">
           <button
             @click.stop="prev"
-            class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            class="hidden md:flex absolute top-1/2 right-3 -translate-y-1/2 w-11 h-11 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            aria-label="تصویر قبلی"
           >
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
             </svg>
           </button>
           <button
             @click.stop="next"
-            class="hidden md:flex absolute top-1/2 left-3 -translate-y-1/2 w-9 h-9 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            class="hidden md:flex absolute top-1/2 left-3 -translate-y-1/2 w-11 h-11 bg-black/30 hover:bg-black/50 shadow-card rounded-full items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity z-10"
+            aria-label="تصویر بعدی"
           >
-            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
             </svg>
           </button>
@@ -72,22 +78,35 @@
               ? 'border-brand shadow-sm scale-105'
               : 'border-surface-border hover:border-brand/50',
           ]"
+          :aria-label="`تصویر ${idx + 1}`"
+          :aria-pressed="activeIndex === idx"
         >
           <img :src="img.thumbnail || img.url" :alt="`تصویر ${idx + 1}`" class="w-full h-full object-contain p-1" />
         </button>
       </div>
 
       <!-- Mobile dot indicators -->
-      <div v-if="normalizedImages.length > 1" class="md:hidden flex justify-center gap-1.5 py-1">
+      <div v-if="normalizedImages.length > 1" class="md:hidden flex justify-center gap-1.5 py-1" role="tablist" :aria-label="`تصاویر ${name}`">
         <button
           v-for="(_, idx) in normalizedImages"
           :key="idx"
           @click="activeIndex = idx"
           :class="[
-            'rounded-full transition-all duration-200',
-            activeIndex === idx ? 'w-5 h-1.5 bg-brand' : 'w-1.5 h-1.5 bg-gray-300',
+            'rounded-full transition-all duration-200 flex-shrink-0',
+            activeIndex === idx ? 'w-5 h-[6px] bg-brand' : 'w-[6px] h-[6px] bg-gray-300',
           ]"
-        />
+          style="min-width: 44px; min-height: 44px; width: auto; height: auto; display: flex; align-items: center; justify-content: center; background: transparent;"
+          role="tab"
+          :aria-label="`تصویر ${idx + 1}`"
+          :aria-selected="activeIndex === idx"
+        >
+          <span
+            :class="[
+              'rounded-full transition-all duration-200 block',
+              activeIndex === idx ? 'w-5 h-1.5 bg-brand' : 'w-1.5 h-1.5 bg-gray-300',
+            ]"
+          />
+        </button>
       </div>
 
     </template>
@@ -101,13 +120,17 @@
         class="fixed inset-0 z-[999] flex items-center justify-center bg-black/90"
         @click.self="closeLightbox"
         @keydown.esc="closeLightbox"
-        tabindex="0"
+        tabindex="-1"
         ref="lightboxEl"
+        role="dialog"
+        aria-modal="true"
+        :aria-label="`تصاویر ${name}`"
       >
         <!-- Close button -->
         <button
           @click="closeLightbox"
-          class="absolute top-4 left-4 w-10 h-10 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          class="absolute top-4 left-4 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          aria-label="بستن تصویر"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
@@ -119,6 +142,7 @@
           v-if="normalizedImages.length > 1"
           @click="prev"
           class="absolute right-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          aria-label="تصویر قبلی"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
@@ -138,6 +162,7 @@
           v-if="normalizedImages.length > 1"
           @click="next"
           class="absolute left-4 top-1/2 -translate-y-1/2 w-11 h-11 flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition-colors z-10"
+          aria-label="تصویر بعدی"
         >
           <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>

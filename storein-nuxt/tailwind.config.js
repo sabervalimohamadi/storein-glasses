@@ -38,6 +38,8 @@ export default {
           light:   '#fef3c7',
           border:  'rgba(245,158,11,0.3)',
         },
+        card: 'var(--color-card)',
+        bg:   'var(--color-bg)',
         success: '#059669',
         warning: '#D97706',
         error:   '#DC2626',

@@ -339,8 +339,8 @@ if (!store.siteName) {
 
 /* ── Social icons ──────────────────────────────── */
 .social-icon {
-  width: 2.25rem;
-  height: 2.25rem;
+  width: 2.75rem;
+  height: 2.75rem;
   border-radius: 0.625rem;
   display: flex;
   align-items: center;
