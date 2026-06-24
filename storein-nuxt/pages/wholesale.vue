@@ -2,73 +2,6 @@
   <div class="bg-bg min-h-screen">
 
     <!-- ══════════════════════════════════════
-         HERO
-    ══════════════════════════════════════ -->
-    <section class="relative overflow-hidden"
-             style="background: linear-gradient(145deg, #06101f 0%, #0f2040 45%, #071628 100%);">
-
-      <!-- Ambient glow -->
-      <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
-        <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[100px] opacity-20"
-             style="background: radial-gradient(ellipse, #f59e0b 0%, #d97706 40%, transparent 75%);"/>
-        <div class="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full blur-3xl opacity-10"
-             style="background: radial-gradient(ellipse, #3b82f6 0%, transparent 70%);"/>
-        <div class="absolute inset-0 opacity-[0.03]"
-             style="background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:48px 48px;"/>
-      </div>
-
-      <div class="relative px-4 pt-16 pb-14 max-w-5xl mx-auto">
-        <div class="text-center max-w-3xl mx-auto">
-
-          <!-- B2B badge -->
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7 text-xs font-bold tracking-widest uppercase"
-               style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.28); color: #fbbf24;">
-            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true"/>
-            B2B · فروش عمده تخصصی
-          </div>
-
-          <h1 class="font-black text-white leading-tight mb-5"
-              style="font-size: clamp(2rem, 5.5vw, 3.2rem); letter-spacing: -0.01em;">
-            فروش عمده
-            <span class="relative inline-block ms-2">
-              <span style="background: linear-gradient(90deg, #f59e0b, #fde68a, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
-                {{ settingsStore.siteName }}
-              </span>
-              <span class="absolute -bottom-1 start-0 end-0 h-0.5 rounded-full opacity-60"
-                    style="background: linear-gradient(90deg, #f59e0b, #fde68a);" aria-hidden="true"/>
-            </span>
-          </h1>
-
-          <p class="text-white/55 leading-relaxed mb-12 text-base">
-            قیمت‌های ویژه عمده · حداقل سفارش مشخص · پشتیبانی اختصاصی B2B
-          </p>
-
-          <!-- Feature cards -->
-          <div class="grid grid-cols-3 gap-3 max-w-xl mx-auto">
-            <div v-for="f in features" :key="f.label"
-                 class="rounded-2xl px-3 py-4 text-center group cursor-default transition-transform hover:-translate-y-0.5"
-                 style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(4px);">
-              <div class="text-3xl mb-2.5 leading-none" aria-hidden="true">{{ f.emoji }}</div>
-              <div class="text-white text-xs font-bold leading-snug">{{ f.label }}</div>
-              <div class="text-white/35 text-[10px] mt-1 leading-relaxed">{{ f.sub }}</div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Stats strip -->
-        <div class="mt-12 grid grid-cols-3 max-w-lg mx-auto gap-px overflow-hidden rounded-2xl"
-             style="background: rgba(255,255,255,0.08);">
-          <div v-for="(s, i) in stats" :key="s.label"
-               class="flex flex-col items-center py-4 px-2"
-               :style="`background: rgba(255,255,255,0.03);`">
-            <div class="font-black text-xl font-fanum" style="color: #fbbf24;">{{ s.value }}</div>
-            <div class="text-white/40 text-[11px] mt-0.5 text-center leading-snug">{{ s.label }}</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <!-- ══════════════════════════════════════
          APPROVED — status strip
     ══════════════════════════════════════ -->
     <div v-if="wholesaleStatus?.isWholesale"
@@ -356,6 +289,74 @@
 
       </div>
     </div>
+
+    <!-- ══════════════════════════════════════
+         HERO (bottom)
+    ══════════════════════════════════════ -->
+    <section class="relative overflow-hidden"
+             style="background: linear-gradient(145deg, #06101f 0%, #0f2040 45%, #071628 100%);">
+
+      <!-- Ambient glow -->
+      <div class="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[800px] h-[500px] rounded-full blur-[100px] opacity-20"
+             style="background: radial-gradient(ellipse, #f59e0b 0%, #d97706 40%, transparent 75%);"/>
+        <div class="absolute bottom-0 right-0 w-[400px] h-[300px] rounded-full blur-3xl opacity-10"
+             style="background: radial-gradient(ellipse, #3b82f6 0%, transparent 70%);"/>
+        <div class="absolute inset-0 opacity-[0.03]"
+             style="background-image:linear-gradient(rgba(255,255,255,.6) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.6) 1px,transparent 1px);background-size:48px 48px;"/>
+      </div>
+
+      <div class="relative px-4 pt-16 pb-14 max-w-5xl mx-auto">
+        <div class="text-center max-w-3xl mx-auto">
+
+          <!-- B2B badge -->
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full mb-7 text-xs font-bold tracking-widest uppercase"
+               style="background: rgba(245,158,11,0.1); border: 1px solid rgba(245,158,11,0.28); color: #fbbf24;">
+            <span class="w-1.5 h-1.5 rounded-full bg-amber-400 animate-pulse" aria-hidden="true"/>
+            B2B · فروش عمده تخصصی
+          </div>
+
+          <h1 class="font-black text-white leading-tight mb-5"
+              style="font-size: clamp(2rem, 5.5vw, 3.2rem); letter-spacing: -0.01em;">
+            فروش عمده
+            <span class="relative inline-block ms-2">
+              <span style="background: linear-gradient(90deg, #f59e0b, #fde68a, #f59e0b); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                {{ settingsStore.siteName }}
+              </span>
+              <span class="absolute -bottom-1 start-0 end-0 h-0.5 rounded-full opacity-60"
+                    style="background: linear-gradient(90deg, #f59e0b, #fde68a);" aria-hidden="true"/>
+            </span>
+          </h1>
+
+          <p class="text-white/55 leading-relaxed mb-12 text-base">
+            قیمت‌های ویژه عمده · حداقل سفارش مشخص · پشتیبانی اختصاصی B2B
+          </p>
+
+          <!-- Feature cards -->
+          <div class="grid grid-cols-3 gap-3 max-w-xl mx-auto">
+            <div v-for="f in features" :key="f.label"
+                 class="rounded-2xl px-3 py-4 text-center group cursor-default transition-transform hover:-translate-y-0.5"
+                 style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); backdrop-filter: blur(4px);">
+              <div class="text-3xl mb-2.5 leading-none" aria-hidden="true">{{ f.emoji }}</div>
+              <div class="text-white text-xs font-bold leading-snug">{{ f.label }}</div>
+              <div class="text-white/35 text-[10px] mt-1 leading-relaxed">{{ f.sub }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Stats strip -->
+        <div class="mt-12 grid grid-cols-3 max-w-lg mx-auto gap-px overflow-hidden rounded-2xl"
+             style="background: rgba(255,255,255,0.08);">
+          <div v-for="(s, i) in stats" :key="s.label"
+               class="flex flex-col items-center py-4 px-2"
+               :style="`background: rgba(255,255,255,0.03);`">
+            <div class="font-black text-xl font-fanum" style="color: #fbbf24;">{{ s.value }}</div>
+            <div class="text-white/40 text-[11px] mt-0.5 text-center leading-snug">{{ s.label }}</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
   </div>
 </template>
 
