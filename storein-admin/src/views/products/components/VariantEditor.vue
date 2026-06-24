@@ -43,21 +43,21 @@
           <div>
             <label class="field-label">قیمت فروش (تومان) <span class="text-error">*</span></label>
             <PriceInput
-              v-model="variant.comparePrice"
-              placeholder="2500000"
-              :class="['field-input text-left', errors?.[idx]?.comparePrice ? 'border-error' : '']"
+              v-model="variant.price"
+              placeholder="2125000"
+              :class="['field-input text-left', errors?.[idx]?.price ? 'border-error' : '']"
             />
-            <p v-if="errors?.[idx]?.comparePrice" class="field-error">{{ errors[idx].comparePrice }}</p>
+            <p v-if="errors?.[idx]?.price" class="field-error">{{ errors[idx].price }}</p>
           </div>
           <div>
             <label class="field-label">قیمت خرید (تومان)</label>
             <PriceInput
-              v-model="variant.price"
-              placeholder="1800000"
+              v-model="variant.comparePrice"
+              placeholder="1500000"
               class="field-input text-left"
             />
-            <p v-if="variant.price > 0 && variant.comparePrice > 0 && variant.price > variant.comparePrice"
-               class="text-warning text-xs mt-1">قیمت خرید از قیمت فروش بیشتر است</p>
+            <p v-if="variant.comparePrice > 0 && variant.comparePrice >= variant.price"
+               class="text-warning text-xs mt-1">قیمت خرید باید از قیمت فروش کمتر باشد</p>
           </div>
           <div>
             <label class="field-label">موجودی <span class="text-error">*</span></label>
