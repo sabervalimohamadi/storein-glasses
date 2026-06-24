@@ -24,178 +24,170 @@
     <!-- ══════════════════════════════════════
          APPROVED — browse (category + brands)
     ══════════════════════════════════════ -->
-    <div v-if="wholesaleStatus?.isWholesale && view === 'browse'" class="container-main py-8">
+    <div v-if="wholesaleStatus?.isWholesale && view === 'browse'">
 
-      <!-- Page title -->
-      <div class="mb-8 text-center">
-        <h1 class="text-2xl font-black text-text-primary mb-1">کاتالوگ عمده</h1>
-        <p class="text-sm text-text-secondary">دسته‌بندی مورد نظر را انتخاب کنید</p>
-      </div>
-
-      <!-- ── Category Carousel ── -->
-      <div class="relative mb-10">
-        <!-- Scroll fade: right -->
-        <div class="pointer-events-none absolute top-0 bottom-0 end-10 w-10 z-10"
-             style="background: linear-gradient(to left, var(--color-bg) 0%, transparent 100%);" aria-hidden="true"/>
-        <!-- Scroll fade: left -->
-        <div class="pointer-events-none absolute top-0 bottom-0 start-10 w-10 z-10"
-             style="background: linear-gradient(to right, var(--color-bg) 0%, transparent 100%);" aria-hidden="true"/>
-
-        <!-- Arrow: end -->
-        <button
-          v-show="canScrollRight"
-          class="absolute end-0 top-9 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
-          style="background: var(--color-card); border: 1.5px solid var(--color-border);"
-          @click="scrollCats('right')"
-          aria-label="بعدی"
-        >
-          <svg class="w-4 h-4 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-          </svg>
-        </button>
-
-        <!-- Arrow: start -->
-        <button
-          v-show="canScrollLeft"
-          class="absolute start-0 top-9 z-20 w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
-          style="background: var(--color-card); border: 1.5px solid var(--color-border);"
-          @click="scrollCats('left')"
-          aria-label="قبلی"
-        >
-          <svg class="w-4 h-4 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-          </svg>
-        </button>
-
-        <!-- Scrollable strip -->
-        <div
-          ref="catStripRef"
-          class="overflow-x-auto scrollbar-none flex gap-4 px-10 py-2"
-          @scroll="onCatScroll"
-        >
-          <!-- All -->
-          <button
-            class="flex flex-col items-center gap-2.5 shrink-0 group"
-            @click="selectCategory(null)"
-          >
-            <div
-              class="w-[68px] h-[68px] rounded-full flex items-center justify-center transition-all duration-200 text-2xl"
-              :class="!selectedCategory ? 'scale-105' : 'hover:scale-105'"
-              :style="!selectedCategory
-                ? 'background: linear-gradient(135deg, var(--color-brand), var(--color-brand-dark,#4f46e5)); box-shadow: 0 6px 20px rgba(var(--color-brand-rgb,79,70,229),.35); outline: 3px solid var(--color-brand); outline-offset: 3px;'
-                : 'background: var(--color-surface); border: 2px solid var(--color-border);'"
-            >
-              <span>🏪</span>
+      <!-- ── Hero header ── -->
+      <div class="relative overflow-hidden border-b" style="border-color:var(--color-border);">
+        <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
+             style="background:radial-gradient(ellipse 80% 120% at 80% -20%,rgba(124,58,237,0.10) 0%,transparent 60%);"/>
+        <div class="absolute inset-0 pointer-events-none opacity-[0.025]" aria-hidden="true"
+             style="background-image:linear-gradient(var(--color-border) 1px,transparent 1px),linear-gradient(90deg,var(--color-border) 1px,transparent 1px);background-size:32px 32px;"/>
+        <div class="relative container-main py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 class="text-2xl font-black text-text-primary leading-tight">کاتالوگ عمده</h1>
+            <p class="text-sm text-text-secondary mt-1">دسته‌بندی و برند مورد نظر را انتخاب کنید</p>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap">
+            <div v-for="s in stats" :key="s.label"
+                 class="flex items-center gap-2 px-3.5 py-2 rounded-xl border"
+                 style="background:var(--color-card); border-color:var(--color-border);">
+              <span class="font-black text-brand text-sm font-fanum">{{ s.value }}</span>
+              <span class="text-text-secondary text-[11px]">{{ s.label }}</span>
             </div>
-            <span
-              class="text-[11px] font-bold leading-tight text-center max-w-[72px] transition-colors"
-              :class="!selectedCategory ? 'text-brand' : 'text-text-secondary group-hover:text-text-primary'"
-            >همه</span>
-          </button>
-
-          <!-- Category items -->
-          <button
-            v-for="cat in categories"
-            :key="cat._id"
-            class="flex flex-col items-center gap-2.5 shrink-0 group"
-            @click="selectCategory(cat)"
-          >
-            <div
-              class="w-[68px] h-[68px] rounded-full overflow-hidden transition-all duration-200 flex items-center justify-center"
-              :class="selectedCategory?._id === cat._id ? 'scale-105' : 'hover:scale-105'"
-              :style="selectedCategory?._id === cat._id
-                ? 'box-shadow: 0 6px 20px rgba(var(--color-brand-rgb,79,70,229),.30); outline: 3px solid var(--color-brand); outline-offset: 3px;'
-                : 'border: 2px solid var(--color-border);'"
-            >
-              <img
-                v-if="cat.icon || cat.image"
-                :src="cat.icon || cat.image"
-                :alt="cat.name"
-                class="w-full h-full object-cover"
-              />
-              <span v-else class="text-2xl">📦</span>
-            </div>
-            <span
-              class="text-[11px] font-bold leading-tight text-center max-w-[72px] line-clamp-2 transition-colors"
-              :class="selectedCategory?._id === cat._id ? 'text-brand' : 'text-text-secondary group-hover:text-text-primary'"
-            >{{ cat.name }}</span>
-          </button>
+          </div>
         </div>
       </div>
 
-      <!-- ── Brands section ── -->
-      <div>
-        <div class="flex items-center justify-between mb-5 gap-3">
+      <!-- ── Categories ── -->
+      <div class="border-b" style="border-color:var(--color-border); background:var(--color-card);">
+        <div class="container-main py-5">
+          <p class="text-[10px] font-black text-text-secondary/50 tracking-widest uppercase mb-3">دسته‌بندی</p>
+
+          <div class="relative">
+            <!-- Fade: end -->
+            <div class="pointer-events-none absolute top-0 bottom-0 end-8 w-12 z-10"
+                 style="background:linear-gradient(to left,var(--color-card) 0%,transparent 100%);" aria-hidden="true"/>
+            <!-- Fade: start -->
+            <div class="pointer-events-none absolute top-0 bottom-0 start-8 w-12 z-10"
+                 style="background:linear-gradient(to right,var(--color-card) 0%,transparent 100%);" aria-hidden="true"/>
+
+            <!-- Arrow end -->
+            <button v-show="canScrollRight"
+              class="absolute end-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
+              style="background:var(--color-bg); border:1.5px solid var(--color-border);"
+              @click="scrollCats('right')" aria-label="بعدی">
+              <svg class="w-3 h-3 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+            <!-- Arrow start -->
+            <button v-show="canScrollLeft"
+              class="absolute start-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
+              style="background:var(--color-bg); border:1.5px solid var(--color-border);"
+              @click="scrollCats('left')" aria-label="قبلی">
+              <svg class="w-3 h-3 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+
+            <!-- Strip -->
+            <div ref="catStripRef"
+                 class="overflow-x-auto scrollbar-none flex gap-2 px-9"
+                 @scroll="onCatScroll">
+
+              <!-- All -->
+              <button class="shrink-0 group" @click="selectCategory(null)">
+                <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group-active:scale-95"
+                     :style="!selectedCategory
+                       ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 4px 14px rgba(124,58,237,0.4);'
+                       : 'background:var(--color-surface); border:1.5px solid var(--color-border);'">
+                  <span class="text-lg leading-none">🏪</span>
+                  <span class="text-xs font-bold whitespace-nowrap"
+                        :class="!selectedCategory ? 'text-white' : 'text-text-primary'">همه</span>
+                </div>
+              </button>
+
+              <!-- Category pills -->
+              <button v-for="cat in categories" :key="cat._id"
+                      class="shrink-0 group" @click="selectCategory(cat)">
+                <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group-active:scale-95"
+                     :style="selectedCategory?._id === cat._id
+                       ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 4px 14px rgba(124,58,237,0.4);'
+                       : 'background:var(--color-surface); border:1.5px solid var(--color-border);'">
+                  <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
+                       :style="selectedCategory?._id === cat._id ? '' : 'background:var(--color-border);'">
+                    <img v-if="cat.icon || cat.image" :src="cat.icon || cat.image" :alt="cat.name"
+                         class="w-full h-full object-cover"/>
+                    <span v-else class="text-sm">📦</span>
+                  </div>
+                  <span class="text-xs font-bold whitespace-nowrap"
+                        :class="selectedCategory?._id === cat._id ? 'text-white' : 'text-text-primary'">{{ cat.name }}</span>
+                </div>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Brands ── -->
+      <div class="container-main py-8">
+
+        <!-- Header row -->
+        <div class="flex items-center justify-between gap-3 mb-6">
           <div>
-            <h2 class="text-base font-black text-text-primary">
+            <h2 class="text-lg font-black text-text-primary">
               {{ selectedCategory ? `برندهای ${selectedCategory.name}` : 'همه برندها' }}
             </h2>
             <p class="text-xs text-text-secondary mt-0.5">{{ displayedBrands.length }} برند موجود</p>
           </div>
-          <div class="relative w-44 hidden sm:block shrink-0">
-            <svg class="absolute top-1/2 -translate-y-1/2 end-3 w-3.5 h-3.5 pointer-events-none text-text-secondary"
+          <div class="relative shrink-0">
+            <svg class="absolute top-1/2 -translate-y-1/2 end-3 w-3.5 h-3.5 pointer-events-none text-text-secondary/50"
                  fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
             </svg>
-            <input
-              v-model="brandSearch"
-              type="search"
-              placeholder="جستجوی برند..."
-              class="w-full pe-9 ps-3 py-1.5 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-              style="border-color: var(--color-border); background: var(--color-surface);"
-            />
+            <input v-model="brandSearch" type="search" placeholder="جستجوی برند..."
+                   class="w-40 sm:w-52 pe-9 ps-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+                   style="border-color:var(--color-border); background:var(--color-surface);"/>
           </div>
         </div>
 
         <!-- Skeleton -->
-        <div v-if="brandsLoading" class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          <div v-for="n in 12" :key="n"
-               class="rounded-2xl animate-pulse"
-               style="background: var(--color-surface); aspect-ratio: 7/4;"/>
+        <div v-if="brandsLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <div v-for="n in 10" :key="n" class="rounded-2xl animate-pulse"
+               style="aspect-ratio:4/3; background:var(--color-surface);"/>
         </div>
 
         <!-- Empty -->
         <div v-else-if="displayedBrands.length === 0"
-             class="flex flex-col items-center py-16 text-center">
-          <div class="text-5xl mb-4">🏷️</div>
-          <p class="font-bold text-text-primary mb-1">برندی یافت نشد</p>
-          <p class="text-sm text-text-secondary">در این دسته‌بندی برند فعالی موجود نیست</p>
+             class="flex flex-col items-center py-24 text-center">
+          <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-5"
+               style="background:var(--color-surface);">🏷️</div>
+          <p class="font-black text-text-primary mb-1.5">برندی یافت نشد</p>
+          <p class="text-sm text-text-secondary">در این دسته‌بندی برندی موجود نیست</p>
         </div>
 
         <!-- Brand grid -->
-        <div v-else class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 lg:grid-cols-6 gap-3">
-          <button
-            v-for="brand in displayedBrands"
-            :key="brand._id ?? brand.slug"
-            class="group relative rounded-2xl overflow-hidden flex flex-col items-center justify-center gap-2 p-3 transition-all duration-200 hover:shadow-xl hover:-translate-y-1 active:scale-95"
-            style="aspect-ratio: 7/4; background: var(--color-card); border: 1.5px solid var(--color-border);"
-            @click="selectBrand(brand)"
-          >
-            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none rounded-2xl"
-                 style="box-shadow: inset 0 0 0 1.5px var(--color-brand);" aria-hidden="true"/>
+        <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+          <button v-for="brand in displayedBrands" :key="brand._id ?? brand.slug"
+                  class="group relative rounded-2xl overflow-hidden transition-all duration-250 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95"
+                  style="aspect-ratio:4/3; background:var(--color-card); border:1.5px solid var(--color-border);"
+                  @click="selectBrand(brand)">
 
-            <div class="flex-1 w-full flex items-center justify-center">
-              <img
-                v-if="brand.logo"
-                :src="brand.logo"
-                :alt="brand.name"
-                class="max-h-9 max-w-full object-contain transition-transform duration-200 group-hover:scale-105"
-              />
-              <span
-                v-else
-                class="font-black text-center leading-tight transition-colors group-hover:text-brand"
-                style="font-size: clamp(11px, 2.5vw, 16px); color: var(--color-text-primary);"
-              >{{ brand.name }}</span>
+            <!-- Hover glow border -->
+            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+                 style="box-shadow:inset 0 0 0 1.5px var(--color-brand), 0 0 32px rgba(124,58,237,0.15);" aria-hidden="true"/>
+
+            <!-- Subtle bg pattern -->
+            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                 aria-hidden="true"
+                 style="background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,0.06) 0%,transparent 70%);"/>
+
+            <!-- Logo / name -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
+              <img v-if="brand.logo" :src="brand.logo" :alt="brand.name"
+                   class="max-h-14 max-w-[75%] object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-sm"/>
+              <span v-else class="font-black text-center text-text-primary leading-tight transition-colors group-hover:text-brand"
+                    style="font-size:clamp(13px,2.5vw,19px);">{{ brand.name }}</span>
+              <p v-if="brand.logo"
+                 class="text-[10px] font-semibold text-text-secondary group-hover:text-brand/80 transition-colors text-center w-full truncate leading-none">
+                {{ brand.name }}
+              </p>
             </div>
 
-            <p v-if="brand.logo"
-               class="text-[10px] font-bold text-text-secondary group-hover:text-brand transition-colors text-center w-full truncate leading-none">
-              {{ brand.name }}
-            </p>
-
-            <div class="absolute top-2 end-2 opacity-0 group-hover:opacity-100 transition-all translate-x-1 group-hover:translate-x-0">
-              <div class="w-5 h-5 rounded-full flex items-center justify-center" style="background: var(--color-brand);">
-                <svg class="w-2.5 h-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+            <!-- Arrow chip -->
+            <div class="absolute top-2.5 end-2.5 z-20 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 -translate-y-1 group-hover:translate-y-0">
+              <div class="w-6 h-6 rounded-full flex items-center justify-center shadow-lg" style="background:var(--color-brand);">
+                <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
                 </svg>
               </div>
