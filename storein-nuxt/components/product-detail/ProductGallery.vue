@@ -182,7 +182,7 @@
 </template>
 
 <script setup>
-import { ref, computed, nextTick } from 'vue'
+import { ref, computed, nextTick, watch } from 'vue'
 import BaseSkeleton from '~/components/common/BaseSkeleton.vue'
 import { PRODUCT_PLACEHOLDER } from '~/utils/constants'
 
@@ -196,6 +196,9 @@ const activeIndex   = ref(0)
 const mainContainer = ref(null)
 const lightboxOpen  = ref(false)
 const lightboxEl    = ref(null)
+
+// Reset to first image whenever the image set changes (e.g. variant selection)
+watch(() => props.images, () => { activeIndex.value = 0 })
 
 function normalizeImg(img) {
   if (!img) return { url: PRODUCT_PLACEHOLDER, thumbnail: PRODUCT_PLACEHOLDER }

@@ -155,7 +155,8 @@
                       @change="onPriceInput('min', $event)"
                       class="w-full border border-surface-border rounded-lg px-3 py-2
                              text-sm text-center font-fanum focus:border-brand
-                             focus:ring-1 focus:ring-brand/20 outline-none"
+                             focus:ring-1 focus:ring-brand/20 outline-none
+                             bg-surface text-text-primary placeholder:text-text-secondary"
                     />
                   </div>
                   <div class="flex-1">
@@ -168,7 +169,8 @@
                       @change="onPriceInput('max', $event)"
                       class="w-full border border-surface-border rounded-lg px-3 py-2
                              text-sm text-center font-fanum focus:border-brand
-                             focus:ring-1 focus:ring-brand/20 outline-none"
+                             focus:ring-1 focus:ring-brand/20 outline-none
+                             bg-surface text-text-primary placeholder:text-text-secondary"
                     />
                   </div>
                 </div>

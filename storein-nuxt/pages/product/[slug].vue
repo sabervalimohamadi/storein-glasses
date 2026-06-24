@@ -24,7 +24,7 @@
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
       <ProductGallery
         ref="galleryRef"
-        :images="product?.images || []"
+        :images="displayImages"
         :name="product?.name || ''"
         :loading="pending"
       />
@@ -204,6 +204,13 @@ const fetchActiveDiscountEndDate = async () => {
 const isInStock = computed(() =>
   selectedVariant.value ? selectedVariant.value.stock > 0 : (product.value?.totalStock ?? 0) > 0
 )
+
+// Images shown in gallery: variant-specific if assigned, else all product images
+const displayImages = computed(() => {
+  const variantImgs = selectedVariant.value?.images
+  if (variantImgs?.length) return variantImgs
+  return product.value?.images || []
+})
 
 // Re-init variant on SPA slug navigation
 watch(slug, () => { selectedVariant.value = product.value?.variants?.[0] || null })

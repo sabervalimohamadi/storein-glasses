@@ -95,6 +95,7 @@
             :errors="variantErrors"
             :frame-shapes="FRAME_SHAPE_OPTS"
             :frame-materials="FRAME_MATERIAL_OPTS"
+            :product-images="productImageUrls"
           />
           <p v-if="errors.variants" class="text-error text-xs mt-2">{{ errors.variants }}</p>
         </div>
@@ -350,8 +351,10 @@ const form = reactive({
   discountPct: 0,
 })
 
-// When discountPct changes, recalculate comparePrice on all variants
+// When discountPct changes, recalculate comparePrice on all variants.
+// Guard: skip during fillForm so server-loaded comparePrices are not overwritten.
 watch(() => form.discountPct, (pct) => {
+  if (_fillingForm) return
   const p = Math.max(0, Math.min(90, Number(pct) || 0))
   form.variants.forEach(v => {
     v.comparePrice = p > 0 && v.price > 0
@@ -367,6 +370,7 @@ const variantErrors = ref({})
 const isDirty       = ref(false)
 const savedRecently = ref(false)
 let   _savedTimer   = null
+let   _fillingForm  = false
 
 watch(form, () => { isDirty.value = true }, { deep: true })
 
@@ -376,6 +380,13 @@ function markSaved() {
   clearTimeout(_savedTimer)
   _savedTimer = setTimeout(() => { savedRecently.value = false }, 3000)
 }
+
+// Normalized URL strings for VariantEditor image assignment
+const productImageUrls = computed(() =>
+  form.images
+    .map(img => img?.original?.url || img?.url || (typeof img === 'string' ? img : null))
+    .filter(Boolean)
+)
 
 const categoryOptions = computed(() =>
   categories.value.map(c => ({ value: c._id, label: c.name }))
@@ -455,6 +466,7 @@ function buildDto(statusOverride) {
       stock:           Number(v.stock),
       wholesalePrice:  v.wholesalePrice > 0 ? Number(v.wholesalePrice) : null,
       wholesaleMinQty: Number(v.wholesaleMinQty) > 0 ? Number(v.wholesaleMinQty) : 10,
+      images:          Array.isArray(v.images) ? v.images.filter(Boolean) : [],
       attributes:   Object.entries(v.attributes || {})
         .filter(([k, val]) => k && val)
         .map(([key, value]) => ({ key: String(key), value: String(value) })),
@@ -517,6 +529,7 @@ async function publish() {
 
 // ── Fill form from product ────────────────────────
 function fillForm(p) {
+  _fillingForm = true
   form.name        = p.name        ?? ''
   form.slug        = p.slug        ?? ''
   form.description = p.description ?? ''
@@ -546,14 +559,19 @@ function fillForm(p) {
         stock:           v.stock           ?? 0,
         wholesalePrice:  v.wholesalePrice  ?? null,
         wholesaleMinQty: v.wholesaleMinQty ?? 10,
+        images:          v.images          ?? [],
         attributes:   Array.isArray(v.attributes)
           ? Object.fromEntries(v.attributes.map(a => [a.key, a.value]))
           : (v.attributes ?? {}),
       }))
     : [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }]
 
-  // Reset dirty tracking after watchers have fired (nextTick ensures watcher runs first)
-  nextTick(() => { isDirty.value = false; savedRecently.value = false })
+  // nextTick runs after all queued watchers — reset flags then
+  nextTick(() => {
+    _fillingForm = false
+    isDirty.value = false
+    savedRecently.value = false
+  })
 }
 
 // ── Lifecycle ─────────────────────────────────────

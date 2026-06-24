@@ -475,4 +475,61 @@ describe('ProductService', () => {
       expect(sortCall).toEqual({ soldCount: -1 });
     });
   });
+
+  describe('variant images', () => {
+    it('passes variant images through to the model on create', async () => {
+      const variantImages = ['https://cdn.example.com/v1.jpg', 'https://cdn.example.com/v2.jpg'];
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({
+        ...mockProduct({ variants: [mockVariant({ images: variantImages })] }),
+        toObject: () => mockProduct({ variants: [mockVariant({ images: variantImages })] }),
+      });
+
+      await service.create({
+        name: 'محصول با عکس تنوع',
+        category: catId,
+        variants: [{ sku: 'SKU-001', price: 10_000_000, stock: 5, images: variantImages }],
+      });
+
+      expect(model.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variants: expect.arrayContaining([
+            expect.objectContaining({ images: variantImages }),
+          ]),
+        }),
+      );
+    });
+
+    it('stores variant images on addVariant', async () => {
+      const prod = mockProduct({ variants: [] });
+      model.findById.mockResolvedValue(prod);
+      const variantImages = ['https://cdn.example.com/v-img.jpg'];
+
+      await service.addVariant(prodId, {
+        sku: 'SKU-IMG', price: 10_000_000, stock: 2, images: variantImages,
+      });
+
+      expect(prod.variants[0]).toMatchObject({ images: variantImages });
+      expect(prod.save).toHaveBeenCalled();
+    });
+
+    it('defaults to empty array when variant has no images', async () => {
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({
+        ...mockProduct(),
+        toObject: () => mockProduct(),
+      });
+
+      await service.create({
+        name: 'محصول بدون عکس تنوع',
+        category: catId,
+        variants: [{ sku: 'SKU-001', price: 10_000_000, stock: 5 }],
+      });
+
+      // images field absent from DTO → no images key passed to model.create
+      const createCall = model.create.mock.calls[0][0];
+      const variant = createCall.variants?.[0];
+      expect(variant?.images).toBeUndefined();
+    });
+  });
 });

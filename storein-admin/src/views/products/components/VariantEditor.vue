@@ -89,6 +89,54 @@
           </div>
         </div>
 
+        <!-- Variant Images -->
+        <div v-if="productImages.length" class="mb-4">
+          <div class="flex items-center justify-between mb-2">
+            <label class="field-label mb-0 flex items-center gap-1.5">
+              <svg class="w-3.5 h-3.5 text-text-secondary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="3" y="3" width="18" height="18" rx="2" stroke-linecap="round"/>
+                <path stroke-linecap="round" d="M3 15l5-5 4 4 3-3 6 4"/>
+              </svg>
+              تصاویر این تنوع
+            </label>
+            <span v-if="!variant.images?.length" class="text-xs text-text-disabled italic">
+              همه تصاویر محصول (پیش‌فرض)
+            </span>
+            <button v-else type="button" @click="clearVariantImages(idx)"
+              class="text-xs text-error hover:underline transition-colors">
+              پاک کردن انتخاب
+            </button>
+          </div>
+          <div class="flex flex-wrap gap-2">
+            <button
+              v-for="(imgUrl, imgIdx) in productImages"
+              :key="imgIdx"
+              type="button"
+              @click="toggleVariantImage(idx, imgUrl)"
+              :class="[
+                'relative w-16 h-16 rounded-xl overflow-hidden border-2 transition-all duration-150 flex-shrink-0',
+                isImageSelected(variant, imgUrl)
+                  ? 'border-primary ring-2 ring-primary/20 shadow-sm'
+                  : 'border-border opacity-50 hover:opacity-90 hover:border-border/70',
+              ]"
+              :aria-label="`تصویر ${imgIdx + 1}`"
+            >
+              <img :src="imgUrl" :alt="`تصویر ${imgIdx + 1}`"
+                class="w-full h-full object-contain p-1" />
+              <Transition name="check-fade">
+                <div v-if="isImageSelected(variant, imgUrl)"
+                  class="absolute inset-0 bg-primary/15 flex items-center justify-center">
+                  <div class="w-5 h-5 rounded-full bg-primary flex items-center justify-center shadow-sm">
+                    <svg class="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 20 20">
+                      <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                    </svg>
+                  </div>
+                </div>
+              </Transition>
+            </button>
+          </div>
+        </div>
+
         <!-- Attributes -->
         <div>
           <label class="field-label mb-2">ویژگی‌های این تنوع</label>
@@ -307,6 +355,7 @@ const props = defineProps({
   errors:         { type: Object, default: () => ({}) },
   frameShapes:    { type: Array,  default: () => [] },
   frameMaterials: { type: Array,  default: () => [] },
+  productImages:  { type: Array,  default: () => [] },
 })
 const emit = defineEmits(['update:modelValue'])
 
@@ -370,16 +419,40 @@ onMounted(async () => {
 })
 onBeforeUnmount(() => document.removeEventListener('click', closeOnOutside))
 
+// ── Variant image helpers ──────────────────────────────────
+function isImageSelected(variant, url) {
+  return variant.images?.includes(url) ?? false
+}
+
+function toggleVariantImage(variantIdx, url) {
+  const updated = props.modelValue.map((v, i) => {
+    if (i !== variantIdx) return v
+    const images = v.images ? [...v.images] : []
+    const pos = images.indexOf(url)
+    if (pos === -1) images.push(url)
+    else images.splice(pos, 1)
+    return { ...v, images }
+  })
+  emit('update:modelValue', updated)
+}
+
+function clearVariantImages(variantIdx) {
+  const updated = props.modelValue.map((v, i) =>
+    i === variantIdx ? { ...v, images: [] } : v
+  )
+  emit('update:modelValue', updated)
+}
+
 // ── Variant helpers ────────────────────────────────────────
 function newVariant() {
-  return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }
+  return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10, images: [] }
 }
 function addVariant() {
   emit('update:modelValue', [...props.modelValue, newVariant()])
 }
 function duplicateVariant(idx) {
   const src = props.modelValue[idx]
-  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, stock: src.stock, attributes: { ...src.attributes }, wholesalePrice: src.wholesalePrice ?? null, wholesaleMinQty: src.wholesaleMinQty ?? 10 }
+  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, stock: src.stock, attributes: { ...src.attributes }, wholesalePrice: src.wholesalePrice ?? null, wholesaleMinQty: src.wholesaleMinQty ?? 10, images: [...(src.images ?? [])] }
   const updated = [...props.modelValue]
   updated.splice(idx + 1, 0, copy)
   emit('update:modelValue', updated)
@@ -417,3 +490,10 @@ function renameAttrKey(variantIdx, oldKey, newKey) {
   emit('update:modelValue', updated)
 }
 </script>
+
+<style scoped>
+.check-fade-enter-active,
+.check-fade-leave-active { transition: opacity 0.15s ease; }
+.check-fade-enter-from,
+.check-fade-leave-to     { opacity: 0; }
+</style>
