@@ -42,15 +42,20 @@
           </div>
           <div>
             <label class="field-label">قیمت (تومان) <span class="text-error">*</span></label>
-            <input v-model.number="variant.price" type="number" min="0" step="1000" dir="ltr"
-                   placeholder="2125000"
-                   :class="['field-input text-left', errors?.[idx]?.price ? 'border-error' : '']" />
+            <PriceInput
+              v-model="variant.price"
+              placeholder="2125000"
+              :class="['field-input text-left', errors?.[idx]?.price ? 'border-error' : '']"
+            />
             <p v-if="errors?.[idx]?.price" class="field-error">{{ errors[idx].price }}</p>
           </div>
           <div>
             <label class="field-label">قیمت اصلی (تومان)</label>
-            <input v-model.number="variant.comparePrice" type="number" min="0" step="1000" dir="ltr"
-                   placeholder="2500000" class="field-input text-left" />
+            <PriceInput
+              v-model="variant.comparePrice"
+              placeholder="2500000"
+              class="field-input text-left"
+            />
             <p v-if="variant.comparePrice > 0 && variant.comparePrice <= variant.price"
                class="text-warning text-xs mt-1">باید از قیمت فروش بیشتر باشد</p>
           </div>
@@ -69,9 +74,11 @@
           <div class="grid grid-cols-2 gap-3">
             <div>
               <label class="field-label text-amber-700 dark:text-amber-400">قیمت عمده (تومان)</label>
-              <input v-model.number="variant.wholesalePrice" type="number" min="0" step="1000" dir="ltr"
-                     placeholder="0 = غیرفعال"
-                     class="field-input text-left" />
+              <PriceInput
+                v-model="variant.wholesalePrice"
+                placeholder="0"
+                class="field-input text-left"
+              />
             </div>
             <div>
               <label class="field-label text-amber-700 dark:text-amber-400">حداقل تعداد عمده</label>
@@ -293,6 +300,7 @@
 <script setup>
 import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
 import { colorService } from '@/services/color.service'
+import PriceInput from '@/components/ui/PriceInput.vue'
 
 const props = defineProps({
   modelValue:     { type: Array,  default: () => [] },
