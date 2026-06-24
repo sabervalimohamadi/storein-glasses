@@ -424,7 +424,7 @@ function validate(targetStatus) {
   if (targetStatus === 'active') {
     form.variants.forEach((v, idx) => {
       const ve = {}
-      if (!v.price || v.price <= 0) ve.price = 'قیمت الزامی است'
+      if (!v.comparePrice || v.comparePrice <= 0) ve.comparePrice = 'قیمت فروش الزامی است'
       if (v.stock < 0)              ve.stock = 'موجودی نمی‌تواند منفی باشد'
       if (Object.keys(ve).length)   variantErrors.value[idx] = ve
     })
