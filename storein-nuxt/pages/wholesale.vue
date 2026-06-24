@@ -26,109 +26,76 @@
     ══════════════════════════════════════ -->
     <div v-if="wholesaleStatus?.isWholesale && view === 'browse'">
 
-      <!-- ── Hero header ── -->
-      <div class="relative overflow-hidden border-b" style="border-color:var(--color-border);">
-        <div class="absolute inset-0 pointer-events-none" aria-hidden="true"
-             style="background:radial-gradient(ellipse 80% 120% at 80% -20%,rgba(124,58,237,0.10) 0%,transparent 60%);"/>
-        <div class="absolute inset-0 pointer-events-none opacity-[0.025]" aria-hidden="true"
-             style="background-image:linear-gradient(var(--color-border) 1px,transparent 1px),linear-gradient(90deg,var(--color-border) 1px,transparent 1px);background-size:32px 32px;"/>
-        <div class="relative container-main py-7 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 class="text-2xl font-black text-text-primary leading-tight">کاتالوگ عمده</h1>
-            <p class="text-sm text-text-secondary mt-1">دسته‌بندی و برند مورد نظر را انتخاب کنید</p>
+      <!-- ── Full-width hero ── -->
+      <div class="relative overflow-hidden py-12 px-4 text-center"
+           style="background:linear-gradient(160deg,#0c0c1d 0%,#10103a 50%,#0c0c1d 100%);">
+        <!-- Grid pattern -->
+        <div class="absolute inset-0 pointer-events-none opacity-[0.07]" aria-hidden="true"
+             style="background-image:linear-gradient(rgba(124,58,237,1) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,1) 1px,transparent 1px);background-size:48px 48px;"/>
+        <!-- Glow -->
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-40 blur-[80px] opacity-25 pointer-events-none"
+             aria-hidden="true"
+             style="background:radial-gradient(ellipse,#7c3aed 0%,transparent 70%);"/>
+        <div class="relative z-10">
+          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
+               style="background:rgba(124,58,237,0.18); border:1px solid rgba(124,58,237,0.35); color:#c4b5fd;">
+            <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true"/>
+            B2B · فروش عمده تخصصی
           </div>
-          <div class="flex items-center gap-2 flex-wrap">
+          <h1 class="text-3xl sm:text-4xl font-black text-white mb-2 leading-tight">کاتالوگ عمده</h1>
+          <p class="text-white/40 text-sm mb-8">برند یا دسته‌بندی مورد نظر را انتخاب کنید</p>
+          <!-- Stats row -->
+          <div class="flex items-center justify-center gap-3 flex-wrap">
             <div v-for="s in stats" :key="s.label"
-                 class="flex items-center gap-2 px-3.5 py-2 rounded-xl border"
-                 style="background:var(--color-card); border-color:var(--color-border);">
-              <span class="font-black text-brand text-sm font-fanum">{{ s.value }}</span>
-              <span class="text-text-secondary text-[11px]">{{ s.label }}</span>
+                 class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
+                 style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);">
+              <span class="font-black text-violet-300 font-fanum">{{ s.value }}</span>
+              <span class="text-white/40">{{ s.label }}</span>
             </div>
           </div>
         </div>
       </div>
 
-      <!-- ── Categories ── -->
-      <div class="border-b" style="border-color:var(--color-border); background:var(--color-card);">
-        <div class="container-main py-5">
-          <p class="text-[10px] font-black text-text-secondary/50 tracking-widest uppercase mb-3">دسته‌بندی</p>
+      <!-- ── Categories — centered wrap ── -->
+      <div class="py-6 border-b" style="background:var(--color-card); border-color:var(--color-border);">
+        <p class="text-center text-[10px] font-black text-text-secondary/40 tracking-[0.2em] uppercase mb-4">دسته‌بندی</p>
+        <div class="flex flex-wrap justify-center gap-2.5 px-4">
 
-          <div class="relative">
-            <!-- Fade: end -->
-            <div class="pointer-events-none absolute top-0 bottom-0 end-8 w-12 z-10"
-                 style="background:linear-gradient(to left,var(--color-card) 0%,transparent 100%);" aria-hidden="true"/>
-            <!-- Fade: start -->
-            <div class="pointer-events-none absolute top-0 bottom-0 start-8 w-12 z-10"
-                 style="background:linear-gradient(to right,var(--color-card) 0%,transparent 100%);" aria-hidden="true"/>
+          <!-- All -->
+          <button @click="selectCategory(null)"
+                  class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
+                  :style="!selectedCategory
+                    ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(124,58,237,0.45);'
+                    : 'background:var(--color-surface); border:1.5px solid var(--color-border); color:var(--color-text-primary);'">
+            <span class="text-lg leading-none">🏪</span>
+            <span>همه برندها</span>
+          </button>
 
-            <!-- Arrow end -->
-            <button v-show="canScrollRight"
-              class="absolute end-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
-              style="background:var(--color-bg); border:1.5px solid var(--color-border);"
-              @click="scrollCats('right')" aria-label="بعدی">
-              <svg class="w-3 h-3 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-            <!-- Arrow start -->
-            <button v-show="canScrollLeft"
-              class="absolute start-0 top-1/2 -translate-y-1/2 z-20 w-7 h-7 rounded-full flex items-center justify-center transition-all hover:scale-110 active:scale-95 shadow-md"
-              style="background:var(--color-bg); border:1.5px solid var(--color-border);"
-              @click="scrollCats('left')" aria-label="قبلی">
-              <svg class="w-3 h-3 text-text-primary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
-
-            <!-- Strip -->
-            <div ref="catStripRef"
-                 class="overflow-x-auto scrollbar-none flex gap-2 px-9"
-                 @scroll="onCatScroll">
-
-              <!-- All -->
-              <button class="shrink-0 group" @click="selectCategory(null)">
-                <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group-active:scale-95"
-                     :style="!selectedCategory
-                       ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 4px 14px rgba(124,58,237,0.4);'
-                       : 'background:var(--color-surface); border:1.5px solid var(--color-border);'">
-                  <span class="text-lg leading-none">🏪</span>
-                  <span class="text-xs font-bold whitespace-nowrap"
-                        :class="!selectedCategory ? 'text-white' : 'text-text-primary'">همه</span>
-                </div>
-              </button>
-
-              <!-- Category pills -->
-              <button v-for="cat in categories" :key="cat._id"
-                      class="shrink-0 group" @click="selectCategory(cat)">
-                <div class="flex items-center gap-2 px-4 py-2.5 rounded-xl transition-all duration-200 group-active:scale-95"
-                     :style="selectedCategory?._id === cat._id
-                       ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 4px 14px rgba(124,58,237,0.4);'
-                       : 'background:var(--color-surface); border:1.5px solid var(--color-border);'">
-                  <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0 flex items-center justify-center"
-                       :style="selectedCategory?._id === cat._id ? '' : 'background:var(--color-border);'">
-                    <img v-if="cat.icon || cat.image" :src="cat.icon || cat.image" :alt="cat.name"
-                         class="w-full h-full object-cover"/>
-                    <span v-else class="text-sm">📦</span>
-                  </div>
-                  <span class="text-xs font-bold whitespace-nowrap"
-                        :class="selectedCategory?._id === cat._id ? 'text-white' : 'text-text-primary'">{{ cat.name }}</span>
-                </div>
-              </button>
+          <!-- Category pills -->
+          <button v-for="cat in categories" :key="cat._id"
+                  @click="selectCategory(cat)"
+                  class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
+                  :style="selectedCategory?._id === cat._id
+                    ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(124,58,237,0.45);'
+                    : 'background:var(--color-surface); border:1.5px solid var(--color-border); color:var(--color-text-primary);'">
+            <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-black/10">
+              <img v-if="cat.icon || cat.image" :src="cat.icon || cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
+              <span v-else class="text-sm">📦</span>
             </div>
-          </div>
+            <span>{{ cat.name }}</span>
+          </button>
         </div>
       </div>
 
       <!-- ── Brands ── -->
-      <div class="container-main py-8">
-
-        <!-- Header row -->
-        <div class="flex items-center justify-between gap-3 mb-6">
+      <div class="py-10 px-4">
+        <!-- Header + search -->
+        <div class="max-w-6xl mx-auto flex items-center justify-between gap-4 mb-7">
           <div>
-            <h2 class="text-lg font-black text-text-primary">
+            <h2 class="text-xl font-black text-text-primary">
               {{ selectedCategory ? `برندهای ${selectedCategory.name}` : 'همه برندها' }}
             </h2>
-            <p class="text-xs text-text-secondary mt-0.5">{{ displayedBrands.length }} برند موجود</p>
+            <p class="text-xs text-text-secondary mt-0.5">{{ displayedBrands.length }} برند</p>
           </div>
           <div class="relative shrink-0">
             <svg class="absolute top-1/2 -translate-y-1/2 end-3 w-3.5 h-3.5 pointer-events-none text-text-secondary/50"
@@ -136,15 +103,16 @@
               <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
             </svg>
             <input v-model="brandSearch" type="search" placeholder="جستجوی برند..."
-                   class="w-40 sm:w-52 pe-9 ps-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
+                   class="w-44 pe-9 ps-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
                    style="border-color:var(--color-border); background:var(--color-surface);"/>
           </div>
         </div>
 
         <!-- Skeleton -->
-        <div v-if="brandsLoading" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          <div v-for="n in 10" :key="n" class="rounded-2xl animate-pulse"
-               style="aspect-ratio:4/3; background:var(--color-surface);"/>
+        <div v-if="brandsLoading" class="max-w-6xl mx-auto grid gap-4"
+             style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
+          <div v-for="n in 8" :key="n" class="rounded-2xl animate-pulse"
+               style="aspect-ratio:3/2; background:var(--color-surface);"/>
         </div>
 
         <!-- Empty -->
@@ -152,46 +120,47 @@
              class="flex flex-col items-center py-24 text-center">
           <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-5"
                style="background:var(--color-surface);">🏷️</div>
-          <p class="font-black text-text-primary mb-1.5">برندی یافت نشد</p>
-          <p class="text-sm text-text-secondary">در این دسته‌بندی برندی موجود نیست</p>
+          <p class="font-black text-text-primary mb-1">برندی یافت نشد</p>
+          <p class="text-sm text-text-secondary">دسته‌بندی دیگری انتخاب کنید</p>
         </div>
 
-        <!-- Brand grid -->
-        <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <!-- Brand grid — auto-fill, centered -->
+        <div v-else class="max-w-6xl mx-auto grid gap-4"
+             style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
           <button v-for="brand in displayedBrands" :key="brand._id ?? brand.slug"
-                  class="group relative rounded-2xl overflow-hidden transition-all duration-250 hover:-translate-y-1.5 hover:shadow-2xl active:scale-95"
-                  style="aspect-ratio:4/3; background:var(--color-card); border:1.5px solid var(--color-border);"
-                  @click="selectBrand(brand)">
+                  @click="selectBrand(brand)"
+                  class="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl active:scale-[0.97]"
+                  style="aspect-ratio:3/2; background:var(--color-card); border:1.5px solid var(--color-border);">
 
-            <!-- Hover glow border -->
-            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
-                 style="box-shadow:inset 0 0 0 1.5px var(--color-brand), 0 0 32px rgba(124,58,237,0.15);" aria-hidden="true"/>
-
-            <!-- Subtle bg pattern -->
+            <!-- Ambient glow on hover -->
             <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
                  aria-hidden="true"
-                 style="background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,0.06) 0%,transparent 70%);"/>
+                 style="background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,0.08) 0%,transparent 70%);"/>
 
             <!-- Logo / name -->
-            <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4">
+            <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-5">
               <img v-if="brand.logo" :src="brand.logo" :alt="brand.name"
-                   class="max-h-14 max-w-[75%] object-contain transition-transform duration-300 group-hover:scale-110 drop-shadow-sm"/>
-              <span v-else class="font-black text-center text-text-primary leading-tight transition-colors group-hover:text-brand"
-                    style="font-size:clamp(13px,2.5vw,19px);">{{ brand.name }}</span>
-              <p v-if="brand.logo"
-                 class="text-[10px] font-semibold text-text-secondary group-hover:text-brand/80 transition-colors text-center w-full truncate leading-none">
+                   class="max-h-14 max-w-[80%] object-contain transition-transform duration-300 group-hover:scale-110"/>
+              <span v-else class="font-black text-center leading-tight transition-colors group-hover:text-brand"
+                    style="font-size:clamp(15px,3vw,22px); color:var(--color-text-primary);">{{ brand.name }}</span>
+              <span v-if="brand.logo"
+                    class="text-[11px] font-semibold text-text-secondary/60 group-hover:text-brand/80 transition-colors">
                 {{ brand.name }}
-              </p>
+              </span>
             </div>
 
-            <!-- Arrow chip -->
-            <div class="absolute top-2.5 end-2.5 z-20 opacity-0 group-hover:opacity-100 transition-all scale-75 group-hover:scale-100 -translate-y-1 group-hover:translate-y-0">
-              <div class="w-6 h-6 rounded-full flex items-center justify-center shadow-lg" style="background:var(--color-brand);">
-                <svg class="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-                </svg>
-              </div>
+            <!-- Hover bottom bar -->
+            <div class="absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-200"
+                 style="background:linear-gradient(to top,rgba(109,28,217,0.95),rgba(109,28,217,0.7));">
+              <span class="text-white text-xs font-bold truncate">{{ brand.name }}</span>
+              <svg class="w-3.5 h-3.5 text-white/80 shrink-0 ms-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
             </div>
+
+            <!-- Focus border -->
+            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+                 style="box-shadow:inset 0 0 0 2px #7c3aed;" aria-hidden="true"/>
           </button>
         </div>
       </div>
