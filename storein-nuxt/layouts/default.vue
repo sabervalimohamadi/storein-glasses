@@ -19,11 +19,12 @@
     <BaseToast />
     <SitePopup />
     <NotificationConsentModal v-model="showConsentModal" />
+    <AppPwaInstall />
   </div>
 </template>
 
 <script setup>
-import { ref, watch, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import AnnouncementBar          from '~/components/layout/AnnouncementBar.vue'
 import AppHeader                from '~/components/layout/AppHeader.vue'
 import AppFooter                from '~/components/layout/AppFooter.vue'
@@ -32,11 +33,11 @@ import AppMobileDrawer          from '~/components/layout/AppMobileDrawer.vue'
 import BaseToast                from '~/components/common/BaseToast.vue'
 import SitePopup                from '~/components/common/SitePopup.vue'
 import NotificationConsentModal from '~/components/common/NotificationConsentModal.vue'
+import AppPwaInstall            from '~/components/AppPwaInstall.vue'
 import { useNotificationPermission } from '~/composables/useNotificationPermission'
 
-const CONSENT_DELAY_MS = 30_000
+const CONSENT_DELAY_MS = 5_000
 
-const auth       = useAuthStore()
 const { canAsk } = useNotificationPermission()
 
 const showConsentModal = ref(false)
@@ -56,11 +57,7 @@ function cancelConsent() {
   showConsentModal.value = false
 }
 
-watch(
-  () => auth.isLoggedIn,
-  (loggedIn) => { if (loggedIn) scheduleConsent(); else cancelConsent() },
-  { immediate: true },
-)
-
+// Show notification permission prompt to all visitors after 5 seconds
+onMounted(() => scheduleConsent())
 onUnmounted(cancelConsent)
 </script>

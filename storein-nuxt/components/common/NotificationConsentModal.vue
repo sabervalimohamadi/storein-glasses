@@ -19,16 +19,16 @@
           <div class="flex flex-col items-center text-center gap-3 pt-1">
             <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-3xl">🔔</div>
             <div>
-              <p class="font-bold text-text-primary text-base">اطلاع‌رسانی سفارش</p>
+              <p class="font-bold text-text-primary text-base">اطلاع‌رسانی‌های استورین</p>
               <p class="text-text-secondary text-sm mt-1 leading-relaxed">
-                می‌خوای وقتی سفارشت تغییر وضعیت داد بهت خبر بدیم؟
+                می‌خوای از جدیدترین تخفیف‌ها، پیشنهادهای ویژه و وضعیت سفارشت باخبر بشی؟
               </p>
             </div>
           </div>
 
           <div class="flex flex-col gap-2.5">
             <button class="btn-brand w-full py-3 rounded-xl text-sm font-medium" @click="handleYes">
-              بله، خبرم کن
+              بله، موافقم
             </button>
             <button
               class="w-full py-3 rounded-xl text-sm text-text-secondary border border-surface-border hover:border-brand/40 hover:text-text-primary transition-colors"
