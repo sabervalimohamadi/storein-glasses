@@ -301,6 +301,13 @@
     </div>
 
     <!-- ══════════════════════════════════════
+         LOADING — while fetching status
+    ══════════════════════════════════════ -->
+    <div v-else-if="statusLoading" class="flex justify-center items-center py-40">
+      <div class="w-10 h-10 rounded-full border-4 border-brand/20 border-t-brand animate-spin" aria-label="در حال بارگذاری..."/>
+    </div>
+
+    <!-- ══════════════════════════════════════
          NON-APPROVED — benefits + form
     ══════════════════════════════════════ -->
     <div v-else-if="!wholesaleStatus?.isWholesale">
@@ -529,13 +536,18 @@ const trustBadges = ['🔒 اطلاعات محفوظ', '⚡ بررسی تا ۲۴
 const view = ref('browse')
 
 const wholesaleStatus = ref(null)
+const statusLoading   = ref(auth.isLoggedIn)
 
 onMounted(async () => {
   if (!auth.isLoggedIn) return
   try {
     const { data } = await http.get('/users/me/wholesale-status')
     wholesaleStatus.value = data
-  } catch {}
+  } catch {
+    wholesaleStatus.value = {}
+  } finally {
+    statusLoading.value = false
+  }
 })
 
 function onSubmitted() {
