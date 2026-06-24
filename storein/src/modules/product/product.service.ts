@@ -361,6 +361,40 @@ export class ProductService {
     }
   }
 
+  async duplicate(id: string): Promise<ProductDocument> {
+    if (!Types.ObjectId.isValid(id))
+      throw new BadRequestException('شناسه معتبر نیست');
+
+    const src = await this.productModel.findById(id).lean<ProductDocument>();
+    if (!src) throw new NotFoundException('محصول یافت نشد');
+
+    const baseSlug = await this.uniqueSlug(`${(src as any).slug}-copy`);
+
+    const { _id, __v, createdAt, updatedAt, ...rest } = src as any;
+
+    // Clear SKUs on variants to avoid duplicate-SKU constraint
+    const variants = (rest.variants ?? []).map((v: any) => {
+      const { _id: _vid, ...vRest } = v;
+      return { ...vRest, sku: '' };
+    });
+
+    const doc = {
+      ...rest,
+      slug:   baseSlug,
+      name:   `${rest.name} (کپی)`,
+      status: 'draft',
+      variants,
+      viewCount: 0,
+      soldCount: 0,
+      avgRating: 0,
+      reviewCount: 0,
+    };
+
+    const created = await this.productModel.create(doc);
+    this.logger.log('Product duplicated', { src: id, new: (created._id as any).toString() });
+    return created.toObject();
+  }
+
   async update(id: string, dto: UpdateProductDto): Promise<ProductDocument> {
     if (!Types.ObjectId.isValid(id))
       throw new BadRequestException('شناسه معتبر نیست');

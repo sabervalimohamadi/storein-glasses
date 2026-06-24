@@ -67,6 +67,12 @@ export class ProductController {
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
+  @Post(':id/duplicate')
+  duplicate(@Param('id') id: string) {
+    return this.productService.duplicate(id);
+  }
+
+  @UseGuards(JwtAuthGuard, AdminGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.productService.remove(id);

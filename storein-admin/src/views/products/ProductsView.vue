@@ -26,15 +26,6 @@
     <div class="admin-card p-0 overflow-hidden">
       <AdminTable :columns="columns" :rows="products" :loading="loading" :skeleton-rows="10" empty-text="محصولی یافت نشد">
 
-        <!-- Checkbox -->
-        <template #cell-select="{ row }">
-          <input type="checkbox"
-            :checked="selectedIds.has(row._id)"
-            @change="toggleSelect(row)"
-            class="w-4 h-4 rounded accent-primary cursor-pointer"
-            @click.stop />
-        </template>
-
         <!-- Image + name -->
         <template #cell-name="{ row }">
           <div class="flex items-center gap-3">
@@ -150,6 +141,19 @@
                 <path stroke-linecap="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
               </svg>
             </button>
+            <button @click="duplicateProduct(row)"
+              :disabled="duplicatingId === row._id"
+              class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-40"
+              title="کپی محصول">
+              <svg v-if="duplicatingId === row._id" class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+              </svg>
+              <svg v-else class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <rect x="9" y="9" width="13" height="13" rx="2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+              </svg>
+            </button>
             <RouterLink :to="{ name: 'product-edit', params: { id: row._id } }"
               class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
               title="ویرایش">
@@ -234,44 +238,6 @@
       </div>
     </Teleport>
 
-    <!-- Bulk action bar -->
-    <Transition name="bulk-bar">
-      <div v-if="selectedIds.size > 0"
-        class="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3
-               bg-slate-900 dark:bg-slate-800 text-white px-5 py-3 rounded-2xl shadow-2xl border border-white/10">
-        <span class="font-fanum text-sm font-medium">
-          {{ selectedIds.size }} محصول انتخاب شده
-        </span>
-        <div class="w-px h-5 bg-white/20" />
-        <button @click="selectAll"
-          class="text-sm text-blue-300 hover:text-white transition-colors">
-          انتخاب همه صفحه
-        </button>
-        <div class="w-px h-5 bg-white/20" />
-        <button @click="bulkModal = true"
-          class="flex items-center gap-1.5 text-sm bg-primary hover:bg-primary/90 text-white px-3 py-1.5 rounded-xl transition-colors font-medium">
-          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z"/>
-          </svg>
-          تخفیف گروهی
-        </button>
-        <button @click="clearSelection"
-          class="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-white/10 transition-colors text-white/60 hover:text-white">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
-            <path stroke-linecap="round" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </div>
-    </Transition>
-
-    <!-- Bulk discount modal -->
-    <BulkDiscountModal
-      v-model="bulkModal"
-      :initial-products="selectedProducts"
-      :categories="categories"
-      :brands="brands"
-      @applied="onBulkApplied"
-    />
 
     <!-- Product detail modal -->
     <ProductDetailModal
@@ -295,6 +261,7 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { productService }  from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService }    from '@/services/brand.service'
@@ -302,15 +269,15 @@ import { useUiStore }      from '@/stores/ui.store'
 import { formatPrice, formatNumber } from '@/utils/formatters'
 import { ITEMS_PER_PAGE } from '@/utils/constants'
 
-import ProductFilters    from './components/ProductFilters.vue'
-import BulkDiscountModal from './components/BulkDiscountModal.vue'
+import ProductFilters     from './components/ProductFilters.vue'
 import ProductDetailModal from './components/ProductDetailModal.vue'
-import AdminTable        from '@/components/common/AdminTable.vue'
-import AdminButton       from '@/components/common/AdminButton.vue'
-import AdminPagination   from '@/components/common/AdminPagination.vue'
-import AdminConfirm      from '@/components/common/AdminConfirm.vue'
+import AdminTable         from '@/components/common/AdminTable.vue'
+import AdminButton        from '@/components/common/AdminButton.vue'
+import AdminPagination    from '@/components/common/AdminPagination.vue'
+import AdminConfirm       from '@/components/common/AdminConfirm.vue'
 
-const ui = useUiStore()
+const ui     = useUiStore()
+const router = useRouter()
 
 // SVG shown inside the image container when the image URL fails to load
 const noImagePlaceholder = `<svg class="w-6 h-6" style="color:#CBD5E1" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M6.75 7.5h.008v.008H6.75V7.5zm10.5 0h.008v.008h-.008V7.5zM3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z"/></svg>`
@@ -326,40 +293,20 @@ const deleteDialog  = ref({ open: false, product: null, loading: false })
 const discountModal = ref({ open: false, product: null, pct: 0, loading: false })
 const detailModal   = ref({ open: false, productId: null })
 
-// ── Bulk select ───────────────────────────────────
-const selectedIds      = ref(new Set())
-const selectedProducts = ref([])
-const bulkModal        = ref(false)
+// ── Duplicate ─────────────────────────────────────
+const duplicatingId = ref(null)
 
-function toggleSelect(row) {
-  if (selectedIds.value.has(row._id)) {
-    selectedIds.value.delete(row._id)
-    selectedProducts.value = selectedProducts.value.filter(p => p._id !== row._id)
-  } else {
-    selectedIds.value.add(row._id)
-    selectedProducts.value.push(row)
+async function duplicateProduct(row) {
+  duplicatingId.value = row._id
+  try {
+    const { data } = await productService.duplicate(row._id)
+    ui.addToast(`کپی «${row.name}» ساخته شد`, 'success')
+    router.push({ name: 'product-edit', params: { id: data._id } })
+  } catch {
+    ui.addToast('خطا در کپی محصول', 'error')
+  } finally {
+    duplicatingId.value = null
   }
-  selectedIds.value = new Set(selectedIds.value)
-}
-
-function selectAll() {
-  products.value.forEach(p => {
-    if (!selectedIds.value.has(p._id)) {
-      selectedIds.value.add(p._id)
-      selectedProducts.value.push(p)
-    }
-  })
-  selectedIds.value = new Set(selectedIds.value)
-}
-
-function clearSelection() {
-  selectedIds.value      = new Set()
-  selectedProducts.value = []
-}
-
-function onBulkApplied() {
-  fetchProducts()
-  clearSelection()
 }
 
 function openDetail(row) {
@@ -369,14 +316,13 @@ function openDetail(row) {
 const totalPages = computed(() => Math.ceil(total.value / ITEMS_PER_PAGE))
 
 const columns = [
-  { key: 'select',     label: '',            width: '44px',  align: 'center' },
   { key: 'name',       label: 'نام محصول',  width: '260px' },
   { key: 'category',   label: 'دسته‌بندی',  width: '110px' },
   { key: 'minPrice',   label: 'قیمت',        width: '130px', align: 'center' },
   { key: 'discount',   label: 'تخفیف',       width: '120px', align: 'center' },
   { key: 'totalStock', label: 'موجودی',      width: '90px',  align: 'center', sortable: true },
   { key: 'status',     label: 'وضعیت',       width: '110px', align: 'center' },
-  { key: 'actions',    label: '',            width: '112px', align: 'center' },
+  { key: 'actions',    label: '',            width: '144px', align: 'center' },
 ]
 
 async function fetchProducts() {
@@ -551,12 +497,3 @@ function statusSelectClass(status) {
 onMounted(() => Promise.allSettled([fetchProducts(), fetchCategories(), fetchBrands()]))
 </script>
 
-<style scoped>
-.bulk-bar-enter-active, .bulk-bar-leave-active {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-.bulk-bar-enter-from, .bulk-bar-leave-to {
-  opacity: 0;
-  transform: translateX(-50%) translateY(16px);
-}
-</style>
