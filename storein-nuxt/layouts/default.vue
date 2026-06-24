@@ -36,7 +36,7 @@ import NotificationConsentModal from '~/components/common/NotificationConsentMod
 import AppPwaInstall            from '~/components/AppPwaInstall.vue'
 import { useNotificationPermission } from '~/composables/useNotificationPermission'
 
-const CONSENT_DELAY_MS = 5_000
+const CONSENT_DELAY_MS = 45_000
 
 const { canAsk } = useNotificationPermission()
 

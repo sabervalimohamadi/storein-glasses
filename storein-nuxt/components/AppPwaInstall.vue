@@ -19,7 +19,7 @@
           <p class="text-xs text-text-secondary mt-0.5 leading-relaxed">دسترسی سریع‌تر، بدون مرورگر</p>
         </div>
 
-        <!-- Install button + close -->
+        <!-- Install + close -->
         <div class="flex items-center gap-1.5 shrink-0">
           <button
             class="text-xs font-bold bg-brand text-white px-3 py-1.5 rounded-lg hover:bg-brand-dark active:scale-95 transition-all"
@@ -44,43 +44,65 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 
-const STORAGE_KEY = 'pwa_install_dismissed'
+const STORAGE_KEY  = 'pwa_install_dismissed'
+// Show banner 4 seconds after the install prompt is available — gives the user
+// a moment to browse before being interrupted.
+const SHOW_DELAY_MS = 4_000
 
 const visible = ref(false)
-let deferredPrompt = null
+let showTimer  = null
+
+function shouldShow() {
+  if (localStorage.getItem(STORAGE_KEY)) return false
+  if (window.matchMedia('(display-mode: standalone)').matches) return false
+  return true
+}
+
+function scheduleShow() {
+  if (!shouldShow() || !window._pwaPrompt) return
+  clearTimeout(showTimer)
+  showTimer = setTimeout(() => { visible.value = true }, SHOW_DELAY_MS)
+}
+
+function onPromptReady() {
+  scheduleShow()
+}
 
 onMounted(() => {
-  if (localStorage.getItem(STORAGE_KEY)) return
-  if (window.matchMedia('(display-mode: standalone)').matches) return
+  if (!shouldShow()) return
 
-  window.addEventListener('beforeinstallprompt', (e) => {
-    e.preventDefault()
-    deferredPrompt = e
-    visible.value = true
-  })
+  // Prompt may have already fired before this component mounted (plugin captures it early)
+  if (window._pwaPrompt) {
+    scheduleShow()
+    return
+  }
 
-  window.addEventListener('appinstalled', () => {
-    visible.value = false
-    localStorage.setItem(STORAGE_KEY, '1')
-    deferredPrompt = null
-  })
+  // Otherwise wait for the plugin to dispatch the custom event
+  window.addEventListener('pwa-install-ready', onPromptReady, { once: true })
+})
+
+onUnmounted(() => {
+  clearTimeout(showTimer)
+  window.removeEventListener('pwa-install-ready', onPromptReady)
 })
 
 async function install() {
-  if (!deferredPrompt) return
-  deferredPrompt.prompt()
-  const { outcome } = await deferredPrompt.userChoice
-  deferredPrompt = null
+  const prompt = window._pwaPrompt
+  if (!prompt) return
+  prompt.prompt()
+  const { outcome } = await prompt.userChoice
+  window._pwaPrompt = null
   visible.value = false
-  localStorage.setItem(STORAGE_KEY, '1')
+  if (outcome === 'accepted') localStorage.setItem(STORAGE_KEY, '1')
 }
 
 function dismiss() {
+  clearTimeout(showTimer)
   visible.value = false
   localStorage.setItem(STORAGE_KEY, '1')
-  deferredPrompt = null
+  window._pwaPrompt = null
 }
 </script>
 
