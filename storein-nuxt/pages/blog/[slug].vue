@@ -110,8 +110,8 @@ useHead({
     const p = post.value
     if (!p) return []
     const img = p.featuredImage ? (p.featuredImage.startsWith('http') ? p.featuredImage : `${config.public.siteUrl}${p.featuredImage}`) : null
-    return [{
-      type: 'application/ld+json', key: 'jsonld-blog',
+    const scripts = [{
+      type: 'application/ld+json', key: 'jsonld-article',
       innerHTML: JSON.stringify({
         '@context': 'https://schema.org', '@type': 'BlogPosting',
         headline: p.title, description: p.excerpt, image: img,
@@ -122,6 +122,20 @@ useHead({
         keywords: (p.tags || []).join(', '),
       }),
     }]
+    if (p.faq?.length) {
+      scripts.push({
+        type: 'application/ld+json', key: 'jsonld-faq',
+        innerHTML: JSON.stringify({
+          '@context': 'https://schema.org', '@type': 'FAQPage',
+          mainEntity: p.faq.map(item => ({
+            '@type': 'Question',
+            name: item.question,
+            acceptedAnswer: { '@type': 'Answer', text: item.answer },
+          })),
+        }),
+      })
+    }
+    return scripts
   }),
 })
 

@@ -122,9 +122,49 @@
             placeholder="خلاصه‌ای که در لیست بلاگ نمایش داده می‌شود..."
             maxlength="500"
           />
-          <p class="text-xs text-text-disabled mt-1 text-left dir-ltr">
-            {{ form.excerpt.length }} / 500
-          </p>
+          <p class="text-xs text-text-disabled mt-1 text-left dir-ltr">{{ form.excerpt.length }} / 500</p>
+        </div>
+
+        <!-- FAQ -->
+        <div class="admin-card">
+          <div class="flex items-center justify-between mb-3">
+            <div>
+              <h3 class="text-sm font-semibold text-text-primary">🙋 سوالات متداول (FAQ Schema)</h3>
+              <p class="text-xs text-text-disabled mt-0.5">در نتایج گوگل به عنوان Rich Result نمایش داده می‌شود</p>
+            </div>
+            <AdminButton variant="secondary" size="sm" @click="addFaq">+ سوال</AdminButton>
+          </div>
+
+          <div v-if="form.faq.length === 0"
+               class="text-center py-8 rounded-xl border-2 border-dashed border-border text-text-disabled text-sm">
+            هنوز سوالی اضافه نشده — روی «+ سوال» کلیک کنید
+          </div>
+
+          <div v-else class="space-y-3">
+            <div v-for="(item, i) in form.faq" :key="i"
+                 class="relative border border-border rounded-xl p-4">
+              <button
+                @click="removeFaq(i)"
+                class="absolute top-2 left-2 w-6 h-6 rounded-lg flex items-center justify-center text-xs text-text-secondary hover:bg-error/10 hover:text-error transition-colors"
+              >✕</button>
+              <label class="field-label mb-1 block">سوال {{ i + 1 }}</label>
+              <input
+                v-model="item.question"
+                type="text"
+                class="field-input w-full text-sm mb-3"
+                :placeholder="`سوال ${i + 1} را بنویسید...`"
+                dir="rtl"
+              />
+              <label class="field-label mb-1 block">پاسخ</label>
+              <textarea
+                v-model="item.answer"
+                rows="3"
+                class="field-input w-full text-sm resize-none"
+                placeholder="پاسخ کامل و جامع..."
+                dir="rtl"
+              />
+            </div>
+          </div>
         </div>
       </div>
 
@@ -202,14 +242,55 @@
           <p class="text-xs text-text-disabled mt-1">Enter یا کاما برای افزودن</p>
         </div>
 
-        <!-- SEO preview -->
-        <div class="admin-card bg-surface">
-          <h3 class="text-sm font-semibold text-text-primary mb-3">پیش‌نمایش سئو</h3>
-          <div class="space-y-1">
-            <p class="text-info text-sm font-medium line-clamp-1">{{ form.title || 'عنوان پست' }}</p>
-            <p class="text-success text-xs font-mono">{{ siteUrl }}/blog/{{ form.slug || 'post-slug' }}</p>
-            <p class="text-text-secondary text-xs line-clamp-2">
-              {{ form.excerpt || 'توضیح کوتاه از محتوای پست در اینجا نمایش داده می‌شود...' }}
+        <!-- SEO settings -->
+        <div class="admin-card">
+          <h3 class="text-sm font-semibold text-text-primary mb-4">🔍 تنظیمات سئو</h3>
+
+          <div class="mb-3">
+            <label class="field-label">عنوان سئو <span class="text-text-disabled font-normal">(اختیاری)</span></label>
+            <input
+              v-model="form.metaTitle"
+              type="text"
+              maxlength="70"
+              class="field-input w-full mt-1 text-sm"
+              placeholder="اگر خالی باشد، عنوان پست استفاده می‌شود"
+              dir="rtl"
+            />
+            <div class="flex justify-between mt-1">
+              <p class="text-xs text-text-disabled">بهترین طول: ۵۰–۶۰ کاراکتر</p>
+              <p class="text-xs" :class="form.metaTitle.length > 60 ? 'text-warning' : 'text-text-disabled'">
+                {{ form.metaTitle.length }} / 70
+              </p>
+            </div>
+          </div>
+
+          <div class="mb-4">
+            <label class="field-label">توضیح متا <span class="text-text-disabled font-normal">(اختیاری)</span></label>
+            <textarea
+              v-model="form.metaDescription"
+              maxlength="160"
+              rows="3"
+              class="field-input w-full mt-1 text-sm resize-none"
+              placeholder="اگر خالی باشد، خلاصه پست استفاده می‌شود"
+              dir="rtl"
+            />
+            <div class="flex justify-between mt-1">
+              <p class="text-xs text-text-disabled">بهترین طول: ۱۲۰–۱۵۸ کاراکتر</p>
+              <p class="text-xs" :class="form.metaDescription.length > 158 ? 'text-warning' : 'text-text-disabled'">
+                {{ form.metaDescription.length }} / 160
+              </p>
+            </div>
+          </div>
+
+          <!-- Google preview -->
+          <div class="rounded-xl p-3" style="background: var(--color-surface); border: 1px solid var(--color-border);">
+            <p class="text-[10px] text-text-disabled uppercase tracking-widest mb-2">پیش‌نمایش گوگل</p>
+            <p class="text-[#1a0dab] dark:text-info text-sm font-medium line-clamp-1 leading-snug">
+              {{ form.metaTitle || form.title || 'عنوان پست' }}
+            </p>
+            <p class="text-success text-xs font-mono my-0.5">{{ siteUrl }}/blog/{{ form.slug || 'post-slug' }}</p>
+            <p class="text-text-secondary text-xs line-clamp-2 leading-relaxed">
+              {{ form.metaDescription || form.excerpt || 'توضیح کوتاه از محتوای پست در اینجا نمایش داده می‌شود...' }}
             </p>
           </div>
         </div>
@@ -246,13 +327,16 @@ const editorRef      = ref(null)
 const fileInput      = ref(null)
 
 const form = reactive({
-  title:        '',
-  slug:         '',
-  content:      '',
-  excerpt:      '',
-  featuredImage: '',
-  tags:         [],
-  status:       'draft',
+  title:           '',
+  slug:            '',
+  content:         '',
+  excerpt:         '',
+  featuredImage:   '',
+  tags:            [],
+  status:          'draft',
+  metaTitle:       '',
+  metaDescription: '',
+  faq:             [],
 })
 
 const statuses = [
@@ -323,6 +407,14 @@ function removeTag(tag) {
   form.tags = form.tags.filter(t => t !== tag)
 }
 
+function addFaq() {
+  form.faq.push({ question: '', answer: '' })
+}
+
+function removeFaq(i) {
+  form.faq.splice(i, 1)
+}
+
 function triggerUpload() { fileInput.value?.click() }
 
 async function onFileChange(e) {
@@ -348,13 +440,16 @@ async function save(status) {
   saving.value = true
   try {
     const dto = {
-      title:         form.title.trim(),
-      slug:          form.slug.trim() || undefined,
-      content:       form.content,
-      excerpt:       form.excerpt.trim(),
-      featuredImage: form.featuredImage.trim(),
-      tags:          form.tags,
+      title:           form.title.trim(),
+      slug:            form.slug.trim() || undefined,
+      content:         form.content,
+      excerpt:         form.excerpt.trim(),
+      featuredImage:   form.featuredImage.trim(),
+      tags:            form.tags,
       status,
+      metaTitle:       form.metaTitle.trim()       || undefined,
+      metaDescription: form.metaDescription.trim() || undefined,
+      faq:             form.faq.filter(f => f.question.trim() && f.answer.trim()),
     }
 
     if (isEdit.value) {
@@ -382,13 +477,16 @@ onMounted(async () => {
   initialLoading.value = true
   try {
     const { data } = await blogService.getById(route.params.id)
-    form.title         = data.title         ?? ''
-    form.slug          = data.slug          ?? ''
-    form.content       = data.content       ?? ''
-    form.excerpt       = data.excerpt       ?? ''
-    form.featuredImage = data.featuredImage ?? ''
-    form.tags          = data.tags          ?? []
-    form.status        = data.status        ?? 'draft'
+    form.title           = data.title           ?? ''
+    form.slug            = data.slug            ?? ''
+    form.content         = data.content         ?? ''
+    form.excerpt         = data.excerpt         ?? ''
+    form.featuredImage   = data.featuredImage   ?? ''
+    form.tags            = data.tags            ?? []
+    form.status          = data.status          ?? 'draft'
+    form.metaTitle       = data.metaTitle       ?? ''
+    form.metaDescription = data.metaDescription ?? ''
+    form.faq             = data.faq             ?? []
     autoSlug = false
   } catch {
     ui.addToast('خطا در بارگذاری پست', 'error')

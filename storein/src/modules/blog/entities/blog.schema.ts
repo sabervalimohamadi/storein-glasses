@@ -51,6 +51,9 @@ export class Blog {
 
   @Prop({ trim: true, maxlength: 160 })
   metaDescription?: string;
+
+  @Prop({ type: [{ question: String, answer: String }], default: [] })
+  faq: { question: string; answer: string }[];
 }
 
 export const BlogSchema = SchemaFactory.createForClass(Blog);
