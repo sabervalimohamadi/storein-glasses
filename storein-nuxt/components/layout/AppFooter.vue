@@ -78,7 +78,7 @@
                 <svg class="footer-link-arrow w-3 h-3" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                   <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
                 </svg>
-                {{ cat.label }}
+                {{ cat.name }}
               </NuxtLink>
             </li>
           </ul>
@@ -212,19 +212,16 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
+import { ref, computed } from 'vue'
 import { useSettingsStore } from '~/stores/settings.store'
+import { categoryService } from '~/services/category.service'
 import { logger } from '~/utils/logger'
 
 const store = useSettingsStore()
 const currentYear = computed(() => new Date().getFullYear())
 
-const footerCategories = [
-  { label: 'عینک آفتابی',  slug: 'sunglasses' },
-  { label: 'عینک طبی',     slug: 'prescription' },
-  { label: 'لنز طبی',      slug: 'contact-lens' },
-  { label: 'لوازم جانبی',  slug: 'accessories' },
-]
+const footerCategories = ref([])
+categoryService.getAll().then(({ data }) => { if (Array.isArray(data)) footerCategories.value = data }).catch(() => {})
 
 const quickLinks = [
   { label: 'درباره ما',         to: '/pages/about' },

@@ -1,5 +1,5 @@
 ﻿<template>
-  <section class="sb-wrap">
+  <section v-if="displayed.length" class="sb-wrap">
     <div class="sb-grid">
       <NuxtLink
         v-for="banner in displayed"
@@ -69,32 +69,7 @@
 import { ref, onMounted } from 'vue'
 import { bannerService } from '~/services/banner.service'
 
-const STATIC_BANNERS = [
-  {
-    id:       1,
-    eyebrow:  'کلکسیون تابستان ۱۴۰۴',
-    title:    'عینک آفتابی',
-    cta:      'مشاهده محصولات',
-    ctaLink:  '/category/sunglasses',
-    bgFrom:   '#0F3D73',
-    bgTo:     '#1B4F8A',
-    glasses:  'sun',
-    imageUrl: '',
-  },
-  {
-    id:       2,
-    eyebrow:  'طبی و استایل',
-    title:    'عینک طبی',
-    cta:      'مشاهده محصولات',
-    ctaLink:  '/category/prescription',
-    bgFrom:   '#1A3A2A',
-    bgTo:     '#2D6A4F',
-    glasses:  'rx',
-    imageUrl: '',
-  },
-]
-
-const displayed = ref([...STATIC_BANNERS])
+const displayed = ref([])
 
 function cardStyle(banner) {
   if (banner.imageUrl) return {}

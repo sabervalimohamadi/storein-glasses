@@ -1,5 +1,5 @@
 ﻿<template>
-  <section class="hero" role="region" aria-label="تبلیغات و بنرها" aria-roledescription="carousel">
+  <section v-if="slides.length" class="hero" role="region" aria-label="تبلیغات و بنرها" aria-roledescription="carousel">
 
     <Transition name="hero">
       <div
@@ -144,49 +144,7 @@ import { logger } from '~/utils/logger'
 
 const CTX = 'HeroBanner'
 
-const STATIC_SLIDES = [
-  {
-    id: 1,
-    eyebrow:  'کلکسیون تابستان ۱۴۰۴',
-    title:    'عینک آفتابی با استایل',
-    subtitle: 'بهترین برندهای جهانی با بالاترین کیفیت — ارسال رایگان برای خریدهای بالای ۵۰۰ هزار تومان',
-    cta:      'مشاهده محصولات',
-    ctaLink:  '/category/sunglasses',
-    bgFrom:   '#0F3D73',
-    bgTo:     '#1B4F8A',
-    accent:   '#FFD700',
-    glasses:  'sun',
-    imageUrl: '',
-  },
-  {
-    id: 2,
-    eyebrow:  'طبی و استایل با هم',
-    title:    'عینک‌های طبی فریم‌لس',
-    subtitle: 'سبک، مقاوم و شیک — مناسب هر چهره‌ای با تنوع رنگ بالا',
-    cta:      'خرید عینک طبی',
-    ctaLink:  '/category/prescription',
-    bgFrom:   '#1A3A2A',
-    bgTo:     '#2D6A4F',
-    accent:   '#B7E4C7',
-    glasses:  'rx',
-    imageUrl: '',
-  },
-  {
-    id: 3,
-    eyebrow:  'راحت و رنگارنگ',
-    title:    'لنزهای طبی رنگی',
-    subtitle: 'تنوع رنگ، راحتی استفاده، تضمین اصالت کالا — تحویل در کمتر از ۴۸ ساعت',
-    cta:      'مشاهده لنزها',
-    ctaLink:  '/category/contact-lens',
-    bgFrom:   '#2d1b69',
-    bgTo:     '#11998e',
-    accent:   '#f8f9fa',
-    glasses:  'lens',
-    imageUrl: '',
-  },
-]
-
-const slides  = ref([...STATIC_SLIDES])
+const slides  = ref([])
 const current = ref(0)
 const paused  = ref(false)
 let autoTimer = null
@@ -222,7 +180,7 @@ onMounted(async () => {
       logger.info(`hero: loaded ${data.length} slides (${withMobile} with mobile image)`, {}, CTX)
     }
   } catch (err) {
-    logger.warn('hero: failed to load banners, using static fallback', { err }, CTX)
+    logger.warn('hero: failed to load banners', { err }, CTX)
   }
 })
 
