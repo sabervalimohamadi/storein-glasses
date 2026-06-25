@@ -68,25 +68,25 @@
       </div>
 
       <!-- ── Category Section ── -->
-      <div class="py-10 px-4" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+      <div class="py-10 px-4" style="border-bottom:1px solid var(--color-border);">
         <div class="max-w-6xl mx-auto">
 
           <!-- Header -->
           <div class="flex items-center justify-between mb-8 flex-row-reverse">
             <div class="text-right">
-              <h2 class="text-xl font-black text-white tracking-tight">دسته‌بندی‌ها</h2>
-              <p class="text-xs mt-1" style="color:rgba(255,255,255,0.35);">انتخاب کنید و محصولات را ببینید</p>
+              <h2 class="text-xl font-black text-text-primary tracking-tight">دسته‌بندی‌ها</h2>
+              <p class="text-xs mt-1 text-text-secondary">انتخاب کنید و محصولات را ببینید</p>
             </div>
             <div class="flex items-center gap-2">
               <button @click="scrollCats('right')" :disabled="!canScrollRight" aria-label="قبلی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 hover:bg-white/10"
-                      style="border:1px solid rgba(255,255,255,0.12);">
-                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 text-text-primary"
+                      style="border:1px solid var(--color-border); background:var(--color-surface);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
               </button>
               <button @click="scrollCats('left')" :disabled="!canScrollLeft" aria-label="بعدی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 hover:bg-white/10"
-                      style="border:1px solid rgba(255,255,255,0.12);">
-                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 text-text-primary"
+                      style="border:1px solid var(--color-border); background:var(--color-surface);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
               </button>
             </div>
           </div>
@@ -94,24 +94,32 @@
           <!-- Root category cards -->
           <div ref="catStripRef" class="flex gap-4 overflow-x-auto pb-3" style="scrollbar-width:none;">
             <template v-if="catCardsLoading">
-              <div v-for="n in 6" :key="n" class="shrink-0 w-44 h-52 rounded-3xl animate-pulse" style="background:rgba(255,255,255,0.05);"/>
+              <div v-for="n in 6" :key="n" class="shrink-0 w-44 h-52 rounded-3xl animate-pulse" style="background:var(--color-surface);"/>
             </template>
             <template v-else>
 
               <!-- All card -->
               <button @click="selectCategory(null)"
-                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
                       :class="!selectedCategory ? 'ring-2 ring-violet-400/60' : ''"
                       :style="!selectedCategory
-                        ? 'background:linear-gradient(145deg,#4c1d95,#6d28d9); box-shadow:0 8px 32px rgba(109,40,217,0.5);'
-                        : 'background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.1);'">
-                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" style="background:rgba(255,255,255,0.3);"/>
-                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" style="background:rgba(255,255,255,0.4);"/>
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl relative z-10"
-                     style="background:rgba(255,255,255,0.15); backdrop-filter:blur(8px);">🏪</div>
+                        ? 'background:linear-gradient(145deg,#4c1d95,#6d28d9); box-shadow:0 8px 32px rgba(109,40,217,0.45);'
+                        : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
+                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" style="background:rgba(124,58,237,0.6);"/>
+                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" style="background:rgba(109,40,217,0.6);"/>
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center relative z-10"
+                     :style="!selectedCategory ? 'background:rgba(255,255,255,0.18);' : 'background:var(--color-surface);'">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
+                       :style="!selectedCategory ? 'color:#e9d5ff;' : 'color:var(--color-text-secondary);'">
+                    <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
+                    <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
+                  </svg>
+                </div>
                 <div class="relative z-10 text-right">
-                  <p class="font-black text-white text-base leading-tight mb-1">همه دسته‌ها</p>
-                  <p class="text-xs font-fanum font-bold" style="color:rgba(255,255,255,0.6);">
+                  <p class="font-black text-base leading-tight mb-1"
+                     :class="!selectedCategory ? 'text-white' : 'text-text-primary'">همه دسته‌ها</p>
+                  <p class="text-xs font-fanum font-bold"
+                     :style="!selectedCategory ? 'color:rgba(255,255,255,0.65);' : 'color:var(--color-text-secondary);'">
                     {{ totalCatStock.toLocaleString('fa-IR') }} کالا
                   </p>
                 </div>
@@ -120,21 +128,25 @@
               <!-- Per-category card -->
               <button v-for="cat in rootCatsWithStock" :key="cat._id"
                       @click="selectCategory(cat)"
-                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
                       :class="selectedCategory?._id === cat._id ? 'ring-2 ring-violet-400/60' : ''"
                       :style="selectedCategory?._id === cat._id
                         ? `background:linear-gradient(145deg,${catMeta(cat.slug).g1},${catMeta(cat.slug).g2}); box-shadow:0 8px 32px ${catMeta(cat.slug).shadow};`
-                        : 'background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.1);'">
+                        : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
                 <!-- deco circles -->
                 <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" :style="`background:${catMeta(cat.slug).g1};`"/>
                 <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" :style="`background:${catMeta(cat.slug).g2};`"/>
                 <!-- icon -->
                 <div class="w-14 h-14 rounded-2xl flex items-center justify-center relative z-10 overflow-hidden"
-                     :style="`background:${catMeta(cat.slug).iconBg}; backdrop-filter:blur(8px);`">
+                     :style="selectedCategory?._id === cat._id
+                       ? `background:${catMeta(cat.slug).iconBg};`
+                       : 'background:var(--color-surface);'">
                   <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
                   <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
                        stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
-                       :style="`color:${catMeta(cat.slug).iconFg};`">
+                       :style="selectedCategory?._id === cat._id
+                         ? `color:${catMeta(cat.slug).iconFg};`
+                         : 'color:var(--color-text-secondary);'">
                     <template v-if="catMeta(cat.slug).icon==='sunglasses'">
                       <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/>
                       <path d="M10 12h4"/><path d="M2 11.5Q0 11.5 0 13"/><path d="M22 11.5Q24 11.5 24 13"/>
@@ -159,8 +171,10 @@
                 </div>
                 <!-- text -->
                 <div class="relative z-10 text-right">
-                  <p class="font-black text-white text-base leading-tight mb-1 line-clamp-2">{{ cat.name }}</p>
-                  <p class="text-xs font-fanum font-bold" style="color:rgba(255,255,255,0.6);">
+                  <p class="font-black text-base leading-tight mb-1 line-clamp-2"
+                     :class="selectedCategory?._id === cat._id ? 'text-white' : 'text-text-primary'">{{ cat.name }}</p>
+                  <p class="text-xs font-fanum font-bold"
+                     :style="selectedCategory?._id === cat._id ? 'color:rgba(255,255,255,0.65);' : 'color:var(--color-text-secondary);'">
                     {{ (cat.totalStock ?? 0).toLocaleString('fa-IR') }} کالا
                   </p>
                 </div>
@@ -169,27 +183,30 @@
             </template>
           </div>
 
-          <!-- Subcategories row (shows when a root is selected and has children) -->
-          <Transition name="sub-fade">
-            <div v-if="selectedCategory && subcategories.length" class="mt-5 flex flex-wrap gap-2">
-              <button @click="selectSubcategory(null)"
+          <!-- Subcategories — always visible, filtered by selected root -->
+          <div v-if="visibleSubcategories.length" class="mt-6">
+            <p class="text-xs text-text-secondary mb-3 text-right font-bold">
+              {{ selectedCategory ? `زیردسته‌های ${selectedCategory.name}` : 'همه زیردسته‌ها' }}
+            </p>
+            <div class="flex flex-wrap gap-2">
+              <button v-if="selectedCategory" @click="selectSubcategory(null)"
                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
                       :style="!selectedSubcategory
-                        ? 'background:rgba(124,58,237,0.4); border:1px solid rgba(124,58,237,0.7); color:#e9d5ff;'
-                        : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);'">
-                همه {{ selectedCategory.name }}
+                        ? 'background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); color:#7c3aed;'
+                        : 'background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-secondary);'">
+                همه
               </button>
-              <button v-for="sub in subcategories" :key="sub._id"
+              <button v-for="sub in visibleSubcategories" :key="sub._id"
                       @click="selectSubcategory(sub)"
                       class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
                       :style="selectedSubcategory?._id === sub._id
-                        ? 'background:rgba(124,58,237,0.4); border:1px solid rgba(124,58,237,0.7); color:#e9d5ff;'
-                        : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);'">
+                        ? 'background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); color:#7c3aed;'
+                        : 'background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-secondary);'">
                 {{ sub.name }}
                 <span v-if="sub.totalStock" class="mr-1 opacity-60 font-fanum">{{ sub.totalStock.toLocaleString('fa-IR') }}</span>
               </button>
             </div>
-          </Transition>
+          </div>
 
         </div>
       </div>
@@ -657,8 +674,16 @@ const totalCatStock = computed(() =>
   rootCatsWithStock.value.reduce((sum, c) => sum + (c.totalStock ?? 0), 0),
 )
 
-const subcategories = computed(() => {
-  if (!selectedCategory.value) return []
+const allSubcategories = computed(() => {
+  const result = []
+  for (const root of categoryTree.value) {
+    if (root.children?.length) result.push(...root.children)
+  }
+  return result
+})
+
+const visibleSubcategories = computed(() => {
+  if (!selectedCategory.value) return allSubcategories.value
   const node = categoryTree.value.find(c => c._id === selectedCategory.value._id)
   return node?.children ?? []
 })
