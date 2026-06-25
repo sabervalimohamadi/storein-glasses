@@ -221,7 +221,7 @@ const store = useSettingsStore()
 const currentYear = computed(() => new Date().getFullYear())
 
 const footerCategories = ref([])
-categoryService.getAll().then(({ data }) => { if (Array.isArray(data)) footerCategories.value = data }).catch(() => {})
+categoryService.getRoots().then(({ data }) => { if (Array.isArray(data)) footerCategories.value = data }).catch(() => {})
 
 const quickLinks = [
   { label: 'درباره ما',         to: '/pages/about' },

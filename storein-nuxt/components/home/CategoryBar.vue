@@ -31,7 +31,7 @@ const items = ref([])
 
 onMounted(async () => {
   try {
-    const { data } = await categoryService.getAll()
+    const { data } = await categoryService.getRoots()
     if (Array.isArray(data)) items.value = data
   } catch {}
 })
