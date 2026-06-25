@@ -18,19 +18,12 @@
       </button>
 
       <!-- Logo — rightmost on desktop (order-3) -->
-      <NuxtLink :to="'/'" class="shrink-0 leading-tight md:order-1 flex items-center gap-2" :aria-label="settingsStore.siteName">
-        <!-- Combined glasses + nimrokh logo -->
-        <svg width="130" height="32" viewBox="0 0 130 32" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-          <!-- glasses frame -->
-          <rect x="1.5" y="9" width="18" height="14" rx="7" stroke="rgb(var(--color-brand-rgb))" stroke-width="2.2"/>
-          <rect x="23.5" y="9" width="18" height="14" rx="7" stroke="rgb(var(--color-brand-rgb))" stroke-width="2.2"/>
-          <path d="M19.5 16 Q21.5 13 23.5 16" stroke="rgb(var(--color-brand-rgb))" stroke-width="2" stroke-linecap="round"/>
-          <path d="M1.5 13 Q0 13 0 16" stroke="rgb(var(--color-brand-rgb))" stroke-width="1.8" stroke-linecap="round"/>
-          <path d="M41.5 13 Q43 13 43 16" stroke="rgb(var(--color-brand-rgb))" stroke-width="1.8" stroke-linecap="round"/>
-          <!-- nimrokh text -->
-          <text x="49" y="22" font-family="'Inter','Helvetica Neue',Arial,sans-serif" font-size="15" font-weight="700" letter-spacing="-0.3" fill="rgb(var(--color-brand-rgb))">nimrokh</text>
-        </svg>
-        <span class="hidden md:block text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
+      <NuxtLink :to="'/'" class="flex items-center gap-2 shrink-0 leading-tight md:order-1">
+        <img src="/favicon.svg" :alt="`لوگو ${settingsStore.siteName}`" class="w-8 h-8 shrink-0" draggable="false" />
+        <div class="flex flex-col items-start">
+          <span class="text-brand font-bold text-xl tracking-tight">{{ settingsStore.siteName }}</span>
+          <span class="hidden md:block -mt-0.5 text-xs" style="color: var(--color-text-secondary);">{{ settingsStore.tagline }}</span>
+        </div>
       </NuxtLink>
 
       <!-- Search (desktop) — middle (order-2) -->
