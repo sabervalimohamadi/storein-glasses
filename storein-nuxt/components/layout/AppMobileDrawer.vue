@@ -24,10 +24,10 @@
         <div class="flex items-center justify-between px-4 py-4 flex-shrink-0"
              style="border-bottom: 1px solid var(--color-border);">
           <NuxtLink :to="'/'" @click="close" class="flex items-center gap-3">
-            <img src="/favicon.svg" alt="لوگو استورین" class="w-9 h-9 shrink-0" draggable="false" />
+            <img src="/favicon.svg" :alt="`لوگو ${settingsStore.siteName}`" class="w-9 h-9 shrink-0" draggable="false" />
             <div class="flex flex-col leading-tight">
-              <span class="text-brand font-bold text-[17px] tracking-tight">استورین</span>
-              <span class="text-[11px]" style="color: var(--color-text-disabled);">فروشگاه تخصصی عینک</span>
+              <span class="text-brand font-bold text-[17px] tracking-tight">{{ settingsStore.siteName }}</span>
+              <span class="text-[11px]" style="color: var(--color-text-disabled);">{{ settingsStore.tagline }}</span>
             </div>
           </NuxtLink>
           <button
@@ -157,8 +157,10 @@
 <script setup>
 import { computed, h } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { useUiStore }       from '~/stores/ui.store'
-import { useAuthStore }     from '~/stores/auth.store'
+import { useUiStore }        from '~/stores/ui.store'
+import { useAuthStore }      from '~/stores/auth.store'
+import { useSettingsStore }  from '~/stores/settings.store'
+const settingsStore = useSettingsStore()
 import { useCategoryStore } from '~/stores/category.store'
 import { storeToRefs } from 'pinia'
 import MobileNavItem from '~/components/layout/MobileNavItem.vue'

@@ -3,7 +3,7 @@
 
     <div class="bg-gradient-to-l from-brand to-brand-dark py-12 text-white">
       <div class="container mx-auto px-4 text-center">
-        <h1 class="text-3xl font-black mb-2">بلاگ استورین</h1>
+        <h1 class="text-3xl font-black mb-2">بلاگ {{ settingsStore.siteName }}</h1>
         <p class="text-white/80 text-sm">مقالات، نکات و راهنماهای خرید عینک</p>
       </div>
     </div>
@@ -90,6 +90,7 @@ import { useDebounceFn } from '@vueuse/core'
 import BlogCard from '~/components/blog/BlogCard.vue'
 
 definePageMeta({ layout: 'default' })
+const settingsStore = useSettingsStore()
 
 const config = useRuntimeConfig()
 const store  = useBlogStore()
@@ -111,7 +112,7 @@ useHead({
       innerHTML: JSON.stringify({
         '@context':  'https://schema.org',
         '@type':     'Blog',
-        name:        'وبلاگ استورین',
+        name:        `وبلاگ ${settingsStore.siteName}`,
         description: 'مقالات آموزشی در زمینه عینک، سلامت چشم، مد و استایل',
         url:         `${config.public.siteUrl}/blog`,
         blogPost:    posts.slice(0, 10).map(p => ({

@@ -19,7 +19,7 @@
           <div class="flex flex-col items-center text-center gap-3 pt-1">
             <div class="w-14 h-14 rounded-2xl bg-brand/10 flex items-center justify-center text-3xl">🔔</div>
             <div>
-              <p class="font-bold text-text-primary text-base">اطلاع‌رسانی‌های استورین</p>
+              <p class="font-bold text-text-primary text-base">اطلاع‌رسانی‌های {{ settingsStore.siteName }}</p>
               <p class="text-text-secondary text-sm mt-1 leading-relaxed">
                 می‌خوای از جدیدترین تخفیف‌ها، پیشنهادهای ویژه و وضعیت سفارشت باخبر بشی؟
               </p>
@@ -46,6 +46,7 @@
 import { ref, watch, onUnmounted } from 'vue'
 import { useNotificationPermission } from '~/composables/useNotificationPermission'
 import { logger } from '~/utils/logger'
+const settingsStore = useSettingsStore()
 
 const CTX = 'NotificationConsentModal'
 

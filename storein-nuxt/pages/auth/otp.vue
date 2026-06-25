@@ -9,7 +9,7 @@
               <rect x="2" y="4" width="18" height="16" rx="8" /><rect x="28" y="4" width="18" height="16" rx="8" /><path d="M20 12 Q24 6 28 12" />
             </svg>
           </div>
-          <span class="text-brand font-black text-xl tracking-tight">استورین</span>
+          <span class="text-brand font-black text-xl tracking-tight">{{ settingsStore.siteName }}</span>
         </NuxtLink>
       </div>
 
@@ -62,10 +62,11 @@ import BaseSpinner from '~/components/common/BaseSpinner.vue'
 
 definePageMeta({ layout: 'auth', middleware: ['guest'] })
 
-const router    = useRouter()
-const route     = useRoute()
-const authStore = useAuthStore()
-const ui        = useUiStore()
+const router        = useRouter()
+const route         = useRoute()
+const authStore     = useAuthStore()
+const ui            = useUiStore()
+const settingsStore = useSettingsStore()
 
 useSeoMeta({ title: 'تأیید شماره موبایل', robots: 'noindex' })
 

@@ -15,7 +15,7 @@
 
         <!-- Text -->
         <div class="flex-1 min-w-0">
-          <p class="text-sm font-bold text-text-primary leading-tight">نصب اپ استورین</p>
+          <p class="text-sm font-bold text-text-primary leading-tight">نصب اپ {{ settingsStore.siteName }}</p>
           <p class="text-xs text-text-secondary mt-0.5 leading-relaxed">دسترسی سریع‌تر، بدون مرورگر</p>
         </div>
 
@@ -45,6 +45,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+const settingsStore = useSettingsStore()
 
 const STORAGE_KEY  = 'pwa_install_dismissed'
 // Show banner 4 seconds after the install prompt is available — gives the user

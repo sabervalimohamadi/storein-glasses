@@ -26,7 +26,7 @@ export const useSettingsStore = defineStore('settings', () => {
   })
   const address   = computed(() => settings.value?.address ?? '')
   const footerTagline   = computed(() => settings.value?.footerTagline   ?? '')
-  const footerCopyright = computed(() => settings.value?.footerCopyright ?? 'تمامی حقوق برای استورین محفوظ است')
+  const footerCopyright = computed(() => settings.value?.footerCopyright ?? `تمامی حقوق برای ${settings.value?.siteName ?? ''} محفوظ است`)
   const footerLinks     = computed(() => settings.value?.footerLinks     ?? [])
   const theme           = computed(() => settings.value?.theme ?? { preset: 'blue', primaryColor: '#1B4F8A', defaultMode: 'light' })
   const trustItems      = computed(() => settings.value?.trustItems?.length
