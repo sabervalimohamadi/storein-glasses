@@ -193,12 +193,17 @@ export class AuthService {
 
   // ── Tokens ────────────────────────────────────────────────────
   async refreshTokens(userId: string, refreshToken: string, meta: { userAgent?: string; ip?: string }) {
+    const sig = refreshToken?.split('.')?.[2];
+    if (!sig) {
+      this.logger.warn(`Refresh — malformed token payload: userId=${userId}`);
+      throw new UnauthorizedException('توکن نامعتبر است');
+    }
+
     // Find a non-revoked, non-expired token record for this user
     const candidates = await this.rtModel.find({
       userId, isRevoked: false,
       expiresAt: { $gt: new Date() },
     });
-    const sig = refreshToken.split('.')[2];
     let doc: RefreshTokenDocument | null = null;
     for (const candidate of candidates) {
       if (await bcrypt.compare(sig, candidate.token)) {

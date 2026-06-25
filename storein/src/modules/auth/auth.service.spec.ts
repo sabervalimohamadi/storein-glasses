@@ -61,6 +61,7 @@ describe('AuthService', () => {
     findByIdAndUpdate: jest.fn(),
     findOneAndUpdate:  jest.fn(),
     updateMany:        jest.fn(),
+    deleteMany:        jest.fn(),
   };
   const jwtService    = { sign: jest.fn().mockReturnValue('tok') };
   const configService = {
@@ -237,6 +238,52 @@ describe('AuthService', () => {
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       await service.adminLogin({ phone: '+989121234567', password: 'secret123' }, {});
       expect(userModel.findOne).toHaveBeenCalledWith({ phone: '09121234567' });
+    });
+  });
+
+  // ── refreshTokens ─────────────────────────────────────────────
+  describe('refreshTokens', () => {
+    const validJwt = 'header.payload.validSig';
+    const hashedSig = '$2a$10$hashed';
+
+    beforeEach(() => {
+      rtModel.find.mockResolvedValue([{ _id: 'rt1', token: hashedSig }]);
+      (bcrypt.compare as jest.Mock).mockResolvedValue(true);
+      userModel.findById.mockResolvedValue({ ...mockUser, _id: 'uid1' });
+      rtModel.deleteMany.mockResolvedValue({});
+      rtModel.create.mockResolvedValue({});
+      (bcrypt.hash as jest.Mock).mockResolvedValue('$2a$10$newHashed');
+    });
+
+    it('returns new tokens when refresh token is valid', async () => {
+      const res = await service.refreshTokens('uid1', validJwt, {});
+      expect(res.accessToken).toBe('tok');
+      expect(rtModel.create).toHaveBeenCalled();
+    });
+
+    it('throws UnauthorizedException when no matching token found in DB', async () => {
+      (bcrypt.compare as jest.Mock).mockResolvedValue(false);
+      await expect(service.refreshTokens('uid1', validJwt, {}))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when user is inactive', async () => {
+      userModel.findById.mockResolvedValue({ ...mockUser, isActive: false });
+      await expect(service.refreshTokens('uid1', validJwt, {}))
+        .rejects.toThrow(UnauthorizedException);
+    });
+
+    it('throws UnauthorizedException when refreshToken is malformed (no signature)', async () => {
+      await expect(service.refreshTokens('uid1', 'malformed', {}))
+        .rejects.toThrow(UnauthorizedException);
+      expect(rtModel.find).not.toHaveBeenCalled();
+    });
+
+    it('cleans up expired tokens before issuing new ones', async () => {
+      await service.refreshTokens('uid1', validJwt, {});
+      expect(rtModel.deleteMany).toHaveBeenCalledWith(
+        expect.objectContaining({ userId: 'uid1', expiresAt: expect.any(Object) }),
+      );
     });
   });
 
