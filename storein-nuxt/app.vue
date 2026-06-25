@@ -128,7 +128,7 @@ if (import.meta.client) {
       () => auth.isLoggedIn,
       (loggedIn) => {
         if (loggedIn && auth.token && socketService) {
-          socketService.connect(auth.token)
+          socketService.connect(() => auth.token)
           socketService.on('notification', onNotification)
           notifStore.fetchUnreadCount()
         } else if (socketService) {

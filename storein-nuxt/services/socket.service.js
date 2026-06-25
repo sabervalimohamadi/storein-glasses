@@ -11,14 +11,20 @@ function resolveSocketUrl() {
 
 const SOCKET_NAMESPACE = resolveSocketUrl() + '/notifications'
 
-let socket = null
+let socket     = null
+let _getToken  = null   // updated on every connect() call; used in auth callback
 
 export const socketService = {
-  connect(token) {
+  connect(getToken) {
+    // Accept either a getter function (() => token) or a plain token string.
+    _getToken = typeof getToken === 'function' ? getToken : () => getToken
+
     if (socket?.connected) return socket
 
     socket = io(SOCKET_NAMESPACE, {
-      auth:                 { token },
+      // auth as a callback so socket.io fetches the current token on every
+      // reconnection attempt — prevents stale-token auth failures after refresh.
+      auth:                 (cb) => cb({ token: _getToken?.() }),
       transports:           ['websocket', 'polling'],
       reconnection:         true,
       reconnectionDelay:    2000,
