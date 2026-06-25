@@ -55,14 +55,129 @@
             </div>
           </div>
 
+          <!-- ── Like + share bar ── -->
           <div class="mt-10 pt-6 border-t border-[var(--color-border)] flex items-center justify-between flex-wrap gap-4">
             <NuxtLink to="/blog" class="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-brand transition-colors">
               <svg class="w-4 h-4 rtl:rotate-180" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18"/></svg>
               بازگشت به بلاگ
             </NuxtLink>
-            <button @click="copyLink" class="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-brand transition-colors">
-              {{ copied ? 'کپی شد ✓' : 'کپی لینک' }}
-            </button>
+            <div class="flex items-center gap-3">
+              <!-- Like button -->
+              <button
+                @click="handleLike"
+                :disabled="likeLoading"
+                class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 active:scale-95"
+                :class="isLiked
+                  ? 'bg-rose-500 text-white shadow-lg shadow-rose-500/30'
+                  : 'bg-[var(--color-surface)] border border-[var(--color-border)] text-[var(--color-text-secondary)] hover:border-rose-400 hover:text-rose-500'"
+              >
+                <svg class="w-4 h-4 transition-transform" :class="isLiked ? 'scale-110' : ''"
+                     :fill="isLiked ? 'currentColor' : 'none'"
+                     stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z"/>
+                </svg>
+                <span class="font-fanum">{{ likeCount }}</span>
+              </button>
+              <!-- Copy link -->
+              <button @click="copyLink" class="flex items-center gap-2 text-sm text-[var(--color-text-secondary)] hover:text-brand transition-colors">
+                {{ copied ? 'کپی شد ✓' : 'کپی لینک' }}
+              </button>
+            </div>
+          </div>
+
+          <!-- ── Comments section ── -->
+          <div class="mt-12">
+            <h2 class="text-xl font-black text-[var(--color-text-primary)] mb-6 flex items-center gap-2">
+              <svg class="w-5 h-5 text-brand" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z"/>
+              </svg>
+              دیدگاه‌ها
+              <span class="text-sm font-normal text-[var(--color-text-secondary)] font-fanum">({{ comments.length }})</span>
+            </h2>
+
+            <!-- Comment form -->
+            <div class="rounded-2xl border border-[var(--color-border)] p-5 mb-8"
+                 style="background:var(--color-card);">
+              <template v-if="auth.isLoggedIn">
+                <p class="text-sm font-semibold text-[var(--color-text-primary)] mb-3">دیدگاه خود را بنویسید</p>
+                <textarea
+                  v-model="commentText"
+                  :disabled="commentSubmitting"
+                  placeholder="نظر شما..."
+                  rows="4"
+                  maxlength="1000"
+                  class="w-full rounded-xl border border-[var(--color-border)] bg-[var(--color-surface)] text-[var(--color-text-primary)] text-sm p-3 resize-none focus:outline-none focus:ring-2 focus:ring-brand/30 focus:border-brand transition-all placeholder:text-[var(--color-text-secondary)]/50"
+                />
+                <div class="flex items-center justify-between mt-3 flex-wrap gap-2">
+                  <span class="text-xs text-[var(--color-text-secondary)]/50 font-fanum">{{ commentText.length }}/1000</span>
+                  <div class="flex items-center gap-3">
+                    <span v-if="commentSuccess" class="text-xs text-success font-semibold">✓ دیدگاه شما پس از تأیید منتشر می‌شود</span>
+                    <span v-if="commentError" class="text-xs text-error">{{ commentError }}</span>
+                    <button
+                      @click="submitComment"
+                      :disabled="commentSubmitting || commentText.trim().length < 2"
+                      class="px-5 py-2 rounded-xl text-sm font-bold text-white transition-all active:scale-95 disabled:opacity-50"
+                      style="background:var(--color-primary);"
+                    >
+                      {{ commentSubmitting ? 'در حال ارسال...' : 'ارسال دیدگاه' }}
+                    </button>
+                  </div>
+                </div>
+              </template>
+              <template v-else>
+                <p class="text-sm text-center text-[var(--color-text-secondary)] py-2">
+                  برای ثبت دیدگاه
+                  <NuxtLink to="/auth/login" class="text-brand font-semibold hover:underline">وارد حساب کاربری</NuxtLink>
+                  خود شوید
+                </p>
+              </template>
+            </div>
+
+            <!-- Comments list -->
+            <div v-if="commentsLoading" class="space-y-4">
+              <div v-for="n in 2" :key="n"
+                   class="rounded-2xl border border-[var(--color-border)] p-5 animate-pulse"
+                   style="background:var(--color-card);">
+                <div class="flex items-center gap-3 mb-3">
+                  <div class="w-9 h-9 rounded-full bg-[var(--color-surface)]"/>
+                  <div class="space-y-1.5">
+                    <div class="h-3 w-24 rounded bg-[var(--color-surface)]"/>
+                    <div class="h-2.5 w-16 rounded bg-[var(--color-surface)]"/>
+                  </div>
+                </div>
+                <div class="space-y-2">
+                  <div class="h-3 rounded bg-[var(--color-surface)]"/>
+                  <div class="h-3 w-3/4 rounded bg-[var(--color-surface)]"/>
+                </div>
+              </div>
+            </div>
+
+            <div v-else-if="!comments.length" class="text-center py-10 text-[var(--color-text-secondary)] text-sm">
+              هنوز دیدگاهی ثبت نشده — اولین نفر باشید!
+            </div>
+
+            <div v-else class="space-y-4">
+              <div v-for="c in comments" :key="c._id"
+                   class="rounded-2xl border border-[var(--color-border)] p-5 transition-all"
+                   style="background:var(--color-card);">
+                <div class="flex items-start gap-3">
+                  <!-- Avatar -->
+                  <div class="w-9 h-9 rounded-full flex items-center justify-center text-sm font-bold shrink-0"
+                       style="background:var(--color-primary); color:#fff; opacity:0.85;">
+                    {{ commentAuthorInitial(c.author) }}
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <!-- Name + date -->
+                    <div class="flex items-center gap-2 flex-wrap mb-1">
+                      <span class="text-sm font-bold text-[var(--color-text-primary)]">{{ commentAuthorName(c.author) }}</span>
+                      <span class="text-xs text-[var(--color-text-secondary)]/50 font-fanum">{{ formatDate(c.createdAt) }}</span>
+                    </div>
+                    <!-- Content -->
+                    <p class="text-sm text-[var(--color-text-primary)] leading-relaxed">{{ c.content }}</p>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -71,6 +186,8 @@
 </template>
 
 <script setup>
+import http from '~/services/http.service'
+
 definePageMeta({ layout: 'default' })
 
 const route         = useRoute()
@@ -139,6 +256,8 @@ useHead({
   }),
 })
 
+const auth = useAuthStore()
+
 const copied = ref(false)
 
 function formatDate(iso) {
@@ -152,6 +271,80 @@ async function copyLink() {
     copied.value = true
     setTimeout(() => { copied.value = false }, 2500)
   } catch { /* ignore */ }
+}
+
+// ── Like ─────────────────────────────────────────────────────────
+const likeCount   = ref(post.value?.likeCount ?? 0)
+const isLiked     = ref(false)
+const likeLoading = ref(false)
+
+onMounted(async () => {
+  if (!auth.isLoggedIn || !post.value?._id) return
+  try {
+    const { data } = await http.get(`/blog/${post.value._id}/like-status`)
+    isLiked.value  = data.isLiked
+    likeCount.value = data.likeCount
+  } catch { /* ignore — show default */ }
+})
+
+async function handleLike() {
+  if (!auth.isLoggedIn) { navigateTo('/auth/login'); return }
+  if (likeLoading.value) return
+  likeLoading.value = true
+  try {
+    const { data } = await http.post(`/blog/${post.value._id}/like`)
+    isLiked.value   = data.isLiked
+    likeCount.value = data.likeCount
+  } catch { /* ignore */ } finally {
+    likeLoading.value = false
+  }
+}
+
+// ── Comments ─────────────────────────────────────────────────────
+const comments         = ref([])
+const commentsLoading  = ref(true)
+const commentText      = ref('')
+const commentSubmitting = ref(false)
+const commentSuccess   = ref(false)
+const commentError     = ref('')
+
+onMounted(async () => {
+  if (!post.value?._id) return
+  try {
+    const { data } = await http.get(`/blog/${post.value._id}/comments`)
+    comments.value = Array.isArray(data) ? data : (data?.comments ?? [])
+  } catch { comments.value = [] } finally {
+    commentsLoading.value = false
+  }
+})
+
+async function submitComment() {
+  const text = commentText.value.trim()
+  if (text.length < 2) return
+  commentSubmitting.value = true
+  commentSuccess.value    = false
+  commentError.value      = ''
+  try {
+    await http.post(`/blog/${post.value._id}/comments`, { content: text })
+    commentText.value    = ''
+    commentSuccess.value = true
+    setTimeout(() => { commentSuccess.value = false }, 5000)
+  } catch (e) {
+    commentError.value = e?.response?.data?.message ?? 'خطا در ارسال دیدگاه'
+    setTimeout(() => { commentError.value = '' }, 4000)
+  } finally {
+    commentSubmitting.value = false
+  }
+}
+
+function commentAuthorName(author) {
+  if (!author) return 'کاربر'
+  if (author.firstName || author.lastName) return `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim()
+  return 'کاربر'
+}
+
+function commentAuthorInitial(author) {
+  return author?.firstName?.[0] ?? '👤'
 }
 </script>
 

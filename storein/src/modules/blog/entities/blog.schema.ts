@@ -43,6 +43,9 @@ export class Blog {
   @Prop({ default: 0 })
   viewCount: number;
 
+  @Prop({ default: 0 })
+  likeCount: number;
+
   @Prop({ type: Date, index: true })
   publishedAt: Date;
 

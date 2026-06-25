@@ -1,7 +1,9 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model, SortOrder } from 'mongoose';
+import { Model, SortOrder, Types } from 'mongoose';
 import { Blog, BlogDocument, BlogStatus } from './entities/blog.schema';
+import { BlogLike, BlogLikeDocument } from './entities/blog-like.schema';
+import { BlogComment, BlogCommentDocument } from './entities/blog-comment.schema';
 import { CreateBlogDto } from './dto/create-blog.dto';
 import { UpdateBlogDto } from './dto/update-blog.dto';
 import { BlogQueryDto  } from './dto/blog-query.dto';
@@ -18,8 +20,12 @@ function slugify(text: string): string {
 
 @Injectable()
 export class BlogService {
+  private readonly logger = new Logger(BlogService.name);
+
   constructor(
-    @InjectModel(Blog.name) private blogModel: Model<BlogDocument>,
+    @InjectModel(Blog.name)        private blogModel:    Model<BlogDocument>,
+    @InjectModel(BlogLike.name)    private likeModel:    Model<BlogLikeDocument>,
+    @InjectModel(BlogComment.name) private commentModel: Model<BlogCommentDocument>,
   ) {}
 
   async findAll(query: BlogQueryDto, adminMode = false) {
@@ -143,6 +149,95 @@ export class BlogService {
     ]);
     return result;
   }
+
+  // ── Likes ─────────────────────────────────────────────────────
+
+  async toggleLike(postId: string, userId: string): Promise<{ likeCount: number; isLiked: boolean }> {
+    const blogOid = new Types.ObjectId(postId);
+    const userOid = new Types.ObjectId(userId);
+
+    const existing = await this.likeModel.findOne({ blog: blogOid, user: userOid });
+
+    if (existing) {
+      await this.likeModel.deleteOne({ _id: existing._id });
+      const updated = await this.blogModel.findByIdAndUpdate(
+        postId,
+        { $inc: { likeCount: -1 } },
+        { new: true },
+      ).lean<BlogDocument>();
+      const likeCount = Math.max(0, updated?.likeCount ?? 0);
+      this.logger.log(`User ${userId} unliked post ${postId} — count: ${likeCount}`);
+      return { likeCount, isLiked: false };
+    }
+
+    await this.likeModel.create({ blog: blogOid, user: userOid });
+    const updated = await this.blogModel.findByIdAndUpdate(
+      postId,
+      { $inc: { likeCount: 1 } },
+      { new: true },
+    ).lean<BlogDocument>();
+    const likeCount = updated?.likeCount ?? 1;
+    this.logger.log(`User ${userId} liked post ${postId} — count: ${likeCount}`);
+    return { likeCount, isLiked: true };
+  }
+
+  async getLikeStatus(postId: string, userId: string): Promise<{ isLiked: boolean; likeCount: number }> {
+    const [post, like] = await Promise.all([
+      this.blogModel.findById(postId).select('likeCount').lean<BlogDocument>(),
+      this.likeModel.exists({ blog: new Types.ObjectId(postId), user: new Types.ObjectId(userId) }),
+    ]);
+    if (!post) throw new NotFoundException('پست یافت نشد');
+    return { isLiked: !!like, likeCount: post.likeCount ?? 0 };
+  }
+
+  // ── Comments ───────────────────────────────────────────────────
+
+  async addComment(postId: string, authorId: string, content: string): Promise<BlogCommentDocument> {
+    const post = await this.blogModel.exists({ _id: postId, status: BlogStatus.PUBLISHED });
+    if (!post) throw new NotFoundException('پست یافت نشد');
+
+    const comment = await this.commentModel.create({
+      blog:    new Types.ObjectId(postId),
+      author:  new Types.ObjectId(authorId),
+      content: content.trim(),
+    });
+    this.logger.log(`Comment added by user ${authorId} on post ${postId} — pending approval`);
+    return comment;
+  }
+
+  async getComments(postId: string): Promise<BlogCommentDocument[]> {
+    return this.commentModel
+      .find({ blog: new Types.ObjectId(postId), isApproved: true })
+      .populate('author', 'firstName lastName')
+      .sort({ createdAt: -1 })
+      .lean<BlogCommentDocument[]>();
+  }
+
+  async getPendingComments(): Promise<BlogCommentDocument[]> {
+    return this.commentModel
+      .find({ isApproved: false })
+      .populate('author', 'firstName lastName phone')
+      .populate('blog', 'title slug')
+      .sort({ createdAt: -1 })
+      .lean<BlogCommentDocument[]>();
+  }
+
+  async approveComment(commentId: string): Promise<BlogCommentDocument> {
+    const comment = await this.commentModel
+      .findByIdAndUpdate(commentId, { isApproved: true }, { new: true })
+      .lean<BlogCommentDocument>();
+    if (!comment) throw new NotFoundException('کامنت یافت نشد');
+    this.logger.log(`Comment ${commentId} approved`);
+    return comment;
+  }
+
+  async deleteComment(commentId: string): Promise<void> {
+    const comment = await this.commentModel.findByIdAndDelete(commentId);
+    if (!comment) throw new NotFoundException('کامنت یافت نشد');
+    this.logger.log(`Comment ${commentId} deleted`);
+  }
+
+  // ── Slug helper ────────────────────────────────────────────────
 
   private async uniqueSlug(base: string, excludeId?: string): Promise<string> {
     let slug = base;
