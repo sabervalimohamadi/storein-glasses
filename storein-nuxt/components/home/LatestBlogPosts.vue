@@ -148,7 +148,7 @@ const canRight = ref(false)
 
 onMounted(async () => {
   try {
-    const { data } = await blogService.getAll({ status: 'published', limit: 8, sort: '-publishedAt' })
+    const { data } = await blogService.getAll({ sortBy: 'newest', limit: 8 })
     posts.value = data?.posts ?? data?.items ?? data ?? []
   } catch {
     posts.value = []
@@ -162,8 +162,10 @@ function initScroll() {
   const el = trackRef.value
   if (!el) return
   const update = () => {
-    canLeft.value  = el.scrollLeft > 8
-    canRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 8
+    // RTL: scrollLeft is 0 at the right end, negative toward left end
+    const sl = Math.abs(el.scrollLeft)
+    canRight.value = sl > 8
+    canLeft.value  = sl < el.scrollWidth - el.clientWidth - 8
   }
   update()
   el.addEventListener('scroll', update, { passive: true })
@@ -172,7 +174,8 @@ function initScroll() {
 function scroll(dir) {
   const el = trackRef.value
   if (!el) return
-  el.scrollBy({ left: dir === 'left' ? -300 : 300, behavior: 'smooth' })
+  // RTL: scrolling "right" (→ next) moves scrollLeft negative
+  el.scrollBy({ left: dir === 'right' ? -300 : 300, behavior: 'smooth' })
 }
 
 function authorName(author) {
