@@ -67,89 +67,130 @@
         </div>
       </div>
 
-      <!-- ── Category Cards Carousel ── -->
-      <div class="py-8 px-4" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+      <!-- ── Category Section ── -->
+      <div class="py-10 px-4" style="border-bottom:1px solid rgba(255,255,255,0.08);">
         <div class="max-w-6xl mx-auto">
 
-          <!-- Header row -->
-          <div class="flex items-center justify-between mb-6 flex-row-reverse">
-            <!-- Title (right in RTL) -->
+          <!-- Header -->
+          <div class="flex items-center justify-between mb-8 flex-row-reverse">
             <div class="text-right">
-              <h2 class="text-lg font-black text-white">دسته‌بندی‌ها</h2>
-              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.35);">محصولات متنوع</p>
+              <h2 class="text-xl font-black text-white tracking-tight">دسته‌بندی‌ها</h2>
+              <p class="text-xs mt-1" style="color:rgba(255,255,255,0.35);">انتخاب کنید و محصولات را ببینید</p>
             </div>
-            <!-- Controls (left in RTL) -->
             <div class="flex items-center gap-2">
               <button @click="scrollCats('right')" :disabled="!canScrollRight" aria-label="قبلی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-25"
-                      style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);">
-                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
-                </svg>
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 hover:bg-white/10"
+                      style="border:1px solid rgba(255,255,255,0.12);">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
               </button>
               <button @click="scrollCats('left')" :disabled="!canScrollLeft" aria-label="بعدی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-25"
-                      style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);">
-                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
-                </svg>
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 hover:bg-white/10"
+                      style="border:1px solid rgba(255,255,255,0.12);">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
               </button>
-              <div class="w-9 h-9 rounded-xl flex items-center justify-center"
-                   style="background:rgba(124,58,237,0.35); border:1px solid rgba(124,58,237,0.5);">
-                <svg class="w-4 h-4" style="color:#c4b5fd;" fill="currentColor" viewBox="0 0 24 24">
-                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-                  <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
-                </svg>
-              </div>
             </div>
           </div>
 
-          <!-- Scrollable cards row -->
-          <div ref="catStripRef" class="flex gap-4 overflow-x-auto pb-2" style="scrollbar-width:none;-webkit-overflow-scrolling:touch;">
-
-            <!-- Skeletons while loading -->
+          <!-- Root category cards -->
+          <div ref="catStripRef" class="flex gap-4 overflow-x-auto pb-3" style="scrollbar-width:none;">
             <template v-if="catCardsLoading">
-              <div v-for="n in 6" :key="n"
-                   class="shrink-0 w-36 rounded-2xl animate-pulse"
-                   style="height:196px; background:rgba(255,255,255,0.05);"/>
+              <div v-for="n in 6" :key="n" class="shrink-0 w-44 h-52 rounded-3xl animate-pulse" style="background:rgba(255,255,255,0.05);"/>
             </template>
-
             <template v-else>
-              <!-- "All" card -->
+
+              <!-- All card -->
               <button @click="selectCategory(null)"
-                      class="shrink-0 w-36 flex flex-col items-center gap-3 py-5 px-3 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
+                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+                      :class="!selectedCategory ? 'ring-2 ring-violet-400/60' : ''"
                       :style="!selectedCategory
-                        ? 'background:linear-gradient(160deg,rgba(124,58,237,0.45),rgba(109,40,217,0.35)); border:1.5px solid rgba(124,58,237,0.6); box-shadow:0 4px 20px rgba(124,58,237,0.3);'
-                        : 'background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1);'">
-                <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
-                     style="background:rgba(255,255,255,0.12);">🏪</div>
-                <span class="font-bold text-sm text-white text-center leading-snug">همه دسته‌ها</span>
-                <span class="text-xs font-fanum font-bold" style="color:#a78bfa;">
-                  {{ totalCatStock.toLocaleString('fa-IR') }} موجودی
-                </span>
+                        ? 'background:linear-gradient(145deg,#4c1d95,#6d28d9); box-shadow:0 8px 32px rgba(109,40,217,0.5);'
+                        : 'background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.1);'">
+                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" style="background:rgba(255,255,255,0.3);"/>
+                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" style="background:rgba(255,255,255,0.4);"/>
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-2xl relative z-10"
+                     style="background:rgba(255,255,255,0.15); backdrop-filter:blur(8px);">🏪</div>
+                <div class="relative z-10 text-right">
+                  <p class="font-black text-white text-base leading-tight mb-1">همه دسته‌ها</p>
+                  <p class="text-xs font-fanum font-bold" style="color:rgba(255,255,255,0.6);">
+                    {{ totalCatStock.toLocaleString('fa-IR') }} کالا
+                  </p>
+                </div>
               </button>
 
               <!-- Per-category card -->
               <button v-for="cat in rootCatsWithStock" :key="cat._id"
                       @click="selectCategory(cat)"
-                      class="shrink-0 w-36 flex flex-col items-center gap-3 py-5 px-3 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
+                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl active:scale-95"
+                      :class="selectedCategory?._id === cat._id ? 'ring-2 ring-violet-400/60' : ''"
                       :style="selectedCategory?._id === cat._id
-                        ? 'background:linear-gradient(160deg,rgba(124,58,237,0.45),rgba(109,40,217,0.35)); border:1.5px solid rgba(124,58,237,0.6); box-shadow:0 4px 20px rgba(124,58,237,0.3);'
-                        : 'background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1);'">
-                <div class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
-                     style="background:rgba(255,255,255,0.14);">
-                  <img v-if="cat.image || cat.icon" :src="cat.image || cat.icon" :alt="cat.name"
-                       class="w-full h-full object-cover"/>
-                  <span v-else class="text-3xl">📦</span>
+                        ? `background:linear-gradient(145deg,${catMeta(cat.slug).g1},${catMeta(cat.slug).g2}); box-shadow:0 8px 32px ${catMeta(cat.slug).shadow};`
+                        : 'background:rgba(255,255,255,0.04); border:1.5px solid rgba(255,255,255,0.1);'">
+                <!-- deco circles -->
+                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" :style="`background:${catMeta(cat.slug).g1};`"/>
+                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" :style="`background:${catMeta(cat.slug).g2};`"/>
+                <!-- icon -->
+                <div class="w-14 h-14 rounded-2xl flex items-center justify-center relative z-10 overflow-hidden"
+                     :style="`background:${catMeta(cat.slug).iconBg}; backdrop-filter:blur(8px);`">
+                  <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
+                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
+                       stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
+                       :style="`color:${catMeta(cat.slug).iconFg};`">
+                    <template v-if="catMeta(cat.slug).icon==='sunglasses'">
+                      <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/>
+                      <path d="M10 12h4"/><path d="M2 11.5Q0 11.5 0 13"/><path d="M22 11.5Q24 11.5 24 13"/>
+                    </template>
+                    <template v-else-if="catMeta(cat.slug).icon==='glasses'">
+                      <circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/>
+                      <path d="M11 12h2"/><path d="M3 10Q1 9 0 10"/><path d="M21 10Q23 9 24 10"/>
+                    </template>
+                    <template v-else-if="catMeta(cat.slug).icon==='lens'">
+                      <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
+                      <path d="M12 4v1M12 19v1M4 12h1M19 12h1"/>
+                    </template>
+                    <template v-else-if="catMeta(cat.slug).icon==='case'">
+                      <rect x="2" y="8" width="20" height="12" rx="4"/>
+                      <path d="M8 8V6a4 4 0 0 1 8 0v2"/><path d="M7 14h10"/>
+                    </template>
+                    <template v-else>
+                      <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/>
+                      <path d="M10 12h4"/>
+                    </template>
+                  </svg>
                 </div>
-                <span class="font-bold text-sm text-white text-center leading-snug line-clamp-2">{{ cat.name }}</span>
-                <span class="text-xs font-fanum font-bold" style="color:#a78bfa;">
-                  {{ (cat.totalStock ?? 0).toLocaleString('fa-IR') }} موجودی
-                </span>
+                <!-- text -->
+                <div class="relative z-10 text-right">
+                  <p class="font-black text-white text-base leading-tight mb-1 line-clamp-2">{{ cat.name }}</p>
+                  <p class="text-xs font-fanum font-bold" style="color:rgba(255,255,255,0.6);">
+                    {{ (cat.totalStock ?? 0).toLocaleString('fa-IR') }} کالا
+                  </p>
+                </div>
               </button>
-            </template>
 
+            </template>
           </div>
+
+          <!-- Subcategories row (shows when a root is selected and has children) -->
+          <Transition name="sub-fade">
+            <div v-if="selectedCategory && subcategories.length" class="mt-5 flex flex-wrap gap-2">
+              <button @click="selectSubcategory(null)"
+                      class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
+                      :style="!selectedSubcategory
+                        ? 'background:rgba(124,58,237,0.4); border:1px solid rgba(124,58,237,0.7); color:#e9d5ff;'
+                        : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);'">
+                همه {{ selectedCategory.name }}
+              </button>
+              <button v-for="sub in subcategories" :key="sub._id"
+                      @click="selectSubcategory(sub)"
+                      class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
+                      :style="selectedSubcategory?._id === sub._id
+                        ? 'background:rgba(124,58,237,0.4); border:1px solid rgba(124,58,237,0.7); color:#e9d5ff;'
+                        : 'background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.12); color:rgba(255,255,255,0.6);'">
+                {{ sub.name }}
+                <span v-if="sub.totalStock" class="mr-1 opacity-60 font-fanum">{{ sub.totalStock.toLocaleString('fa-IR') }}</span>
+              </button>
+            </div>
+          </Transition>
+
         </div>
       </div>
 
@@ -589,23 +630,48 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('fa-IR') : ''
 }
 
-// ── Category cards carousel ───────────────────────────────────
-const rootCatsWithStock = ref([])
-const catCardsLoading   = ref(false)
-const selectedCategory  = ref(null)
-const catStripRef       = ref(null)
-const canScrollLeft     = ref(false)
-const canScrollRight    = ref(false)
+// ── Category cards ────────────────────────────────────────────
+const CAT_META = {
+  sunglasses:    { g1:'#0f3d73', g2:'#1b4f8a', shadow:'rgba(27,79,138,0.5)',  iconBg:'rgba(74,158,255,0.2)',  iconFg:'#93c5fd', icon:'sunglasses' },
+  prescription:  { g1:'#1a3a2a', g2:'#2d6a4f', shadow:'rgba(45,106,79,0.5)',  iconBg:'rgba(52,211,153,0.2)',  iconFg:'#6ee7b7', icon:'glasses'    },
+  'contact-lens':{ g1:'#2d1b69', g2:'#4c1d95', shadow:'rgba(109,40,217,0.5)', iconBg:'rgba(167,139,250,0.2)', iconFg:'#c4b5fd', icon:'lens'        },
+  accessories:   { g1:'#831843', g2:'#9d174d', shadow:'rgba(157,23,77,0.5)',  iconBg:'rgba(249,168,212,0.2)', iconFg:'#f9a8d4', icon:'case'        },
+  men:           { g1:'#1e3a5f', g2:'#1d4ed8', shadow:'rgba(29,78,216,0.5)',  iconBg:'rgba(96,165,250,0.2)',  iconFg:'#93c5fd', icon:'glasses'     },
+  women:         { g1:'#581c87', g2:'#7c3aed', shadow:'rgba(124,58,237,0.5)', iconBg:'rgba(192,132,252,0.2)', iconFg:'#e9d5ff', icon:'glasses'     },
+  kids:          { g1:'#7c2d12', g2:'#c2410c', shadow:'rgba(194,65,12,0.5)',  iconBg:'rgba(251,146,60,0.2)',  iconFg:'#fed7aa', icon:'case'        },
+}
+const DEFAULT_META = { g1:'#1e293b', g2:'#334155', shadow:'rgba(51,65,85,0.5)', iconBg:'rgba(255,255,255,0.1)', iconFg:'rgba(255,255,255,0.6)', icon:'glasses' }
+
+function catMeta(slug) { return CAT_META[slug] ?? DEFAULT_META }
+
+const rootCatsWithStock  = ref([])
+const categoryTree       = ref([])
+const catCardsLoading    = ref(false)
+const selectedCategory   = ref(null)
+const selectedSubcategory = ref(null)
+const catStripRef        = ref(null)
+const canScrollLeft      = ref(false)
+const canScrollRight     = ref(false)
 
 const totalCatStock = computed(() =>
   rootCatsWithStock.value.reduce((sum, c) => sum + (c.totalStock ?? 0), 0),
 )
 
+const subcategories = computed(() => {
+  if (!selectedCategory.value) return []
+  const node = categoryTree.value.find(c => c._id === selectedCategory.value._id)
+  return node?.children ?? []
+})
+
 onMounted(async () => {
   catCardsLoading.value = true
   try {
-    const { data } = await http.get('/categories/roots-with-stock')
-    rootCatsWithStock.value = Array.isArray(data) ? data : (data?.data ?? [])
+    const [stockRes, treeRes] = await Promise.all([
+      http.get('/categories/roots-with-stock'),
+      http.get('/categories/tree'),
+    ])
+    rootCatsWithStock.value = Array.isArray(stockRes.data) ? stockRes.data : (stockRes.data?.data ?? [])
+    categoryTree.value      = Array.isArray(treeRes.data)  ? treeRes.data  : (treeRes.data?.data  ?? [])
   } catch {
     rootCatsWithStock.value = []
   } finally {
@@ -623,9 +689,17 @@ onMounted(async () => {
 })
 
 function selectCategory(cat) {
-  selectedCategory.value = cat
-  brandSearch.value      = ''
+  selectedCategory.value    = cat
+  selectedSubcategory.value = null
+  brandSearch.value         = ''
   loadBrands()
+}
+
+function selectSubcategory(sub) {
+  selectedSubcategory.value = sub
+  filters.category = sub ? sub._id : (selectedCategory.value?._id ?? '')
+  page.value = 1
+  if (selectedBrand.value) fetchWholesaleProducts()
 }
 
 function scrollCats(dir) {
@@ -770,4 +844,8 @@ async function onPageChange(p) {
 <style scoped>
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
+.sub-fade-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
+.sub-fade-leave-active { transition: opacity 0.15s ease; }
+.sub-fade-enter-from   { opacity: 0; transform: translateY(-6px); }
+.sub-fade-leave-to     { opacity: 0; }
 </style>
