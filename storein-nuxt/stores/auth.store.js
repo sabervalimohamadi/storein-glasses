@@ -110,12 +110,15 @@ export const useAuthStore = defineStore('auth', () => {
       if (user.value) _postLoginSync()
     } catch (error) {
       const status = error?.response?.status
-      if (status === 429) {
-        logger.warn('auth: initAuth rate-limited — not clearing session', { status }, 'AuthStore')
-      } else {
-        logger.warn('auth: initAuth failed — no active session', { status }, 'AuthStore')
+      if (status === 401) {
+        logger.info('auth: initAuth — no active session', { status }, 'AuthStore')
         token.value = null
         user.value  = null
+      } else if (status === 429) {
+        logger.warn('auth: initAuth rate-limited — not clearing session', { status }, 'AuthStore')
+      } else {
+        // 5xx, network error, or timeout — transient failure, do not clear session
+        logger.warn('auth: initAuth server error — not clearing session', { status }, 'AuthStore')
       }
     } finally {
       initialized.value  = true

@@ -199,11 +199,15 @@ export class AuthService {
       throw new UnauthorizedException('توکن نامعتبر است');
     }
 
-    // Find a non-revoked, non-expired token record for this user
+    // Limit to the 3 most recent non-revoked tokens.
+    // bcrypt.compare on a slow VPS takes ~2-3s per round; iterating all accumulated
+    // tokens (one created per page-refresh) causes the request to exceed the 15s
+    // client timeout after just 5-6 refreshes.
     const candidates = await this.rtModel.find({
       userId, isRevoked: false,
       expiresAt: { $gt: new Date() },
-    });
+    }).sort({ createdAt: -1 }).limit(3);
+
     let doc: RefreshTokenDocument | null = null;
     for (const candidate of candidates) {
       if (await bcrypt.compare(sig, candidate.token)) {
@@ -222,11 +226,10 @@ export class AuthService {
       throw new UnauthorizedException('کاربر یافت نشد');
     }
 
-    // Do NOT revoke the old token here — token rotation via immediate revocation causes
-    // logout on page refresh if the new Set-Cookie header is stripped by a reverse proxy
-    // (e.g. nginx proxy_hide_header). Old tokens expire naturally after 30 days.
-    // Explicit logout still revokes all tokens via logoutAll().
-    // Clean up already-expired tokens to prevent DB growth.
+    // Token rotation: revoke ALL active tokens for this user before issuing a new one.
+    // This keeps exactly one active token in DB at all times, eliminating bcrypt
+    // accumulation from repeated page refreshes. Explicit logout-all still works.
+    await this.rtModel.updateMany({ userId, isRevoked: false }, { isRevoked: true });
     await this.rtModel.deleteMany({ userId, expiresAt: { $lte: new Date() } });
     return this.issueTokens(user, meta);
   }

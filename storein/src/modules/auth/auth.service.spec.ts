@@ -247,9 +247,14 @@ describe('AuthService', () => {
     const hashedSig = '$2a$10$hashed';
 
     beforeEach(() => {
-      rtModel.find.mockResolvedValue([{ _id: 'rt1', token: hashedSig }]);
+      // find() now chains .sort().limit() — mock must be a chainable object
+      rtModel.find.mockReturnValue({
+        sort:  jest.fn().mockReturnThis(),
+        limit: jest.fn().mockResolvedValue([{ _id: 'rt1', token: hashedSig }]),
+      });
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
       userModel.findById.mockResolvedValue({ ...mockUser, _id: 'uid1' });
+      rtModel.updateMany.mockResolvedValue({});
       rtModel.deleteMany.mockResolvedValue({});
       rtModel.create.mockResolvedValue({});
       (bcrypt.hash as jest.Mock).mockResolvedValue('$2a$10$newHashed');
@@ -259,6 +264,14 @@ describe('AuthService', () => {
       const res = await service.refreshTokens('uid1', validJwt, {});
       expect(res.accessToken).toBe('tok');
       expect(rtModel.create).toHaveBeenCalled();
+    });
+
+    it('revokes all existing tokens before issuing new ones (token rotation)', async () => {
+      await service.refreshTokens('uid1', validJwt, {});
+      expect(rtModel.updateMany).toHaveBeenCalledWith(
+        { userId: 'uid1', isRevoked: false },
+        { isRevoked: true },
+      );
     });
 
     it('throws UnauthorizedException when no matching token found in DB', async () => {
@@ -279,7 +292,7 @@ describe('AuthService', () => {
       expect(rtModel.find).not.toHaveBeenCalled();
     });
 
-    it('cleans up expired tokens before issuing new ones', async () => {
+    it('cleans up expired tokens after revoking active ones', async () => {
       await service.refreshTokens('uid1', validJwt, {});
       expect(rtModel.deleteMany).toHaveBeenCalledWith(
         expect.objectContaining({ userId: 'uid1', expiresAt: expect.any(Object) }),
