@@ -72,6 +72,22 @@ export class BlogController {
     return this.blogService.getPendingComments();
   }
 
+  @Get('comments')
+  @UseGuards(AdminGuard)
+  getAllComments(
+    @Query('page')   page?:   string,
+    @Query('limit')  limit?:  string,
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+  ) {
+    return this.blogService.getAllCommentsAdmin({
+      page:   page  ? +page  : 1,
+      limit:  limit ? +limit : 20,
+      status,
+      search,
+    });
+  }
+
   @Patch('comments/:commentId/approve')
   @UseGuards(AdminGuard)
   approveComment(@Param('commentId') commentId: string) {

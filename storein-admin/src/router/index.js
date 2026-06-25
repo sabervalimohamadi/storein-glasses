@@ -142,6 +142,12 @@ const routes = [
     meta: { layout: 'admin', title: 'پست جدید', permission: 'blog' },
   },
   {
+    path: '/blog/comments',
+    name: 'blog-comments',
+    component: () => import('@/views/blog/BlogCommentsView.vue'),
+    meta: { layout: 'admin', title: 'نظرات مقالات', permission: 'blog' },
+  },
+  {
     path: '/blog/:id/edit',
     name: 'blog-edit',
     component: () => import('@/views/blog/BlogFormView.vue'),

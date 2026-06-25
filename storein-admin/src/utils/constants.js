@@ -53,5 +53,6 @@ export const PANEL_PERMISSIONS = [
   { key: 'discounts',  label: 'کدهای تخفیف',  icon: '🎟️', group: 'فروشگاه' },
   { key: 'users',      label: 'کاربران',       icon: '👥', group: 'مدیریت' },
   { key: 'reviews',    label: 'نظرات',         icon: '⭐', group: 'مدیریت' },
-  { key: 'blog',       label: 'بلاگ',          icon: '📝', group: 'محتوا'   },
+  { key: 'blog',          label: 'بلاگ',          icon: '📝', group: 'محتوا' },
+  { key: 'blog-comments', label: 'نظرات مقالات', icon: '💬', group: 'محتوا' },
 ]

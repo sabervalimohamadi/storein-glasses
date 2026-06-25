@@ -222,6 +222,37 @@ export class BlogService {
       .lean<BlogCommentDocument[]>();
   }
 
+  async getAllCommentsAdmin(query: {
+    page?: number; limit?: number; status?: string; search?: string;
+  }) {
+    const page  = Math.max(1, +(query.page  ?? 1));
+    const limit = Math.max(1, Math.min(50, +(query.limit ?? 20)));
+    const skip  = (page - 1) * limit;
+
+    const filter: Record<string, any> = {};
+    if (query.status === 'pending')  filter.isApproved = false;
+    if (query.status === 'approved') filter.isApproved = true;
+    if (query.search) {
+      filter.content = { $regex: query.search, $options: 'i' };
+    }
+
+    const [items, total, pendingCount] = await Promise.all([
+      this.commentModel
+        .find(filter)
+        .populate('author', 'firstName lastName phone')
+        .populate('blog', 'title slug')
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean<BlogCommentDocument[]>(),
+      this.commentModel.countDocuments(filter),
+      this.commentModel.countDocuments({ isApproved: false }),
+    ]);
+
+    this.logger.debug(`getAllCommentsAdmin — page:${page} status:${query.status ?? 'all'} total:${total} pending:${pendingCount}`);
+    return { items, total, pendingCount, page, totalPages: Math.ceil(total / limit) };
+  }
+
   async approveComment(commentId: string): Promise<BlogCommentDocument> {
     const comment = await this.commentModel
       .findByIdAndUpdate(commentId, { isApproved: true }, { new: true })

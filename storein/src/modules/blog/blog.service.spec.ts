@@ -60,6 +60,7 @@ describe('BlogService', () => {
       findByIdAndDelete: jest.fn(),
       create:            jest.fn(),
       exists:            jest.fn(),
+      countDocuments:    jest.fn(),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -198,6 +199,68 @@ describe('BlogService', () => {
         expect.objectContaining({ isApproved: true }),
       );
       expect(result).toHaveLength(2);
+    });
+  });
+
+  // ── getAllCommentsAdmin ──────────────────────────────────────
+
+  describe('getAllCommentsAdmin', () => {
+    const commentList = [
+      mockComment({ isApproved: false }),
+      mockComment({ isApproved: true }),
+    ];
+
+    function makeChain(data: any[]) {
+      const chain: any = {
+        populate: jest.fn().mockReturnThis(),
+        sort:     jest.fn().mockReturnThis(),
+        skip:     jest.fn().mockReturnThis(),
+        limit:    jest.fn().mockReturnThis(),
+        lean:     jest.fn().mockResolvedValue(data),
+      };
+      return chain;
+    }
+
+    beforeEach(() => {
+      commentModel.find.mockReturnValue(makeChain(commentList));
+      commentModel.countDocuments
+        .mockResolvedValueOnce(commentList.length) // total
+        .mockResolvedValueOnce(1);                 // pendingCount
+    });
+
+    it('returns paginated comments with pendingCount', async () => {
+      const result = await service.getAllCommentsAdmin({ page: 1, limit: 20 });
+      expect(result.items).toHaveLength(2);
+      expect(result.total).toBe(2);
+      expect(result.pendingCount).toBe(1);
+      expect(result.page).toBe(1);
+    });
+
+    it('filters by pending status', async () => {
+      await service.getAllCommentsAdmin({ status: 'pending' });
+      expect(commentModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({ isApproved: false }),
+      );
+    });
+
+    it('filters by approved status', async () => {
+      await service.getAllCommentsAdmin({ status: 'approved' });
+      expect(commentModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({ isApproved: true }),
+      );
+    });
+
+    it('applies content search filter', async () => {
+      await service.getAllCommentsAdmin({ search: 'تست' });
+      expect(commentModel.find).toHaveBeenCalledWith(
+        expect.objectContaining({ content: { $regex: 'تست', $options: 'i' } }),
+      );
+    });
+
+    it('returns no status filter when status is undefined', async () => {
+      await service.getAllCommentsAdmin({});
+      const callArg = commentModel.find.mock.calls[0][0];
+      expect(callArg).not.toHaveProperty('isApproved');
     });
   });
 
