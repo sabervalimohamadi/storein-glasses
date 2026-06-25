@@ -207,7 +207,7 @@
           <h3 class="text-sm font-semibold text-text-primary mb-3">پیش‌نمایش سئو</h3>
           <div class="space-y-1">
             <p class="text-info text-sm font-medium line-clamp-1">{{ form.title || 'عنوان پست' }}</p>
-            <p class="text-success text-xs font-mono">localhost:3001/blog/{{ form.slug || 'post-slug' }}</p>
+            <p class="text-success text-xs font-mono">{{ siteUrl }}/blog/{{ form.slug || 'post-slug' }}</p>
             <p class="text-text-secondary text-xs line-clamp-2">
               {{ form.excerpt || 'توضیح کوتاه از محتوای پست در اینجا نمایش داده می‌شود...' }}
             </p>
@@ -227,6 +227,8 @@ import { blogService }   from '@/services/blog.service'
 import { uploadService } from '@/services/upload.service'
 import { useUiStore }    from '@/stores/ui.store'
 import AdminButton   from '@/components/common/AdminButton.vue'
+
+const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000'
 import AdminInput    from '@/components/common/AdminInput.vue'
 import AdminSkeleton from '@/components/common/AdminSkeleton.vue'
 

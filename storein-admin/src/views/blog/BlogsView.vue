@@ -122,7 +122,7 @@
           </RouterLink>
           <a
             v-if="post.status === 'published'"
-            :href="`http://localhost:3001/blog/${post.slug}`"
+            :href="`${siteUrl}/blog/${post.slug}`"
             target="_blank"
             class="w-8 h-8 rounded-lg flex items-center justify-center text-sm text-text-secondary hover:bg-surface hover:text-info transition-colors"
             title="مشاهده در سایت"
@@ -163,6 +163,8 @@ import AdminBadge      from '@/components/common/AdminBadge.vue'
 import AdminSkeleton   from '@/components/common/AdminSkeleton.vue'
 import AdminConfirm    from '@/components/common/AdminConfirm.vue'
 import AdminPagination from '@/components/common/AdminPagination.vue'
+
+const siteUrl = import.meta.env.VITE_SITE_URL || 'http://localhost:3000'
 
 const ui = useUiStore()
 
