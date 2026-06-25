@@ -4,9 +4,10 @@ import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { Types } from 'mongoose';
 import { CategoryService } from './category.service';
 import { Category } from './entities/category.schema';
+import { Product } from '../product/entities/product.schema';
 
 const mockId = new Types.ObjectId().toString();
-const mockCat = (overrides = {}) => ({
+const mockCat = (overrides: Record<string, any> = {}) => ({
   _id: new Types.ObjectId(mockId),
   name: 'موبایل',
   slug: 'mobile',
@@ -21,9 +22,12 @@ const mockCat = (overrides = {}) => ({
 describe('CategoryService', () => {
   let service: CategoryService;
   let model: any;
+  let productModel: any;
 
-  const lean = (val: any) => ({ lean: jest.fn().mockResolvedValue(val) });
-  const selectLean = (val: any) => ({ select: jest.fn().mockReturnValue(lean(val)) });
+  const lean        = (val: any) => ({ lean: jest.fn().mockResolvedValue(val) });
+  const selectLean  = (val: any) => ({ select: jest.fn().mockReturnValue(lean(val)) });
+  const sortLean    = (val: any) => ({ sort: jest.fn().mockReturnValue(lean(val)) });
+  const selectSort  = (val: any) => ({ select: jest.fn().mockReturnValue(sortLean(val)) });
 
   beforeEach(async () => {
     model = {
@@ -36,10 +40,15 @@ describe('CategoryService', () => {
       create: jest.fn(),
     };
 
+    productModel = {
+      aggregate: jest.fn().mockResolvedValue([]),
+    };
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         CategoryService,
         { provide: getModelToken(Category.name), useValue: model },
+        { provide: getModelToken(Product.name),  useValue: productModel },
       ],
     }).compile();
 
@@ -132,6 +141,85 @@ describe('CategoryService', () => {
       });
       const res = await service.getBySlug('mobile');
       expect(res.category.slug).toBe('mobile');
+    });
+  });
+
+  describe('getRootsWithStock', () => {
+    it('returns only root categories (depth=0)', async () => {
+      const rootId  = new Types.ObjectId();
+      const childId = new Types.ObjectId();
+
+      const root  = mockCat({ _id: rootId,  depth: 0, ancestors: [],      parent: null    });
+      const child = mockCat({ _id: childId, depth: 1, ancestors: [rootId], parent: rootId });
+
+      model.find.mockReturnValue(selectSort([root, child]));
+      productModel.aggregate.mockResolvedValue([]);
+
+      const result = await service.getRootsWithStock();
+
+      expect(result).toHaveLength(1);
+      expect(result[0]._id.toString()).toBe(rootId.toString());
+    });
+
+    it('rolls up child product stock to the root', async () => {
+      const rootId  = new Types.ObjectId();
+      const childId = new Types.ObjectId();
+
+      const root  = mockCat({ _id: rootId,  depth: 0, ancestors: [],       parent: null    });
+      const child = mockCat({ _id: childId, depth: 1, ancestors: [rootId],  parent: rootId });
+
+      model.find.mockReturnValue(selectSort([root, child]));
+      productModel.aggregate.mockResolvedValue([
+        { _id: childId.toString(), totalStock: 80, productsCount: 4 },
+      ]);
+
+      const result = await service.getRootsWithStock();
+
+      expect(result[0].totalStock).toBe(80);
+      expect(result[0].productsCount).toBe(4);
+    });
+
+    it('accumulates stock from multiple children', async () => {
+      const rootId   = new Types.ObjectId();
+      const childId1 = new Types.ObjectId();
+      const childId2 = new Types.ObjectId();
+
+      model.find.mockReturnValue(selectSort([
+        mockCat({ _id: rootId,   depth: 0, ancestors: [],       parent: null    }),
+        mockCat({ _id: childId1, depth: 1, ancestors: [rootId], parent: rootId }),
+        mockCat({ _id: childId2, depth: 1, ancestors: [rootId], parent: rootId }),
+      ]));
+      productModel.aggregate.mockResolvedValue([
+        { _id: childId1.toString(), totalStock: 30, productsCount: 2 },
+        { _id: childId2.toString(), totalStock: 50, productsCount: 3 },
+      ]);
+
+      const result = await service.getRootsWithStock();
+
+      expect(result[0].totalStock).toBe(80);
+      expect(result[0].productsCount).toBe(5);
+    });
+
+    it('returns empty array when no active categories exist', async () => {
+      model.find.mockReturnValue(selectSort([]));
+      productModel.aggregate.mockResolvedValue([]);
+
+      const result = await service.getRootsWithStock();
+      expect(result).toEqual([]);
+    });
+
+    it('ignores product stats for unknown category IDs', async () => {
+      const rootId = new Types.ObjectId();
+      model.find.mockReturnValue(selectSort([
+        mockCat({ _id: rootId, depth: 0, ancestors: [], parent: null }),
+      ]));
+      productModel.aggregate.mockResolvedValue([
+        { _id: new Types.ObjectId().toString(), totalStock: 999, productsCount: 99 },
+      ]);
+
+      const result = await service.getRootsWithStock();
+      expect(result[0].totalStock).toBe(0);
+      expect(result[0].productsCount).toBe(0);
     });
   });
 });

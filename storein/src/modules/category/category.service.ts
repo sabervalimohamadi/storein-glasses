@@ -1,6 +1,7 @@
 import {
   BadRequestException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
@@ -13,6 +14,8 @@ import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoryService {
+  private readonly logger = new Logger(CategoryService.name);
+
   constructor(
     @InjectModel(Category.name) private catModel: Model<CategoryDocument>,
     @InjectModel(Product.name)  private productModel: Model<ProductDocument>,
@@ -78,6 +81,66 @@ export class CategoryService {
       .select('-__v')
       .sort({ sortOrder: 1 })
       .lean<CategoryDocument[]>();
+  }
+
+  async getRootsWithStock(): Promise<any[]> {
+    this.logger.log('Fetching root categories with stock aggregation');
+
+    const [allCats, productAgg] = await Promise.all([
+      this.catModel
+        .find({ isActive: true })
+        .select('_id name slug image icon sortOrder depth ancestors parent')
+        .sort({ sortOrder: 1 })
+        .lean<CategoryDocument[]>(),
+      this.productModel.aggregate<{ _id: string; totalStock: number; productsCount: number }>([
+        { $match: { status: 'active' } },
+        { $unwind: { path: '$variants', preserveNullAndEmptyArrays: false } },
+        {
+          $group: {
+            _id:          { $toString: '$category' },
+            totalStock:   { $sum: '$variants.stock' },
+            productIds:   { $addToSet: '$_id' },
+          },
+        },
+        { $project: { totalStock: 1, productsCount: { $size: '$productIds' } } },
+      ]),
+    ]);
+
+    // Map every category ID to its root ID (ancestors[0] for children, self for roots)
+    const catToRoot = new Map<string, string>();
+    const roots: any[] = [];
+
+    for (const cat of allCats) {
+      const id = (cat._id as any).toString();
+      if (cat.depth === 0) {
+        catToRoot.set(id, id);
+        roots.push({ ...cat, totalStock: 0, productsCount: 0 });
+      } else if (cat.ancestors?.length) {
+        catToRoot.set(id, cat.ancestors[0].toString());
+      }
+    }
+
+    // Roll-up product stats from each leaf category to its root
+    const rootStats = new Map<string, { totalStock: number; productsCount: number }>(
+      roots.map((r) => [(r._id as any).toString(), { totalStock: 0, productsCount: 0 }]),
+    );
+
+    for (const ps of productAgg) {
+      const rootId = catToRoot.get(ps._id);
+      if (rootId && rootStats.has(rootId)) {
+        const s = rootStats.get(rootId)!;
+        s.totalStock    += ps.totalStock;
+        s.productsCount += ps.productsCount;
+      }
+    }
+
+    const result = roots.map((r) => ({
+      ...r,
+      ...rootStats.get((r._id as any).toString()),
+    }));
+
+    this.logger.log(`Returned ${result.length} root categories`);
+    return result;
   }
 
   async getBySlug(slug: string): Promise<{ category: CategoryDocument; children: CategoryDocument[] }> {

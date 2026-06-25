@@ -67,34 +67,89 @@
         </div>
       </div>
 
-      <!-- ── Categories — centered wrap ── -->
-      <div class="py-6 border-b" style="background:var(--color-card); border-color:var(--color-border);">
-        <p class="text-center text-[10px] font-black text-text-secondary/40 tracking-[0.2em] uppercase mb-4">دسته‌بندی</p>
-        <div class="flex flex-wrap justify-center gap-2.5 px-4">
+      <!-- ── Category Cards Carousel ── -->
+      <div class="py-8 px-4" style="border-bottom:1px solid rgba(255,255,255,0.08);">
+        <div class="max-w-6xl mx-auto">
 
-          <!-- All -->
-          <button @click="selectCategory(null)"
-                  class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
-                  :style="!selectedCategory
-                    ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(124,58,237,0.45);'
-                    : 'background:var(--color-surface); border:1.5px solid var(--color-border); color:var(--color-text-primary);'">
-            <span class="text-lg leading-none">🏪</span>
-            <span>همه برندها</span>
-          </button>
-
-          <!-- Category pills -->
-          <button v-for="cat in categories" :key="cat._id"
-                  @click="selectCategory(cat)"
-                  class="group flex items-center gap-2.5 px-5 py-2.5 rounded-xl font-bold text-sm transition-all duration-200 active:scale-95"
-                  :style="selectedCategory?._id === cat._id
-                    ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 4px 18px rgba(124,58,237,0.45);'
-                    : 'background:var(--color-surface); border:1.5px solid var(--color-border); color:var(--color-text-primary);'">
-            <div class="w-6 h-6 rounded-lg overflow-hidden shrink-0 flex items-center justify-center bg-black/10">
-              <img v-if="cat.icon || cat.image" :src="cat.icon || cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
-              <span v-else class="text-sm">📦</span>
+          <!-- Header row -->
+          <div class="flex items-center justify-between mb-6 flex-row-reverse">
+            <!-- Title (right in RTL) -->
+            <div class="text-right">
+              <h2 class="text-lg font-black text-white">دسته‌بندی‌ها</h2>
+              <p class="text-xs mt-0.5" style="color:rgba(255,255,255,0.35);">محصولات متنوع</p>
             </div>
-            <span>{{ cat.name }}</span>
-          </button>
+            <!-- Controls (left in RTL) -->
+            <div class="flex items-center gap-2">
+              <button @click="scrollCats('right')" :disabled="!canScrollRight" aria-label="قبلی"
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-25"
+                      style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" d="M15 19l-7-7 7-7"/>
+                </svg>
+              </button>
+              <button @click="scrollCats('left')" :disabled="!canScrollLeft" aria-label="بعدی"
+                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-25"
+                      style="background:rgba(255,255,255,0.08); border:1px solid rgba(255,255,255,0.12);">
+                <svg class="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" d="M9 5l7 7-7 7"/>
+                </svg>
+              </button>
+              <div class="w-9 h-9 rounded-xl flex items-center justify-center"
+                   style="background:rgba(124,58,237,0.35); border:1px solid rgba(124,58,237,0.5);">
+                <svg class="w-4 h-4" style="color:#c4b5fd;" fill="currentColor" viewBox="0 0 24 24">
+                  <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
+                  <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scrollable cards row -->
+          <div ref="catStripRef" class="flex gap-4 overflow-x-auto pb-2" style="scrollbar-width:none;-webkit-overflow-scrolling:touch;">
+
+            <!-- Skeletons while loading -->
+            <template v-if="catCardsLoading">
+              <div v-for="n in 6" :key="n"
+                   class="shrink-0 w-36 rounded-2xl animate-pulse"
+                   style="height:196px; background:rgba(255,255,255,0.05);"/>
+            </template>
+
+            <template v-else>
+              <!-- "All" card -->
+              <button @click="selectCategory(null)"
+                      class="shrink-0 w-36 flex flex-col items-center gap-3 py-5 px-3 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
+                      :style="!selectedCategory
+                        ? 'background:linear-gradient(160deg,rgba(124,58,237,0.45),rgba(109,40,217,0.35)); border:1.5px solid rgba(124,58,237,0.6); box-shadow:0 4px 20px rgba(124,58,237,0.3);'
+                        : 'background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1);'">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center text-3xl"
+                     style="background:rgba(255,255,255,0.12);">🏪</div>
+                <span class="font-bold text-sm text-white text-center leading-snug">همه دسته‌ها</span>
+                <span class="text-xs font-fanum font-bold" style="color:#a78bfa;">
+                  {{ totalCatStock.toLocaleString('fa-IR') }} موجودی
+                </span>
+              </button>
+
+              <!-- Per-category card -->
+              <button v-for="cat in rootCatsWithStock" :key="cat._id"
+                      @click="selectCategory(cat)"
+                      class="shrink-0 w-36 flex flex-col items-center gap-3 py-5 px-3 rounded-2xl transition-all duration-200 hover:scale-105 active:scale-95"
+                      :style="selectedCategory?._id === cat._id
+                        ? 'background:linear-gradient(160deg,rgba(124,58,237,0.45),rgba(109,40,217,0.35)); border:1.5px solid rgba(124,58,237,0.6); box-shadow:0 4px 20px rgba(124,58,237,0.3);'
+                        : 'background:rgba(255,255,255,0.05); border:1.5px solid rgba(255,255,255,0.1);'">
+                <div class="w-16 h-16 rounded-full overflow-hidden flex items-center justify-center"
+                     style="background:rgba(255,255,255,0.14);">
+                  <img v-if="cat.image || cat.icon" :src="cat.image || cat.icon" :alt="cat.name"
+                       class="w-full h-full object-cover"/>
+                  <span v-else class="text-3xl">📦</span>
+                </div>
+                <span class="font-bold text-sm text-white text-center leading-snug line-clamp-2">{{ cat.name }}</span>
+                <span class="text-xs font-fanum font-bold" style="color:#a78bfa;">
+                  {{ (cat.totalStock ?? 0).toLocaleString('fa-IR') }} موجودی
+                </span>
+              </button>
+            </template>
+
+          </div>
         </div>
       </div>
 
@@ -534,15 +589,37 @@ function formatDate(d) {
   return d ? new Date(d).toLocaleDateString('fa-IR') : ''
 }
 
-// ── Categories ────────────────────────────────────────────────
-const categories       = ref([])
-const selectedCategory = ref(null)
+// ── Category cards carousel ───────────────────────────────────
+const rootCatsWithStock = ref([])
+const catCardsLoading   = ref(false)
+const selectedCategory  = ref(null)
+const catStripRef       = ref(null)
+const canScrollLeft     = ref(false)
+const canScrollRight    = ref(false)
+
+const totalCatStock = computed(() =>
+  rootCatsWithStock.value.reduce((sum, c) => sum + (c.totalStock ?? 0), 0),
+)
 
 onMounted(async () => {
+  catCardsLoading.value = true
   try {
-    const { data } = await http.get('/categories', { params: { level: 1, limit: 20 } })
-    categories.value = data?.items ?? data?.categories ?? data ?? []
-  } catch {}
+    const { data } = await http.get('/categories/roots-with-stock')
+    rootCatsWithStock.value = Array.isArray(data) ? data : (data?.data ?? [])
+  } catch {
+    rootCatsWithStock.value = []
+  } finally {
+    catCardsLoading.value = false
+    nextTick(() => {
+      const el = catStripRef.value
+      if (!el) return
+      canScrollRight.value = el.scrollWidth > el.clientWidth + 8
+      el.addEventListener('scroll', () => {
+        canScrollLeft.value  = el.scrollLeft > 8
+        canScrollRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 8
+      }, { passive: true })
+    })
+  }
 })
 
 function selectCategory(cat) {
@@ -551,32 +628,11 @@ function selectCategory(cat) {
   loadBrands()
 }
 
-// ── Category carousel ─────────────────────────────────────────
-const catStripRef    = ref(null)
-const canScrollLeft  = ref(false)
-const canScrollRight = ref(false)
-
-function onCatScroll() {
-  const el = catStripRef.value
-  if (!el) return
-  canScrollLeft.value  = el.scrollLeft > 8
-  canScrollRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 8
-}
-
 function scrollCats(dir) {
   const el = catStripRef.value
   if (!el) return
   el.scrollBy({ left: dir === 'left' ? -240 : 240, behavior: 'smooth' })
 }
-
-onMounted(() => {
-  nextTick(() => {
-    const el = catStripRef.value
-    if (!el) return
-    canScrollRight.value = el.scrollWidth > el.clientWidth + 8
-    el.addEventListener('scroll', onCatScroll, { passive: true })
-  })
-})
 
 // ── Brands ────────────────────────────────────────────────────
 const allBrands     = ref([])

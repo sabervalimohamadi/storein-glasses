@@ -28,6 +28,7 @@
         class="home__section"
       />
       <MostViewed class="home__section" />
+      <LatestBlogPosts class="home__section" />
       <TrustStrip class="home__section" />
     </div>
   </div>
@@ -39,8 +40,9 @@ import CategoryBar   from '~/components/home/CategoryBar.vue'
 import FlashSale     from '~/components/home/FlashSale.vue'
 import ProductRow    from '~/components/home/ProductRow.vue'
 import SpecialBanner from '~/components/home/SpecialBanner.vue'
-import MostViewed    from '~/components/home/MostViewed.vue'
-import TrustStrip    from '~/components/home/TrustStrip.vue'
+import MostViewed       from '~/components/home/MostViewed.vue'
+import LatestBlogPosts  from '~/components/home/LatestBlogPosts.vue'
+import TrustStrip       from '~/components/home/TrustStrip.vue'
 
 definePageMeta({ layout: 'default' })
 

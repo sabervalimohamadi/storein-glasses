@@ -27,6 +27,12 @@ export class CategoryController {
   }
 
   @Public()
+  @Get('roots-with-stock')
+  getRootsWithStock() {
+    return this.categoryService.getRootsWithStock();
+  }
+
+  @Public()
   @Get('slug/:slug')
   getBySlug(@Param('slug') slug: string) {
     return this.categoryService.getBySlug(slug);
