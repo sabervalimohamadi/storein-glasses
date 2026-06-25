@@ -40,9 +40,9 @@ import CategoryBar   from '~/components/home/CategoryBar.vue'
 import FlashSale     from '~/components/home/FlashSale.vue'
 import ProductRow    from '~/components/home/ProductRow.vue'
 import SpecialBanner from '~/components/home/SpecialBanner.vue'
-import MostViewed       from '~/components/home/MostViewed.vue'
-import LatestBlogPosts  from '~/components/home/LatestBlogPosts.vue'
-import TrustStrip       from '~/components/home/TrustStrip.vue'
+const MostViewed      = defineAsyncComponent(() => import('~/components/home/MostViewed.vue'))
+const LatestBlogPosts = defineAsyncComponent(() => import('~/components/home/LatestBlogPosts.vue'))
+const TrustStrip      = defineAsyncComponent(() => import('~/components/home/TrustStrip.vue'))
 
 definePageMeta({ layout: 'default' })
 
@@ -64,9 +64,9 @@ const [
   { data: rawBest, pending: loadingBest },
   { data: rawSun,  pending: loadingSun },
 ] = await Promise.all([
-  useAsyncData('home-new',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest' } }),                              { transform: (r) => r?.data ?? r }),
-  useAsyncData('home-best', () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'bestseller' } }),                          { transform: (r) => r?.data ?? r }),
-  useAsyncData('home-sun',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest', category: 'eynak-aftabi' } }),    { transform: (r) => r?.data ?? r }),
+  useAsyncData('home-new',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest' } }),                           { transform: (r) => r?.data ?? r }),
+  useAsyncData('home-best', () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'bestseller' } }),                       { transform: (r) => r?.data ?? r, lazy: true }),
+  useAsyncData('home-sun',  () => $fetch('/api/v1/products', { params: { status: 'active', limit: 8, sort: 'newest', category: 'eynak-aftabi' } }), { transform: (r) => r?.data ?? r, lazy: true }),
 ])
 
 const newArrivals = computed(() => rawNew.value?.products  ?? rawNew.value?.items  ?? [])
