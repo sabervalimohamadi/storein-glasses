@@ -2,6 +2,17 @@
   <div class="bg-bg min-h-screen">
 
     <!-- ══════════════════════════════════════
+         PRE-MOUNT — SSR-safe spinner
+         (server and client render identically
+          until onMounted fires)
+    ══════════════════════════════════════ -->
+    <div v-if="!isMounted" class="min-h-[60vh] flex items-center justify-center">
+      <div class="w-10 h-10 rounded-full border-4 border-brand/20 border-t-brand animate-spin" aria-label="در حال بارگذاری..."/>
+    </div>
+
+    <template v-else>
+
+    <!-- ══════════════════════════════════════
          APPROVED — status strip
     ══════════════════════════════════════ -->
     <div v-if="wholesaleStatus?.isWholesale"
@@ -404,8 +415,10 @@
       </div>
     </div>
 
+    </template><!-- end v-else (isMounted) -->
+
     <!-- ══════════════════════════════════════
-         HERO (bottom)
+         HERO (bottom) — always rendered
     ══════════════════════════════════════ -->
     <section class="relative overflow-hidden"
              style="background: linear-gradient(145deg, #06101f 0%, #0f2040 45%, #071628 100%);">
@@ -496,11 +509,14 @@ const trustBadges = ['🔒 اطلاعات محفوظ', '⚡ بررسی تا ۲۴
 // view: 'browse' | 'products'
 const view = ref('browse')
 
+const isMounted       = ref(false)
 const wholesaleStatus = ref(null)
-const statusLoading   = ref(auth.isLoggedIn)
+const statusLoading   = ref(false)
 
 onMounted(async () => {
+  isMounted.value = true
   if (!auth.isLoggedIn) return
+  statusLoading.value = true
   try {
     const { data } = await http.get('/users/me/wholesale-status')
     wholesaleStatus.value = data
