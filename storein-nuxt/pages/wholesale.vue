@@ -42,30 +42,32 @@
         <div class="max-w-6xl mx-auto">
 
           <!-- Header -->
-          <div class="flex items-center justify-between mb-8 flex-row-reverse">
-            <div class="text-right">
-              <h2 class="text-xl font-black text-text-primary tracking-tight">دسته‌بندی‌ها</h2>
-              <p class="text-xs mt-1 text-text-secondary">انتخاب کنید و محصولات را ببینید</p>
-            </div>
-            <div class="flex items-center gap-2">
-              <button @click="scrollCats('right')" :disabled="!canScrollRight" aria-label="قبلی"
-                      class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30"
-                      :style="canScrollRight
-                        ? 'background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.35);'
-                        : 'background:var(--color-surface); color:var(--color-text-secondary); border:1px solid var(--color-border);'">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
-              </button>
-              <button @click="scrollCats('left')" :disabled="!canScrollLeft" aria-label="بعدی"
-                      class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30"
-                      :style="canScrollLeft
-                        ? 'background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.35);'
-                        : 'background:var(--color-surface); color:var(--color-text-secondary); border:1px solid var(--color-border);'">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
-              </button>
-            </div>
+          <div class="text-right mb-6">
+            <h2 class="text-xl font-black text-text-primary tracking-tight">دسته‌بندی‌ها</h2>
+            <p class="text-xs mt-1 text-text-secondary">انتخاب کنید و محصولات را ببینید</p>
           </div>
 
           <!-- Category + subcategory — Instagram story circles -->
+          <div class="relative">
+
+            <!-- Floating left button -->
+            <button v-show="canScrollLeft" @click="scrollCats('left')" aria-label="بعدی"
+                    class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                    style="background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+              </svg>
+            </button>
+
+            <!-- Floating right button -->
+            <button v-show="canScrollRight" @click="scrollCats('right')" aria-label="قبلی"
+                    class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                    style="background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+              </svg>
+            </button>
+
           <div ref="catStripRef" class="flex gap-5 overflow-x-auto items-start" style="scrollbar-width:none; padding: 8px 4px 12px;">
 
             <!-- Skeleton -->
@@ -175,6 +177,7 @@
 
             </template>
           </div>
+          </div><!-- /relative wrapper -->
 
         </div>
       </div>
