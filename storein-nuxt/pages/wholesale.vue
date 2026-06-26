@@ -91,144 +91,113 @@
             </div>
           </div>
 
-          <!-- Root category cards -->
-          <div ref="catStripRef" class="flex gap-4 overflow-x-auto pb-3" style="scrollbar-width:none;">
+          <!-- Category + subcategory — Instagram story circles -->
+          <div ref="catStripRef" class="flex gap-5 overflow-x-auto pb-3 items-start" style="scrollbar-width:none;">
+
+            <!-- Skeleton -->
             <template v-if="catCardsLoading">
-              <div v-for="n in 6" :key="n" class="shrink-0 w-44 h-52 rounded-3xl animate-pulse" style="background:var(--color-surface);"/>
+              <div v-for="n in 6" :key="n" class="shrink-0 flex flex-col items-center gap-2">
+                <div class="w-16 h-16 rounded-full animate-pulse" style="background:var(--color-surface);"/>
+                <div class="w-12 h-2.5 rounded-full animate-pulse" style="background:var(--color-surface);"/>
+              </div>
             </template>
+
             <template v-else>
 
-              <!-- All card -->
+              <!-- همه دسته‌ها -->
               <button @click="selectCategory(null)"
-                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
-                      :class="!selectedCategory ? 'ring-2 ring-violet-400/60' : ''"
-                      :style="!selectedCategory
-                        ? 'background:linear-gradient(145deg,#4c1d95,#6d28d9); box-shadow:0 8px 32px rgba(109,40,217,0.45);'
-                        : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
-                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" style="background:rgba(124,58,237,0.6);"/>
-                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" style="background:rgba(109,40,217,0.6);"/>
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center relative z-10"
-                     :style="!selectedCategory ? 'background:rgba(255,255,255,0.18);' : 'background:var(--color-surface);'">
+                      class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
+                <div class="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200"
+                     :style="!selectedCategory
+                       ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
+                       : 'background:var(--color-surface); box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
                        :style="!selectedCategory ? 'color:#e9d5ff;' : 'color:var(--color-text-secondary);'">
                     <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
                     <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
                   </svg>
                 </div>
-                <div class="relative z-10 text-right">
-                  <p class="font-black text-base leading-tight mb-1"
-                     :class="!selectedCategory ? 'text-white' : 'text-text-primary'">همه دسته‌ها</p>
-                  <p class="text-xs font-fanum font-bold"
-                     :style="!selectedCategory ? 'color:rgba(255,255,255,0.65);' : 'color:var(--color-text-secondary);'">
-                    {{ totalCatStock.toLocaleString('fa-IR') }} کالا
-                  </p>
-                </div>
+                <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:64px;"
+                      :class="!selectedCategory ? 'text-violet-400' : 'text-text-primary'">همه دسته‌ها</span>
               </button>
 
-              <!-- Per-category card -->
+              <!-- Root category circles -->
               <button v-for="cat in rootCatsWithStock" :key="cat._id"
                       @click="selectCategory(cat)"
-                      class="shrink-0 w-44 relative overflow-hidden rounded-3xl flex flex-col justify-between p-5 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
-                      :class="selectedCategory?._id === cat._id ? 'ring-2 ring-violet-400/60' : ''"
-                      :style="selectedCategory?._id === cat._id
-                        ? `background:linear-gradient(145deg,${catMeta(cat.slug).g1},${catMeta(cat.slug).g2}); box-shadow:0 8px 32px ${catMeta(cat.slug).shadow};`
-                        : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
-                <!-- deco circles -->
-                <div class="absolute -top-4 -left-4 w-24 h-24 rounded-full opacity-20" :style="`background:${catMeta(cat.slug).g1};`"/>
-                <div class="absolute -bottom-6 -right-6 w-28 h-28 rounded-full opacity-10" :style="`background:${catMeta(cat.slug).g2};`"/>
-                <!-- icon -->
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center relative z-10 overflow-hidden"
+                      class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
+                <div class="w-16 h-16 rounded-full overflow-hidden transition-all duration-200"
                      :style="selectedCategory?._id === cat._id
-                       ? `background:${catMeta(cat.slug).iconBg};`
-                       : 'background:var(--color-surface);'">
+                       ? 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
+                       : 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                   <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
-                  <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"
-                       stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
-                       :style="selectedCategory?._id === cat._id
-                         ? `color:${catMeta(cat.slug).iconFg};`
-                         : 'color:var(--color-text-secondary);'">
-                    <template v-if="catMeta(cat.slug).icon==='sunglasses'">
-                      <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/>
-                      <path d="M10 12h4"/><path d="M2 11.5Q0 11.5 0 13"/><path d="M22 11.5Q24 11.5 24 13"/>
-                    </template>
-                    <template v-else-if="catMeta(cat.slug).icon==='glasses'">
-                      <circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/>
-                      <path d="M11 12h2"/><path d="M3 10Q1 9 0 10"/><path d="M21 10Q23 9 24 10"/>
-                    </template>
-                    <template v-else-if="catMeta(cat.slug).icon==='lens'">
-                      <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
-                      <path d="M12 4v1M12 19v1M4 12h1M19 12h1"/>
-                    </template>
-                    <template v-else-if="catMeta(cat.slug).icon==='case'">
-                      <rect x="2" y="8" width="20" height="12" rx="4"/>
-                      <path d="M8 8V6a4 4 0 0 1 8 0v2"/><path d="M7 14h10"/>
-                    </template>
-                    <template v-else>
-                      <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/>
-                      <path d="M10 12h4"/>
-                    </template>
-                  </svg>
+                  <div v-else class="w-full h-full flex items-center justify-center" :style="`background:${catMeta(cat.slug).g1};`">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
+                         :style="`color:${catMeta(cat.slug).iconFg};`">
+                      <template v-if="catMeta(cat.slug).icon==='sunglasses'">
+                        <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/><path d="M10 12h4"/>
+                      </template>
+                      <template v-else-if="catMeta(cat.slug).icon==='glasses'">
+                        <circle cx="7" cy="12" r="4"/><circle cx="17" cy="12" r="4"/><path d="M11 12h2"/>
+                      </template>
+                      <template v-else-if="catMeta(cat.slug).icon==='lens'">
+                        <circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>
+                      </template>
+                      <template v-else-if="catMeta(cat.slug).icon==='case'">
+                        <rect x="2" y="8" width="20" height="12" rx="4"/><path d="M8 8V6a4 4 0 0 1 8 0v2"/>
+                      </template>
+                      <template v-else>
+                        <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/><path d="M10 12h4"/>
+                      </template>
+                    </svg>
+                  </div>
                 </div>
-                <!-- text -->
-                <div class="relative z-10 text-right">
-                  <p class="font-black text-base leading-tight mb-1 line-clamp-2"
-                     :class="selectedCategory?._id === cat._id ? 'text-white' : 'text-text-primary'">{{ cat.name }}</p>
-                  <p class="text-xs font-fanum font-bold"
-                     :style="selectedCategory?._id === cat._id ? 'color:rgba(255,255,255,0.65);' : 'color:var(--color-text-secondary);'">
-                    {{ (cat.totalStock ?? 0).toLocaleString('fa-IR') }} کالا
-                  </p>
-                </div>
+                <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:64px;"
+                      :class="selectedCategory?._id === cat._id ? 'text-violet-400' : 'text-text-primary'">{{ cat.name }}</span>
               </button>
 
-              <!-- Subcategory cards — inline in same strip -->
+              <!-- Divider + subcategory circles -->
               <template v-if="visibleSubcategories.length">
-                <!-- Divider -->
-                <div class="shrink-0 flex items-center px-1">
-                  <div class="w-px h-32 rounded-full" style="background:var(--color-border);"/>
+                <div class="shrink-0 self-stretch flex items-center px-0.5">
+                  <div class="w-px h-16 rounded-full" style="background:var(--color-border);"/>
                 </div>
 
-                <!-- همه زیردسته‌ها — only when a root is selected -->
+                <!-- همه زیردسته‌ها — only when root is selected -->
                 <button v-if="selectedCategory" @click="selectSubcategory(null)"
-                        class="shrink-0 w-40 relative overflow-hidden rounded-3xl flex flex-col justify-between p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
-                        :style="!selectedSubcategory
-                          ? 'background:rgba(124,58,237,0.12); border:1.5px solid rgba(124,58,237,0.4);'
-                          : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
-                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center"
-                       :style="!selectedSubcategory ? 'background:rgba(124,58,237,0.2);' : 'background:var(--color-surface);'">
+                        class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
+                  <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200"
+                       :style="!selectedSubcategory
+                         ? 'background:rgba(124,58,237,0.18); box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
+                         : 'background:var(--color-surface); box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
                          :style="!selectedSubcategory ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
                       <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
                       <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
                     </svg>
                   </div>
-                  <div class="text-right">
-                    <p class="font-bold text-sm" :class="!selectedSubcategory ? 'text-violet-400' : 'text-text-primary'">همه</p>
-                    <p class="text-xs font-fanum mt-0.5" :style="!selectedSubcategory ? 'color:rgba(167,139,250,0.7);' : 'color:var(--color-text-secondary);'">{{ selectedCategory.name }}</p>
-                  </div>
+                  <span class="text-[11px] font-bold text-center leading-tight" style="width:56px;"
+                        :class="!selectedSubcategory ? 'text-violet-400' : 'text-text-secondary'">همه</span>
                 </button>
 
-                <!-- Per-subcategory cards -->
+                <!-- Subcategory circles -->
                 <button v-for="sub in visibleSubcategories" :key="sub._id"
                         @click="selectSubcategory(sub)"
-                        class="shrink-0 w-40 relative overflow-hidden rounded-3xl flex flex-col justify-between p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
-                        :style="selectedSubcategory?._id === sub._id
-                          ? 'background:rgba(124,58,237,0.12); border:1.5px solid rgba(124,58,237,0.4);'
-                          : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
-                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center"
-                       :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.2);' : 'background:var(--color-surface);'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
-                         :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
-                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-                      <line x1="7" y1="7" x2="7.01" y2="7"/>
-                    </svg>
+                        class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
+                  <div class="w-14 h-14 rounded-full overflow-hidden transition-all duration-200"
+                       :style="selectedSubcategory?._id === sub._id
+                         ? 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
+                         : 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
+                    <img v-if="sub.image" :src="sub.image" :alt="sub.name" class="w-full h-full object-cover"/>
+                    <div v-else class="w-full h-full flex items-center justify-center"
+                         :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.18);' : 'background:var(--color-surface);'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
+                           :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                      </svg>
+                    </div>
                   </div>
-                  <div class="text-right">
-                    <p class="font-bold text-sm line-clamp-2" :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</p>
-                    <p v-if="sub.totalStock != null" class="text-xs font-fanum mt-0.5"
-                       :style="selectedSubcategory?._id === sub._id ? 'color:rgba(167,139,250,0.7);' : 'color:var(--color-text-secondary);'">
-                      {{ sub.totalStock.toLocaleString('fa-IR') }} کالا
-                    </p>
-                  </div>
+                  <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:56px;"
+                        :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</span>
                 </button>
               </template>
 
