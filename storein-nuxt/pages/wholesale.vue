@@ -180,32 +180,59 @@
                 </div>
               </button>
 
-            </template>
-          </div>
+              <!-- Subcategory cards — inline in same strip -->
+              <template v-if="visibleSubcategories.length">
+                <!-- Divider -->
+                <div class="shrink-0 flex items-center px-1">
+                  <div class="w-px h-32 rounded-full" style="background:var(--color-border);"/>
+                </div>
 
-          <!-- Subcategories — always visible, filtered by selected root -->
-          <div v-if="visibleSubcategories.length" class="mt-6">
-            <p class="text-xs text-text-secondary mb-3 text-right font-bold">
-              {{ selectedCategory ? `زیردسته‌های ${selectedCategory.name}` : 'همه زیردسته‌ها' }}
-            </p>
-            <div class="flex flex-wrap gap-2">
-              <button v-if="selectedCategory" @click="selectSubcategory(null)"
-                      class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
-                      :style="!selectedSubcategory
-                        ? 'background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); color:#7c3aed;'
-                        : 'background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-secondary);'">
-                همه
-              </button>
-              <button v-for="sub in visibleSubcategories" :key="sub._id"
-                      @click="selectSubcategory(sub)"
-                      class="px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200"
-                      :style="selectedSubcategory?._id === sub._id
-                        ? 'background:rgba(124,58,237,0.12); border:1px solid rgba(124,58,237,0.4); color:#7c3aed;'
-                        : 'background:var(--color-surface); border:1px solid var(--color-border); color:var(--color-text-secondary);'">
-                {{ sub.name }}
-                <span v-if="sub.totalStock" class="mr-1 opacity-60 font-fanum">{{ sub.totalStock.toLocaleString('fa-IR') }}</span>
-              </button>
-            </div>
+                <!-- همه زیردسته‌ها — only when a root is selected -->
+                <button v-if="selectedCategory" @click="selectSubcategory(null)"
+                        class="shrink-0 w-40 relative overflow-hidden rounded-3xl flex flex-col justify-between p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                        :style="!selectedSubcategory
+                          ? 'background:rgba(124,58,237,0.12); border:1.5px solid rgba(124,58,237,0.4);'
+                          : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
+                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center"
+                       :style="!selectedSubcategory ? 'background:rgba(124,58,237,0.2);' : 'background:var(--color-surface);'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
+                         :style="!selectedSubcategory ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
+                      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
+                      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+                    </svg>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-bold text-sm" :class="!selectedSubcategory ? 'text-violet-400' : 'text-text-primary'">همه</p>
+                    <p class="text-xs font-fanum mt-0.5" :style="!selectedSubcategory ? 'color:rgba(167,139,250,0.7);' : 'color:var(--color-text-secondary);'">{{ selectedCategory.name }}</p>
+                  </div>
+                </button>
+
+                <!-- Per-subcategory cards -->
+                <button v-for="sub in visibleSubcategories" :key="sub._id"
+                        @click="selectSubcategory(sub)"
+                        class="shrink-0 w-40 relative overflow-hidden rounded-3xl flex flex-col justify-between p-4 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl active:scale-95"
+                        :style="selectedSubcategory?._id === sub._id
+                          ? 'background:rgba(124,58,237,0.12); border:1.5px solid rgba(124,58,237,0.4);'
+                          : 'background:var(--color-card); border:1.5px solid var(--color-border);'">
+                  <div class="w-11 h-11 rounded-2xl flex items-center justify-center"
+                       :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.2);' : 'background:var(--color-surface);'">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
+                         :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
+                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                      <line x1="7" y1="7" x2="7.01" y2="7"/>
+                    </svg>
+                  </div>
+                  <div class="text-right">
+                    <p class="font-bold text-sm line-clamp-2" :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</p>
+                    <p v-if="sub.totalStock != null" class="text-xs font-fanum mt-0.5"
+                       :style="selectedSubcategory?._id === sub._id ? 'color:rgba(167,139,250,0.7);' : 'color:var(--color-text-secondary);'">
+                      {{ sub.totalStock.toLocaleString('fa-IR') }} کالا
+                    </p>
+                  </div>
+                </button>
+              </template>
+
+            </template>
           </div>
 
         </div>
