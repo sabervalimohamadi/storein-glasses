@@ -42,19 +42,9 @@
         <div class="max-w-6xl mx-auto">
 
           <!-- Header -->
-          <div class="flex items-center justify-between mb-6">
-            <button @click="filterDrawerOpen = true"
-                    class="flex items-center gap-2 text-sm font-bold px-4 py-2.5 rounded-2xl transition-all duration-200 active:scale-95 shrink-0"
-                    style="background:rgba(var(--color-brand-rgb),0.1); color:rgb(var(--color-brand-rgb)); border:1.5px solid rgba(var(--color-brand-rgb),0.25);">
-              <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4h18M7 8h10M11 12h2"/>
-              </svg>
-              انتخاب با فیلتر
-            </button>
-            <div class="text-right">
-              <h2 class="text-xl font-black text-text-primary tracking-tight">دسته‌بندی‌ها</h2>
-              <p class="text-xs mt-1 text-text-secondary">انتخاب کنید و محصولات را ببینید</p>
-            </div>
+          <div class="text-right mb-6">
+            <h2 class="text-xl font-black text-text-primary tracking-tight">دسته‌بندی‌ها</h2>
+            <p class="text-xs mt-1 text-text-secondary">انتخاب کنید و محصولات را ببینید</p>
           </div>
 
           <!-- Category + subcategory — Instagram story circles -->
@@ -260,134 +250,6 @@
         </div>
       </div>
 
-      <!-- ══ FILTER DRAWER (bottom-sheet on mobile) ══ -->
-      <Teleport to="body">
-      <Transition name="ws-drawer">
-        <div v-if="filterDrawerOpen"
-             class="fixed inset-0 z-[80] flex items-end sm:items-center justify-center"
-             dir="rtl"
-             @keydown.esc="filterDrawerOpen = false">
-
-          <!-- Backdrop -->
-          <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" @click="filterDrawerOpen = false"/>
-
-          <!-- Panel -->
-          <div class="relative w-full sm:max-w-lg rounded-t-3xl sm:rounded-3xl overflow-hidden flex flex-col"
-               style="max-height:88dvh; background:var(--color-card);">
-
-            <!-- Mobile drag handle -->
-            <div class="flex justify-center pt-3 pb-0.5 sm:hidden shrink-0">
-              <div class="w-10 h-1 rounded-full" style="background:var(--color-border);"/>
-            </div>
-
-            <!-- Header -->
-            <div class="flex items-center justify-between px-5 py-4 shrink-0 border-b" style="border-color:var(--color-border);">
-              <button @click="filterDrawerOpen = false"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-colors hover:bg-surface"
-                      style="background:var(--color-surface);">
-                <svg class="w-4 h-4 text-text-secondary" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
-                </svg>
-              </button>
-              <div class="text-right">
-                <h3 class="font-black text-text-primary text-base">انتخاب با فیلتر</h3>
-                <p class="text-[11px] text-text-secondary mt-0.5">دسته، زیردسته و برند را انتخاب کنید</p>
-              </div>
-              <div class="w-9"/>
-            </div>
-
-            <!-- Scrollable body -->
-            <div class="overflow-y-auto flex-1 px-5 py-5 space-y-6">
-
-              <!-- دسته‌بندی -->
-              <div>
-                <p class="text-xs font-extrabold text-text-secondary mb-3 tracking-wide">دسته‌بندی</p>
-                <div class="flex flex-wrap gap-2">
-                  <button @click="drawerSelectCategory(null)"
-                          :class="['px-3.5 py-2 rounded-xl text-sm font-bold transition-all border-2',
-                                   !selectedCategory && !selectedSubcategory
-                                     ? 'border-brand bg-brand/10 text-brand'
-                                     : 'border-border text-text-secondary']">
-                    همه
-                  </button>
-                  <button v-for="cat in rootCatsWithStock" :key="cat._id"
-                          @click="drawerSelectCategory(cat)"
-                          :class="['px-3.5 py-2 rounded-xl text-sm font-bold transition-all border-2',
-                                   selectedCategory?._id === cat._id && !selectedSubcategory
-                                     ? 'border-brand bg-brand/10 text-brand'
-                                     : 'border-border text-text-secondary']">
-                    {{ cat.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- زیردسته -->
-              <div v-if="drawerSubcats.length">
-                <p class="text-xs font-extrabold text-text-secondary mb-3 tracking-wide">زیردسته</p>
-                <div class="flex flex-wrap gap-2">
-                  <button v-for="sub in drawerSubcats" :key="sub._id"
-                          @click="drawerSelectSubcategory(sub)"
-                          :class="['px-3.5 py-2 rounded-xl text-sm font-semibold transition-all border-2',
-                                   selectedSubcategory?._id === sub._id
-                                     ? 'border-brand bg-brand/10 text-brand'
-                                     : 'border-border text-text-secondary']">
-                    {{ sub.name }}
-                  </button>
-                </div>
-              </div>
-
-              <!-- برند -->
-              <div>
-                <p class="text-xs font-extrabold text-text-secondary mb-3 tracking-wide">برند</p>
-
-                <div v-if="brandsLoading" class="grid grid-cols-3 gap-2">
-                  <div v-for="n in 6" :key="n" class="h-16 rounded-xl animate-pulse" style="background:var(--color-surface);"/>
-                </div>
-
-                <p v-else-if="!displayedBrands.length" class="text-sm text-text-secondary py-2">
-                  برندی برای این دسته یافت نشد
-                </p>
-
-                <div v-else class="grid grid-cols-3 gap-2">
-                  <button v-for="brand in displayedBrands" :key="brand._id ?? brand.slug"
-                          @click="drawerSelectBrand(brand)"
-                          :class="['flex flex-col items-center justify-center gap-1.5 rounded-xl p-2.5 transition-all border-2 active:scale-95',
-                                   selectedBrand?.slug === brand.slug
-                                     ? 'border-brand bg-brand/5'
-                                     : 'border-border']">
-                    <div class="h-8 flex items-center justify-center w-full">
-                      <img v-if="brand.logo" :src="brand.logo" :alt="brand.name" class="max-h-8 max-w-[72px] object-contain"/>
-                      <span v-else class="font-black text-xs text-center leading-tight"
-                            :class="selectedBrand?.slug === brand.slug ? 'text-brand' : 'text-text-primary'">
-                        {{ brand.name }}
-                      </span>
-                    </div>
-                    <span v-if="brand.logo" class="text-[10px] font-semibold text-center leading-tight line-clamp-1 w-full"
-                          :class="selectedBrand?.slug === brand.slug ? 'text-brand/80' : 'text-text-secondary'">
-                      {{ brand.name }}
-                    </span>
-                  </button>
-                </div>
-              </div>
-
-            </div>
-
-            <!-- Footer CTA -->
-            <div class="px-5 py-4 shrink-0 border-t" style="border-color:var(--color-border); background:var(--color-card);">
-              <button @click="applyDrawerFilter"
-                      :disabled="!selectedBrand"
-                      class="w-full py-3.5 rounded-2xl font-black text-sm transition-all active:scale-[0.98]"
-                      :style="selectedBrand
-                        ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); color:#fff; box-shadow:0 6px 20px rgba(124,58,237,0.35);'
-                        : 'background:var(--color-surface); color:var(--color-text-secondary); cursor:not-allowed;'">
-                {{ selectedBrand ? `مشاهده محصولات ${selectedBrand.name}` : 'ابتدا یک برند انتخاب کنید' }}
-              </button>
-            </div>
-
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
     </div>
 
     <!-- ══════════════════════════════════════
@@ -814,36 +676,6 @@ onMounted(async () => {
   }
 })
 
-// ── Filter drawer ─────────────────────────────────────────────
-const filterDrawerOpen = ref(false)
-
-const drawerSubcats = computed(() => {
-  if (!selectedCategory.value) return allSubcategories.value
-  const found = categoryTree.value.find(c => c._id === selectedCategory.value._id)
-  return found?.children ?? []
-})
-
-function drawerSelectCategory(cat) {
-  selectCategory(cat)
-}
-
-function drawerSelectSubcategory(sub) {
-  selectSubcategory(sub)
-}
-
-function drawerSelectBrand(brand) {
-  filterDrawerOpen.value = false
-  selectBrand(brand)
-}
-
-function applyDrawerFilter() {
-  if (!selectedBrand.value) return
-  filterDrawerOpen.value = false
-  nextTick(() => {
-    document.getElementById('ws-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-  })
-}
-
 function selectCategory(cat) {
   selectedCategory.value    = cat
   selectedSubcategory.value = null
@@ -1059,25 +891,6 @@ async function onPageChange(p) {
 .scrollbar-none { scrollbar-width: none; }
 .scrollbar-none::-webkit-scrollbar { display: none; }
 
-/* Wholesale filter drawer — slides up from bottom on mobile */
-.ws-drawer-enter-active { transition: opacity 0.2s ease; }
-.ws-drawer-leave-active { transition: opacity 0.18s ease; }
-.ws-drawer-enter-from,
-.ws-drawer-leave-to   { opacity: 0; }
-
-.ws-drawer-enter-active .relative,
-.ws-drawer-leave-active .relative {
-  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-}
-.ws-drawer-enter-from .relative,
-.ws-drawer-leave-to   .relative { transform: translateY(100%); }
-
-@media (min-width: 640px) {
-  .ws-drawer-enter-active .relative,
-  .ws-drawer-leave-active .relative { transition: transform 0.25s ease, opacity 0.2s ease; }
-  .ws-drawer-enter-from .relative,
-  .ws-drawer-leave-to   .relative  { transform: scale(0.96); opacity: 0; }
-}
 .sub-fade-enter-active { transition: opacity 0.25s ease, transform 0.25s ease; }
 .sub-fade-leave-active { transition: opacity 0.15s ease; }
 .sub-fade-enter-from   { opacity: 0; transform: translateY(-6px); }
