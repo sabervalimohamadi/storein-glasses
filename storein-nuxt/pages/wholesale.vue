@@ -186,6 +186,13 @@
                 {{ selectedCategory ? `برندهای ${selectedCategory.name}` : 'همه برندها' }}
                 <span v-if="!brandsLoading" class="mr-1.5 opacity-50 font-normal">({{ displayedBrands.length }} برند)</span>
               </p>
+              <button v-if="selectedBrand" @click="clearBrandSelection"
+                      class="text-xs text-text-secondary hover:text-text-primary transition-colors flex items-center gap-1 shrink-0">
+                <svg class="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+                پاک‌کردن
+              </button>
             </div>
 
             <!-- Skeleton -->
@@ -228,6 +235,36 @@
                 </button>
               </div>
             </div>
+          </div>
+
+          <!-- ── Inline product results ── -->
+          <div v-if="selectedBrand" id="ws-products" class="mt-7 pt-6 border-t" style="border-color:var(--color-border);">
+            <div class="flex items-center justify-between mb-4">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <img v-if="selectedBrand.logo" :src="selectedBrand.logo" class="h-6 object-contain shrink-0" :alt="selectedBrand.name"/>
+                <span class="font-bold text-sm text-text-primary truncate">{{ selectedBrand.name }}</span>
+                <span v-if="!productsLoading" class="text-xs text-text-secondary shrink-0 opacity-60">({{ total }} محصول)</span>
+              </div>
+            </div>
+
+            <SortBar v-model="filters.sortBy" :total="total" :loading="productsLoading"
+                     @update:modelValue="onSortChange" @open-filter="mobileFilterOpen = true"/>
+
+            <div v-if="!productsLoading && wholesaleProducts.length === 0"
+                 class="flex flex-col items-center py-16 text-center mt-4 rounded-2xl border"
+                 style="background:var(--color-card); border-color:var(--color-border);">
+              <div class="text-3xl mb-3">🔍</div>
+              <p class="font-bold text-text-primary text-sm mb-1">محصولی یافت نشد</p>
+              <p class="text-xs text-text-secondary">برای این برند محصول عمده‌ای موجود نیست</p>
+            </div>
+
+            <WholesaleProductGrid v-else :products="wholesaleProducts" :loading="productsLoading"/>
+
+            <BasePagination :model-value="page" :total-pages="totalPages" :loading="productsLoading"
+                            @update:modelValue="onPageChange" class="mt-6"/>
+
+            <FilterMobileDrawer v-model="mobileFilterOpen" :filters="filters"
+                                @apply="onMobileFilterApply" @clear="clearAllFilters"/>
           </div>
 
         </div>
@@ -666,6 +703,7 @@ function selectCategory(cat) {
   selectedCategory.value    = cat
   selectedSubcategory.value = null
   brandSearch.value         = ''
+  clearBrandSelection()
   loadBrands()
 }
 
@@ -746,20 +784,31 @@ onMounted(() => loadBrands())
 // ── Brand → products ──────────────────────────────────────────
 const selectedBrand = ref(null)
 
-function selectBrand(brand) {
+async function selectBrand(brand) {
+  if (selectedBrand.value?.slug === brand.slug) {
+    clearBrandSelection()
+    return
+  }
   selectedBrand.value = brand
   filters.brand       = brand.slug
-  filters.category    = selectedCategory.value?._id ?? ''
+  filters.category    = selectedSubcategory.value?._id ?? selectedCategory.value?._id ?? ''
   page.value          = 1
-  view.value          = 'products'
-  fetchWholesaleProducts()
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  await fetchWholesaleProducts()
+  nextTick(() => {
+    document.getElementById('ws-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  })
+}
+
+function clearBrandSelection() {
+  selectedBrand.value     = null
+  filters.brand           = ''
+  wholesaleProducts.value = []
+  total.value             = 0
 }
 
 function backToBrowse() {
-  view.value          = 'browse'
-  selectedBrand.value = null
-  filters.brand       = ''
+  view.value = 'browse'
+  clearBrandSelection()
 }
 
 // ── Search ────────────────────────────────────────────────────
@@ -847,7 +896,7 @@ function onMobileFilterApply(newFilters) {
 async function onPageChange(p) {
   page.value = p
   await fetchWholesaleProducts()
-  window.scrollTo({ top: 0, behavior: 'smooth' })
+  document.getElementById('ws-products')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 </script>
 
