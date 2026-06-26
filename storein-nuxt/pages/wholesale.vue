@@ -688,7 +688,7 @@ import { useAuthStore }     from '~/stores/auth.store'
 import { useSettingsStore } from '~/stores/settings.store'
 import http from '~/services/http.service'
 
-definePageMeta({ layout: 'default' })
+definePageMeta({ layout: 'wholesale' })
 
 const auth          = useAuthStore()
 const settingsStore = useSettingsStore()
