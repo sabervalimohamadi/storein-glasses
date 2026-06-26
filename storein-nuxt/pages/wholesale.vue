@@ -179,84 +179,57 @@
           </div>
           </div><!-- /relative wrapper -->
 
-        </div>
-      </div>
-
-      <!-- ── Brands ── -->
-      <div class="py-10 px-4">
-        <!-- Header + search -->
-        <div class="max-w-6xl mx-auto flex items-center justify-between gap-4 mb-7">
-          <div>
-            <h2 class="text-xl font-black text-text-primary">
-              {{ selectedCategory ? `برندهای ${selectedCategory.name}` : 'همه برندها' }}
-            </h2>
-            <p class="text-xs text-text-secondary mt-0.5">{{ displayedBrands.length }} برند</p>
-          </div>
-          <div class="relative shrink-0">
-            <svg class="absolute top-1/2 -translate-y-1/2 end-3 w-3.5 h-3.5 pointer-events-none text-text-secondary/50"
-                 fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
-            </svg>
-            <input v-model="brandSearch" type="search" placeholder="جستجوی برند..."
-                   class="w-44 pe-9 ps-3 py-2 text-xs rounded-xl border focus:outline-none focus:ring-2 focus:ring-brand/20 focus:border-brand transition-all"
-                   style="border-color:var(--color-border); background:var(--color-surface);"/>
-          </div>
-        </div>
-
-        <!-- Skeleton -->
-        <div v-if="brandsLoading" class="max-w-6xl mx-auto grid gap-4"
-             style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
-          <div v-for="n in 8" :key="n" class="rounded-2xl animate-pulse"
-               style="aspect-ratio:3/2; background:var(--color-surface);"/>
-        </div>
-
-        <!-- Empty -->
-        <div v-else-if="displayedBrands.length === 0"
-             class="flex flex-col items-center py-24 text-center">
-          <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-4xl mb-5"
-               style="background:var(--color-surface);">🏷️</div>
-          <p class="font-black text-text-primary mb-1">برندی یافت نشد</p>
-          <p class="text-sm text-text-secondary">دسته‌بندی دیگری انتخاب کنید</p>
-        </div>
-
-        <!-- Brand grid — auto-fill, centered -->
-        <div v-else class="max-w-6xl mx-auto grid gap-4"
-             style="grid-template-columns:repeat(auto-fill,minmax(180px,1fr));">
-          <button v-for="brand in displayedBrands" :key="brand._id ?? brand.slug"
-                  @click="selectBrand(brand)"
-                  class="group relative rounded-2xl overflow-hidden transition-all duration-300 hover:-translate-y-2 hover:shadow-2xl active:scale-[0.97]"
-                  style="aspect-ratio:3/2; background:var(--color-card); border:1.5px solid var(--color-border);">
-
-            <!-- Ambient glow on hover -->
-            <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                 aria-hidden="true"
-                 style="background:radial-gradient(ellipse at 50% 0%,rgba(124,58,237,0.08) 0%,transparent 70%);"/>
-
-            <!-- Logo / name -->
-            <div class="absolute inset-0 flex flex-col items-center justify-center gap-2 p-5">
-              <img v-if="brand.logo" :src="brand.logo" :alt="brand.name"
-                   class="max-h-14 max-w-[80%] object-contain transition-transform duration-300 group-hover:scale-110"/>
-              <span v-else class="font-black text-center leading-tight transition-colors group-hover:text-brand"
-                    style="font-size:clamp(15px,3vw,22px); color:var(--color-text-primary);">{{ brand.name }}</span>
-              <span v-if="brand.logo"
-                    class="text-[11px] font-semibold text-text-secondary/60 group-hover:text-brand/80 transition-colors">
-                {{ brand.name }}
-              </span>
+          <!-- ── Brand strip (below categories) ── -->
+          <div class="mt-7 pt-6 border-t" style="border-color:var(--color-border);">
+            <div class="flex items-center justify-between mb-4">
+              <p class="text-xs font-bold text-text-secondary">
+                {{ selectedCategory ? `برندهای ${selectedCategory.name}` : 'همه برندها' }}
+                <span v-if="!brandsLoading" class="mr-1.5 opacity-50 font-normal">({{ displayedBrands.length }} برند)</span>
+              </p>
             </div>
 
-            <!-- Hover bottom bar -->
-            <div class="absolute bottom-0 inset-x-0 flex items-center justify-between px-4 py-2.5 translate-y-full group-hover:translate-y-0 transition-transform duration-200"
-                 style="background:linear-gradient(to top,rgba(109,28,217,0.95),rgba(109,28,217,0.7));">
-              <span class="text-white text-xs font-bold truncate">{{ brand.name }}</span>
-              <svg class="w-3.5 h-3.5 text-white/80 shrink-0 ms-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
+            <!-- Skeleton -->
+            <div v-if="brandsLoading" class="flex gap-3 overflow-hidden" style="padding:4px 0 8px;">
+              <div v-for="n in 8" :key="n" class="shrink-0 w-28 h-[76px] rounded-2xl animate-pulse" style="background:var(--color-surface);"/>
             </div>
 
-            <!-- Focus border -->
-            <div class="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-                 style="box-shadow:inset 0 0 0 2px #7c3aed;" aria-hidden="true"/>
-          </button>
+            <!-- Empty -->
+            <div v-else-if="!displayedBrands.length" class="flex items-center gap-2 py-3 text-sm text-text-secondary">
+              <span>🏷️</span> برندی برای این دسته‌بندی یافت نشد
+            </div>
+
+            <!-- Brand scroll strip -->
+            <div v-else class="relative">
+              <button v-show="canScrollBrandLeft" @click="scrollBrands('left')"
+                      class="absolute left-1 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
+                      style="top:38px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.4);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
+              </button>
+              <button v-show="canScrollBrandRight" @click="scrollBrands('right')"
+                      class="absolute right-1 z-10 w-9 h-9 rounded-full flex items-center justify-center transition-all duration-200"
+                      style="top:38px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.4);">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
+              </button>
+
+              <div ref="brandStripRef" class="flex gap-3 overflow-x-auto" style="scrollbar-width:none; padding:4px 48px 8px;">
+                <button v-for="brand in displayedBrands" :key="brand._id ?? brand.slug"
+                        @click="selectBrand(brand)"
+                        class="shrink-0 min-w-[108px] flex flex-col items-center justify-center gap-2 rounded-2xl px-4 py-3 transition-all duration-200 active:scale-95 hover:-translate-y-0.5 hover:shadow-md"
+                        :style="selectedBrand?.slug === brand.slug
+                          ? 'border:2px solid rgb(var(--color-brand-rgb)); background:rgba(var(--color-brand-rgb),0.06);'
+                          : 'border:1.5px solid var(--color-border); background:var(--color-card);'">
+                  <div class="h-9 flex items-center justify-center w-full">
+                    <img v-if="brand.logo" :src="brand.logo" :alt="brand.name" class="max-h-9 max-w-[88px] object-contain"/>
+                    <span v-else class="font-black text-sm text-center leading-tight"
+                          :class="selectedBrand?.slug === brand.slug ? 'text-brand' : 'text-text-primary'">{{ brand.name }}</span>
+                  </div>
+                  <span v-if="brand.logo" class="text-[10px] font-semibold text-center leading-tight line-clamp-1 w-full"
+                        :class="selectedBrand?.slug === brand.slug ? 'text-brand/80' : 'text-text-secondary'">{{ brand.name }}</span>
+                </button>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
     </div>
@@ -722,12 +695,27 @@ function scrollCats(dir) {
 const allBrands     = ref([])
 const brandsLoading = ref(false)
 const brandSearch   = ref('')
+const brandStripRef       = ref(null)
+const canScrollBrandLeft  = ref(false)
+const canScrollBrandRight = ref(true)
 
 const displayedBrands = computed(() => {
   const q = brandSearch.value.trim().toLowerCase()
   if (!q) return allBrands.value
   return allBrands.value.filter(b => b.name.toLowerCase().includes(q))
 })
+
+function scrollBrands(dir) {
+  const el = brandStripRef.value
+  if (!el) return
+  el.scrollBy({ left: dir === 'left' ? 240 : -240, behavior: 'smooth' })
+  nextTick(() => {
+    const pos = el.scrollLeft
+    const max = el.scrollWidth - el.clientWidth
+    canScrollBrandLeft.value  = pos < -8 || pos > 8
+    canScrollBrandRight.value = Math.abs(pos) < max - 8
+  })
+}
 
 async function loadBrands() {
   brandsLoading.value = true
@@ -738,6 +726,18 @@ async function loadBrands() {
     allBrands.value = []
   } finally {
     brandsLoading.value = false
+    nextTick(() => {
+      const el = brandStripRef.value
+      if (!el) return
+      const max = el.scrollWidth - el.clientWidth
+      canScrollBrandRight.value = max > 8
+      canScrollBrandLeft.value  = false
+      el.addEventListener('scroll', () => {
+        const pos = el.scrollLeft
+        canScrollBrandLeft.value  = Math.abs(pos) > 8 || pos > 8
+        canScrollBrandRight.value = Math.abs(pos) < max - 8
+      }, { passive: true })
+    })
   }
 }
 
