@@ -37,36 +37,6 @@
     ══════════════════════════════════════ -->
     <div v-if="wholesaleStatus?.isWholesale && view === 'browse'">
 
-      <!-- ── Full-width hero ── -->
-      <div class="relative overflow-hidden py-12 px-4 text-center"
-           style="background:linear-gradient(160deg,#0c0c1d 0%,#10103a 50%,#0c0c1d 100%);">
-        <!-- Grid pattern -->
-        <div class="absolute inset-0 pointer-events-none opacity-[0.07]" aria-hidden="true"
-             style="background-image:linear-gradient(rgba(124,58,237,1) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,1) 1px,transparent 1px);background-size:48px 48px;"/>
-        <!-- Glow -->
-        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-40 blur-[80px] opacity-25 pointer-events-none"
-             aria-hidden="true"
-             style="background:radial-gradient(ellipse,#7c3aed 0%,transparent 70%);"/>
-        <div class="relative z-10">
-          <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold mb-5"
-               style="background:rgba(124,58,237,0.18); border:1px solid rgba(124,58,237,0.35); color:#c4b5fd;">
-            <span class="w-1.5 h-1.5 rounded-full bg-violet-400 animate-pulse" aria-hidden="true"/>
-            B2B · فروش عمده تخصصی
-          </div>
-          <h1 class="text-3xl sm:text-4xl font-black text-white mb-2 leading-tight">کاتالوگ عمده</h1>
-          <p class="text-white/40 text-sm mb-8">برند یا دسته‌بندی مورد نظر را انتخاب کنید</p>
-          <!-- Stats row -->
-          <div class="flex items-center justify-center gap-3 flex-wrap">
-            <div v-for="s in stats" :key="s.label"
-                 class="flex items-center gap-2 px-4 py-2 rounded-xl text-sm"
-                 style="background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1);">
-              <span class="font-black text-violet-300 font-fanum">{{ s.value }}</span>
-              <span class="text-white/40">{{ s.label }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
       <!-- ── Category Section ── -->
       <div class="py-10 px-4" style="border-bottom:1px solid var(--color-border);">
         <div class="max-w-6xl mx-auto">
