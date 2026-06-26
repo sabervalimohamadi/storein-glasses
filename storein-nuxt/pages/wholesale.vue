@@ -227,21 +227,31 @@
               </div>
             </div>
 
-            <SortBar v-model="filters.sortBy" :total="total" :loading="productsLoading"
-                     @update:modelValue="onSortChange" @open-filter="mobileFilterOpen = true"/>
+            <ActiveFilters :filters="filters" @remove="removeFilter" @clear-all="clearAllFilters" />
 
-            <div v-if="!productsLoading && wholesaleProducts.length === 0"
-                 class="flex flex-col items-center py-16 text-center mt-4 rounded-2xl border"
-                 style="background:var(--color-card); border-color:var(--color-border);">
-              <div class="text-3xl mb-3">🔍</div>
-              <p class="font-bold text-text-primary text-sm mb-1">محصولی یافت نشد</p>
-              <p class="text-xs text-text-secondary">برای این برند محصول عمده‌ای موجود نیست</p>
+            <div class="flex gap-5 items-start">
+              <div class="hidden lg:block sticky top-[60px] self-start shrink-0">
+                <FilterSidebar :filters="filters" @change="onFilterChange" />
+              </div>
+
+              <div class="flex-1 min-w-0">
+                <SortBar v-model="filters.sortBy" :total="total" :loading="productsLoading"
+                         @update:modelValue="onSortChange" @open-filter="mobileFilterOpen = true"/>
+
+                <div v-if="!productsLoading && wholesaleProducts.length === 0"
+                     class="flex flex-col items-center py-16 text-center mt-4 rounded-2xl border"
+                     style="background:var(--color-card); border-color:var(--color-border);">
+                  <div class="text-3xl mb-3">🔍</div>
+                  <p class="font-bold text-text-primary text-sm mb-1">محصولی یافت نشد</p>
+                  <p class="text-xs text-text-secondary">برای این برند محصول عمده‌ای موجود نیست</p>
+                </div>
+
+                <WholesaleProductGrid v-else :products="wholesaleProducts" :loading="productsLoading"/>
+
+                <BasePagination :model-value="page" :total-pages="totalPages" :loading="productsLoading"
+                                @update:modelValue="onPageChange" class="mt-6"/>
+              </div>
             </div>
-
-            <WholesaleProductGrid v-else :products="wholesaleProducts" :loading="productsLoading"/>
-
-            <BasePagination :model-value="page" :total-pages="totalPages" :loading="productsLoading"
-                            @update:modelValue="onPageChange" class="mt-6"/>
 
             <FilterMobileDrawer v-model="mobileFilterOpen" :filters="filters"
                                 @apply="onMobileFilterApply" @clear="clearAllFilters"/>
@@ -823,7 +833,7 @@ const productsLoading   = ref(false)
 const mobileFilterOpen  = ref(false)
 
 function buildParams() {
-  return {
+  const params = {
     status: 'active', hasWholesalePrice: true,
     page: page.value, limit: LIMIT, sort: filters.sortBy,
     ...(searchQuery.value              ? { search:        searchQuery.value              } : {}),
@@ -836,6 +846,8 @@ function buildParams() {
     ...(filters.frameShapes?.length    ? { frameShape:    filters.frameShapes.join(',')  } : {}),
     ...(filters.frameMaterials?.length ? { frameMaterial: filters.frameMaterials.join(',') } : {}),
   }
+  if (import.meta.dev) console.log('[wholesale] buildParams →', params)
+  return params
 }
 
 async function fetchWholesaleProducts() {
@@ -874,6 +886,7 @@ function clearAllFilters() {
 }
 
 function onMobileFilterApply(newFilters) {
+  if (import.meta.dev) console.log('[wholesale] onMobileFilterApply ←', JSON.parse(JSON.stringify(newFilters)))
   Object.assign(filters, newFilters)
   mobileFilterOpen.value = false
   page.value = 1

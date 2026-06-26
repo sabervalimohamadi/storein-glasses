@@ -261,6 +261,10 @@ const allCategories = computed(() =>
   [...categoryStore.categories].sort((a, b) => (a.depth || 0) - (b.depth || 0) || a.name.localeCompare(b.name, 'fa'))
 )
 
+const rootCategories = computed(() =>
+  categoryStore.categories.filter(c => (c.depth ?? 0) === 0)
+)
+
 function toggleArray(key, value) {
   const arr = localFilters[key] || []
   const idx = arr.indexOf(value)

@@ -141,10 +141,22 @@ export class ProductService {
       }
     }
 
-    // Tag-based filters for frame attributes
+    // Frame attribute filters — check product.tags OR variant.attributes (two storage conventions)
     const tagConditions: any[] = [];
-    if (frameShape)    tagConditions.push({ tags: { $in: frameShape.split(',').map((s: string) => s.trim()).filter(Boolean) } });
-    if (frameMaterial) tagConditions.push({ tags: { $in: frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean) } });
+    if (frameShape) {
+      const shapes = frameShape.split(',').map((s: string) => s.trim()).filter(Boolean);
+      tagConditions.push({ $or: [
+        { tags: { $in: shapes } },
+        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: shapes } } } } } },
+      ]});
+    }
+    if (frameMaterial) {
+      const materials = frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean);
+      tagConditions.push({ $or: [
+        { tags: { $in: materials } },
+        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: materials } } } } } },
+      ]});
+    }
     if (tagConditions.length) filter.$and = [...(filter.$and ?? []), ...tagConditions];
 
     // When sorting by discount, only return products that actually have a discount
