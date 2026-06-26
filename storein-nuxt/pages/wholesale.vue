@@ -738,7 +738,10 @@ function scrollBrands(dir) {
 async function loadBrands() {
   brandsLoading.value = true
   try {
-    const { data } = await http.get('/brands')
+    const params = { hasWholesalePrice: true }
+    const activeCat = selectedSubcategory.value ?? selectedCategory.value
+    if (activeCat) params.category = activeCat._id
+    const { data } = await http.get('/products/brands', { params })
     allBrands.value = Array.isArray(data) ? data : (data?.items ?? [])
   } catch {
     allBrands.value = []

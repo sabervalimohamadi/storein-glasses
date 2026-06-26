@@ -9,6 +9,7 @@ import slugify from 'slugify';
 import { Product, ProductDocument, ProductStatus } from './entities/product.schema';
 import { Category, CategoryDocument } from '../category/entities/category.schema';
 import { Color, ColorDocument } from '../color/entities/color.schema';
+import { Brand, BrandDocument } from '../brand/entities/brand.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -23,6 +24,7 @@ export class ProductService {
     @InjectModel(Product.name)   private productModel:   Model<ProductDocument>,
     @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
     @InjectModel(Color.name)     private colorModel:     Model<ColorDocument>,
+    @InjectModel(Brand.name)     private brandModel:     Model<BrandDocument>,
     private readonly logger: AppLoggerService,
     private readonly discountsService: DiscountsService,
   ) {
@@ -194,6 +196,28 @@ export class ProductService {
     ]);
 
     return { products, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  async findBrandsForFilter(category?: string, hasWholesalePrice = false): Promise<BrandDocument[]> {
+    const filter: Record<string, any> = { status: ProductStatus.ACTIVE };
+
+    if (category) {
+      const catIds = await this.resolveCategoryIds(category);
+      if (!catIds?.length) return [];
+      filter.category = { $in: catIds };
+    }
+
+    if (hasWholesalePrice) {
+      filter['variants'] = { $elemMatch: { wholesalePrice: { $gt: 0 }, isActive: { $ne: false } } };
+    }
+
+    const brandIds = await this.productModel.distinct('brand', filter);
+    if (!brandIds.length) return [];
+
+    return this.brandModel
+      .find({ _id: { $in: brandIds }, isActive: true })
+      .sort({ sortOrder: 1, name: 1 })
+      .lean<BrandDocument[]>();
   }
 
   async findBySlug(slug: string): Promise<any> {
