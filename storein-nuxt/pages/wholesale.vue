@@ -131,54 +131,37 @@
                       :class="selectedCategory?._id === cat._id ? 'text-violet-400' : 'text-text-primary'">{{ cat.name }}</span>
               </button>
 
+              <!-- Divider + subcategory circles — after root cats -->
+              <template v-if="visibleSubcategories.length">
+                <div class="shrink-0 self-stretch flex items-center px-0.5">
+                  <div class="w-px h-16 rounded-full" style="background:var(--color-border);"/>
+                </div>
+
+<button v-for="sub in visibleSubcategories" :key="sub._id"
+                        @click="selectSubcategory(sub)"
+                        class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
+                  <div class="w-14 h-14 rounded-full overflow-hidden transition-all duration-200"
+                       :style="selectedSubcategory?._id === sub._id
+                         ? 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
+                         : 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
+                    <img v-if="sub.image" :src="sub.image" :alt="sub.name" class="w-full h-full object-cover"/>
+                    <div v-else class="w-full h-full flex items-center justify-center"
+                         :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.18);' : 'background:var(--color-surface);'">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
+                           :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
+                        <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
+                        <line x1="7" y1="7" x2="7.01" y2="7"/>
+                      </svg>
+                    </div>
+                  </div>
+                  <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:56px;"
+                        :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</span>
+                </button>
+              </template>
 
             </template>
           </div>
           </div><!-- /relative wrapper -->
-
-          <!-- ── Subcategory row — separate strip, always below root cats ── -->
-          <div v-if="!catCardsLoading && visibleSubcategories.length"
-               class="mt-3 pt-3 relative"
-               style="border-top:1px dashed var(--color-border);">
-
-            <button v-show="canScrollSubLeft" @click="scrollSubs('left')" aria-label="بعدی"
-                    class="absolute left-1 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
-                    style="top:36px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 3px 12px rgba(var(--color-brand-rgb),0.4);">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
-              </svg>
-            </button>
-            <button v-show="canScrollSubRight" @click="scrollSubs('right')" aria-label="قبلی"
-                    class="absolute right-1 z-10 w-8 h-8 rounded-full flex items-center justify-center transition-all duration-200"
-                    style="top:36px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 3px 12px rgba(var(--color-brand-rgb),0.4);">
-              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
-              </svg>
-            </button>
-
-            <div ref="subStripRef" class="flex gap-4 overflow-x-auto items-start" style="scrollbar-width:none; padding:4px 44px 8px;">
-              <button v-for="sub in visibleSubcategories" :key="sub._id"
-                      @click="selectSubcategory(sub)"
-                      class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
-                <div class="w-14 h-14 rounded-full overflow-hidden transition-all duration-200"
-                     :style="selectedSubcategory?._id === sub._id
-                       ? 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
-                       : 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
-                  <img v-if="sub.image" :src="sub.image" :alt="sub.name" class="w-full h-full object-cover"/>
-                  <div v-else class="w-full h-full flex items-center justify-center"
-                       :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.18);' : 'background:var(--color-surface);'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
-                         :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
-                      <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
-                      <line x1="7" y1="7" x2="7.01" y2="7"/>
-                    </svg>
-                  </div>
-                </div>
-                <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:56px;"
-                      :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</span>
-              </button>
-            </div>
-          </div>
 
           <!-- ── Brand strip (below categories) ── -->
           <div class="mt-7 pt-6 border-t" style="border-color:var(--color-border);">
@@ -651,9 +634,6 @@ const selectedSubcategory = ref(null)
 const catStripRef        = ref(null)
 const canScrollLeft      = ref(false)
 const canScrollRight     = ref(true)
-const subStripRef        = ref(null)
-const canScrollSubLeft   = ref(false)
-const canScrollSubRight  = ref(true)
 
 const totalCatStock = computed(() =>
   rootCatsWithStock.value.reduce((sum, c) => sum + (c.totalStock ?? 0), 0),
@@ -684,29 +664,17 @@ onMounted(async () => {
     catCardsLoading.value = false
     nextTick(() => {
       const el = catStripRef.value
-      if (el) {
-        const max = el.scrollWidth - el.clientWidth
-        canScrollRight.value = max > 8
-        canScrollLeft.value  = false
-        el.addEventListener('scroll', () => {
-          const pos = el.scrollLeft
-          const absPos = Math.abs(pos)
-          canScrollLeft.value  = absPos > 8 || pos > 8
-          canScrollRight.value = absPos < max - 8
-        }, { passive: true })
-      }
-      const subEl = subStripRef.value
-      if (subEl) {
-        const subMax = subEl.scrollWidth - subEl.clientWidth
-        canScrollSubRight.value = subMax > 8
-        canScrollSubLeft.value  = false
-        subEl.addEventListener('scroll', () => {
-          const pos = subEl.scrollLeft
-          const absPos = Math.abs(pos)
-          canScrollSubLeft.value  = absPos > 8 || pos > 8
-          canScrollSubRight.value = absPos < subMax - 8
-        }, { passive: true })
-      }
+      if (!el) return
+      const max = el.scrollWidth - el.clientWidth
+      canScrollRight.value = max > 8
+      canScrollLeft.value  = false
+      el.addEventListener('scroll', () => {
+        // RTL: scrollLeft is negative in Chrome, positive in Firefox
+        const pos = el.scrollLeft
+        const absPos = Math.abs(pos)
+        canScrollLeft.value  = absPos > 8 || pos > 8
+        canScrollRight.value = absPos < max - 8
+      }, { passive: true })
     })
   }
 })
@@ -724,18 +692,6 @@ function selectSubcategory(sub) {
   filters.category = sub ? sub._id : (selectedCategory.value?._id ?? '')
   page.value = 1
   if (selectedBrand.value) fetchWholesaleProducts()
-}
-
-function scrollSubs(dir) {
-  const el = subStripRef.value
-  if (!el) return
-  el.scrollBy({ left: dir === 'left' ? 240 : -240, behavior: 'smooth' })
-  nextTick(() => {
-    const pos = el.scrollLeft
-    const max = el.scrollWidth - el.clientWidth
-    canScrollSubLeft.value  = pos < -8
-    canScrollSubRight.value = Math.abs(pos) < max - 8
-  })
 }
 
 function scrollCats(dir) {
