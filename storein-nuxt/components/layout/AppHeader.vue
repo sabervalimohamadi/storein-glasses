@@ -54,7 +54,7 @@
     </div>
 
     <!-- Category nav (desktop) -->
-    <AppHeaderNav />
+    <AppHeaderNav v-if="!hideNav" />
   </header>
 </template>
 
@@ -68,6 +68,8 @@ import { useSettingsStore } from '~/stores/settings.store'
 import AppHeaderSearch  from './AppHeaderSearch.vue'
 import AppHeaderActions from './AppHeaderActions.vue'
 import AppHeaderNav     from './AppHeaderNav.vue'
+
+const props = defineProps({ hideNav: { type: Boolean, default: false } })
 
 const uiStore       = useUiStore()
 const authStore     = useAuthStore()

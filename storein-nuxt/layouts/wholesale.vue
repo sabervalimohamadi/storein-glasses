@@ -5,6 +5,9 @@
       class="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:right-2 focus:z-[500] focus:px-4 focus:py-2 focus:bg-brand focus:text-white focus:rounded-lg focus:text-sm focus:font-bold"
     >رفتن به محتوای اصلی</a>
 
+    <AnnouncementBar />
+    <AppHeader :hide-nav="true" />
+
     <main id="main-content" class="flex-1 pb-14 md:pb-0">
       <slot />
     </main>
@@ -21,6 +24,8 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
+import AnnouncementBar          from '~/components/layout/AnnouncementBar.vue'
+import AppHeader                from '~/components/layout/AppHeader.vue'
 import AppFooter                from '~/components/layout/AppFooter.vue'
 import AppMobileNav             from '~/components/layout/AppMobileNav.vue'
 import AppMobileDrawer          from '~/components/layout/AppMobileDrawer.vue'
