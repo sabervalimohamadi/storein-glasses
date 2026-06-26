@@ -50,10 +50,10 @@
           <!-- Category + subcategory — Instagram story circles -->
           <div class="relative">
 
-            <!-- Floating left button -->
+            <!-- Floating left button — centered on the 64px circles (8px top padding + 32px = 40px) -->
             <button v-show="canScrollLeft" @click="scrollCats('left')" aria-label="بعدی"
-                    class="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                    style="background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
+                    class="absolute left-1 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                    style="top:40px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
               </svg>
@@ -61,14 +61,14 @@
 
             <!-- Floating right button -->
             <button v-show="canScrollRight" @click="scrollCats('right')" aria-label="قبلی"
-                    class="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
-                    style="background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
+                    class="absolute right-1 z-10 w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200"
+                    style="top:40px; transform:translateY(-50%); background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 16px rgba(var(--color-brand-rgb),0.45);">
               <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
               </svg>
             </button>
 
-          <div ref="catStripRef" class="flex gap-5 overflow-x-auto items-start" style="scrollbar-width:none; padding: 8px 4px 12px;">
+          <div ref="catStripRef" class="flex gap-5 overflow-x-auto items-start" style="scrollbar-width:none; padding: 8px 52px 12px;">
 
             <!-- Skeleton -->
             <template v-if="catCardsLoading">
