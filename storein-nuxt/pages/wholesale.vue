@@ -137,23 +137,7 @@
                   <div class="w-px h-16 rounded-full" style="background:var(--color-border);"/>
                 </div>
 
-                <button v-if="selectedCategory" @click="selectSubcategory(null)"
-                        class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
-                  <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200"
-                       :style="!selectedSubcategory
-                         ? 'background:rgba(124,58,237,0.18); box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
-                         : 'background:var(--color-surface); box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
-                         :style="!selectedSubcategory ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
-                      <line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-                      <line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
-                    </svg>
-                  </div>
-                  <span class="text-[11px] font-bold text-center leading-tight" style="width:56px;"
-                        :class="!selectedSubcategory ? 'text-violet-400' : 'text-text-secondary'">همه</span>
-                </button>
-
-                <button v-for="sub in visibleSubcategories" :key="sub._id"
+<button v-for="sub in visibleSubcategories" :key="sub._id"
                         @click="selectSubcategory(sub)"
                         class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
                   <div class="w-14 h-14 rounded-full overflow-hidden transition-all duration-200"
