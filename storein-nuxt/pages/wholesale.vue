@@ -74,7 +74,7 @@
 
             <template v-else>
 
-              <!-- همه دسته‌ها -->
+              <!-- Root category circles — first in LTR = leftmost -->
               <button @click="selectCategory(null)"
                       class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200"
@@ -91,7 +91,6 @@
                       :class="!selectedCategory ? 'text-violet-400' : 'text-text-primary'">همه دسته‌ها</span>
               </button>
 
-              <!-- Root category circles -->
               <button v-for="cat in rootCatsWithStock" :key="cat._id"
                       @click="selectCategory(cat)"
                       class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
@@ -126,13 +125,12 @@
                       :class="selectedCategory?._id === cat._id ? 'text-violet-400' : 'text-text-primary'">{{ cat.name }}</span>
               </button>
 
-              <!-- Divider + subcategory circles -->
+              <!-- Divider + subcategory circles — after root cats -->
               <template v-if="visibleSubcategories.length">
                 <div class="shrink-0 self-stretch flex items-center px-0.5">
                   <div class="w-px h-16 rounded-full" style="background:var(--color-border);"/>
                 </div>
 
-                <!-- همه زیردسته‌ها — only when root is selected -->
                 <button v-if="selectedCategory" @click="selectSubcategory(null)"
                         class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
                   <div class="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200"
@@ -149,7 +147,6 @@
                         :class="!selectedSubcategory ? 'text-violet-400' : 'text-text-secondary'">همه</span>
                 </button>
 
-                <!-- Subcategory circles -->
                 <button v-for="sub in visibleSubcategories" :key="sub._id"
                         @click="selectSubcategory(sub)"
                         class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
@@ -635,7 +632,7 @@ const selectedCategory   = ref(null)
 const selectedSubcategory = ref(null)
 const catStripRef        = ref(null)
 const canScrollLeft      = ref(false)
-const canScrollRight     = ref(false)
+const canScrollRight     = ref(true)
 
 const totalCatStock = computed(() =>
   rootCatsWithStock.value.reduce((sum, c) => sum + (c.totalStock ?? 0), 0),
@@ -671,10 +668,15 @@ onMounted(async () => {
     nextTick(() => {
       const el = catStripRef.value
       if (!el) return
-      canScrollRight.value = el.scrollWidth > el.clientWidth + 8
+      const max = el.scrollWidth - el.clientWidth
+      canScrollRight.value = max > 8
+      canScrollLeft.value  = false
       el.addEventListener('scroll', () => {
-        canScrollLeft.value  = el.scrollLeft > 8
-        canScrollRight.value = el.scrollLeft < el.scrollWidth - el.clientWidth - 8
+        // RTL: scrollLeft is negative in Chrome, positive in Firefox
+        const pos = el.scrollLeft
+        const absPos = Math.abs(pos)
+        canScrollLeft.value  = absPos > 8 || pos > 8
+        canScrollRight.value = absPos < max - 8
       }, { passive: true })
     })
   }
@@ -697,7 +699,16 @@ function selectSubcategory(sub) {
 function scrollCats(dir) {
   const el = catStripRef.value
   if (!el) return
-  el.scrollBy({ left: dir === 'left' ? -240 : 240, behavior: 'smooth' })
+  // RTL: scrollLeft is 0 at right end and goes negative toward left.
+  // "left" button = scroll strip LEFT = see content on the right (negative delta in RTL)
+  // "right" button = scroll strip RIGHT = see content on the left (positive delta in RTL)
+  el.scrollBy({ left: dir === 'left' ? 240 : -240, behavior: 'smooth' })
+  nextTick(() => {
+    const pos = el.scrollLeft   // negative in Chrome RTL, positive toward 0
+    const max = el.scrollWidth - el.clientWidth
+    canScrollLeft.value  = pos < -8
+    canScrollRight.value = Math.abs(pos) < max - 8
+  })
 }
 
 // ── Brands ────────────────────────────────────────────────────
