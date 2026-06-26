@@ -663,11 +663,7 @@ const allSubcategories = computed(() => {
   return result
 })
 
-const visibleSubcategories = computed(() => {
-  if (!selectedCategory.value) return allSubcategories.value
-  const node = categoryTree.value.find(c => c._id === selectedCategory.value._id)
-  return node?.children ?? []
-})
+const visibleSubcategories = computed(() => allSubcategories.value)
 
 onMounted(async () => {
   catCardsLoading.value = true
