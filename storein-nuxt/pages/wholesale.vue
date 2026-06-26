@@ -49,14 +49,18 @@
             </div>
             <div class="flex items-center gap-2">
               <button @click="scrollCats('right')" :disabled="!canScrollRight" aria-label="قبلی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 text-text-primary"
-                      style="border:1px solid var(--color-border); background:var(--color-surface);">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M15 19l-7-7 7-7"/></svg>
+                      class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30"
+                      :style="canScrollRight
+                        ? 'background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.35);'
+                        : 'background:var(--color-surface); color:var(--color-text-secondary); border:1px solid var(--color-border);'">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/></svg>
               </button>
               <button @click="scrollCats('left')" :disabled="!canScrollLeft" aria-label="بعدی"
-                      class="w-9 h-9 rounded-xl flex items-center justify-center transition-all disabled:opacity-20 text-text-primary"
-                      style="border:1px solid var(--color-border); background:var(--color-surface);">
-                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" d="M9 5l7 7-7 7"/></svg>
+                      class="w-10 h-10 rounded-full flex items-center justify-center transition-all duration-200 disabled:opacity-30"
+                      :style="canScrollLeft
+                        ? 'background:rgb(var(--color-brand-rgb)); color:#fff; box-shadow:0 4px 14px rgba(var(--color-brand-rgb),0.35);'
+                        : 'background:var(--color-surface); color:var(--color-text-secondary); border:1px solid var(--color-border);'">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/></svg>
               </button>
             </div>
           </div>
