@@ -145,7 +145,7 @@ const routes = [
     path: '/blog/comments',
     name: 'blog-comments',
     component: () => import('@/views/blog/BlogCommentsView.vue'),
-    meta: { layout: 'admin', title: 'نظرات مقالات', permission: 'blog' },
+    meta: { layout: 'admin', title: 'نظرات مقالات', permission: 'blog-comments' },
   },
   {
     path: '/blog/:id/edit',
@@ -205,13 +205,13 @@ const routes = [
     path: '/wholesale',
     name: 'wholesale-requests',
     component: () => import('@/views/wholesale/WholesaleRequestsView.vue'),
-    meta: { layout: 'admin', title: 'درخواست‌های عمده', permission: 'users' },
+    meta: { layout: 'admin', title: 'درخواست‌های عمده', permission: 'wholesale' },
   },
   {
     path: '/wholesale-orders',
     name: 'wholesale-orders',
     component: () => import('@/views/wholesale/WholesaleOrdersView.vue'),
-    meta: { layout: 'admin', title: 'سفارشات عمده', permission: 'orders' },
+    meta: { layout: 'admin', title: 'سفارشات عمده', permission: 'wholesale-orders' },
   },
   { path: '/:pathMatch(.*)*', redirect: '/dashboard' },
 ]
