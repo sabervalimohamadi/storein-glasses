@@ -790,7 +790,7 @@ async function selectBrand(brand) {
     return
   }
   selectedBrand.value = brand
-  filters.brand       = brand.slug
+  filters.brand       = brand._id ?? brand.slug
   filters.category    = selectedSubcategory.value?._id ?? selectedCategory.value?._id ?? ''
   page.value          = 1
   await fetchWholesaleProducts()

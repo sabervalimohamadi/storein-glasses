@@ -98,7 +98,7 @@ export class ProductService {
     totalPages: number;
   }> {
     const {
-      category, minPrice, maxPrice, inStock,
+      category, brand, minPrice, maxPrice, inStock,
       sort, page = 1, limit = 20,
       gender, frameShape, frameMaterial,
       hasWholesalePrice, hasDiscount,
@@ -110,6 +110,7 @@ export class ProductService {
 
     const catIds = category ? await this.resolveCategoryIds(category) : null;
     if (catIds?.length) filter.category = { $in: catIds };
+    if (brand && Types.ObjectId.isValid(brand)) filter.brand = new Types.ObjectId(brand);
     if (minPrice !== undefined) filter.minPrice = { $gte: minPrice };
     if (maxPrice !== undefined) filter.maxPrice = { ...filter.maxPrice, $lte: maxPrice };
     if (inStock) filter.totalStock = { $gt: 0 };
