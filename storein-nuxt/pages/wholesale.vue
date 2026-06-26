@@ -62,7 +62,7 @@
           </div>
 
           <!-- Category + subcategory — Instagram story circles -->
-          <div ref="catStripRef" class="flex gap-5 overflow-x-auto pb-3 items-start" style="scrollbar-width:none;">
+          <div ref="catStripRef" class="flex gap-5 overflow-x-auto items-start" style="scrollbar-width:none; padding: 8px 4px 12px;">
 
             <!-- Skeleton -->
             <template v-if="catCardsLoading">
@@ -100,8 +100,9 @@
                        ? 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
                        : 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                   <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
-                  <div v-else class="w-full h-full flex items-center justify-center" :style="`background:${catMeta(cat.slug).g1};`">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
+                  <div v-else class="w-full h-full flex items-center justify-center"
+                       :style="`background:linear-gradient(145deg,${catMeta(cat.slug).g1},${catMeta(cat.slug).g2});`">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" class="w-8 h-8"
                          :style="`color:${catMeta(cat.slug).iconFg};`">
                       <template v-if="catMeta(cat.slug).icon==='sunglasses'">
                         <rect x="2" y="9" width="8" height="6" rx="3"/><rect x="14" y="9" width="8" height="6" rx="3"/><path d="M10 12h4"/>
