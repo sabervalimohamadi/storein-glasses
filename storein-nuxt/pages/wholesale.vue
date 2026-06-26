@@ -84,24 +84,24 @@
               <button @click="selectCategory(null)"
                       class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
                 <div class="w-16 h-16 rounded-full flex items-center justify-center transition-all duration-200"
-                     :style="!selectedCategory
+                     :style="!selectedCategory && !selectedSubcategory
                        ? 'background:linear-gradient(135deg,#7c3aed,#6d28d9); box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
                        : 'background:var(--color-surface); box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
-                       :style="!selectedCategory ? 'color:#e9d5ff;' : 'color:var(--color-text-secondary);'">
+                       :style="!selectedCategory && !selectedSubcategory ? 'color:#e9d5ff;' : 'color:var(--color-text-secondary);'">
                     <rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/>
                     <rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>
                   </svg>
                 </div>
                 <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:64px;"
-                      :class="!selectedCategory ? 'text-violet-400' : 'text-text-primary'">همه دسته‌ها</span>
+                      :class="!selectedCategory && !selectedSubcategory ? 'text-violet-400' : 'text-text-primary'">همه دسته‌ها</span>
               </button>
 
               <button v-for="cat in rootCatsWithStock" :key="cat._id"
                       @click="selectCategory(cat)"
                       class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
                 <div class="w-16 h-16 rounded-full overflow-hidden transition-all duration-200"
-                     :style="selectedCategory?._id === cat._id
+                     :style="selectedCategory?._id === cat._id && !selectedSubcategory
                        ? 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
                        : 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                   <img v-if="cat.image" :src="cat.image" :alt="cat.name" class="w-full h-full object-cover"/>
@@ -128,7 +128,7 @@
                   </div>
                 </div>
                 <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:64px;"
-                      :class="selectedCategory?._id === cat._id ? 'text-violet-400' : 'text-text-primary'">{{ cat.name }}</span>
+                      :class="selectedCategory?._id === cat._id && !selectedSubcategory ? 'text-violet-400' : 'text-text-primary'">{{ cat.name }}</span>
               </button>
 
               <!-- Divider + subcategory circles — after root cats -->
@@ -688,10 +688,17 @@ function selectCategory(cat) {
 }
 
 function selectSubcategory(sub) {
-  selectedSubcategory.value = sub
-  filters.category = sub ? sub._id : (selectedCategory.value?._id ?? '')
+  if (selectedSubcategory.value?._id === sub._id) {
+    // toggle off → fall back to parent category
+    selectedSubcategory.value = null
+    filters.category = selectedCategory.value?._id ?? ''
+  } else {
+    selectedSubcategory.value = sub
+    filters.category = sub._id
+  }
   page.value = 1
-  if (selectedBrand.value) fetchWholesaleProducts()
+  clearBrandSelection()
+  loadBrands()
 }
 
 function scrollCats(dir) {
