@@ -44,27 +44,44 @@ export const ITEMS_PER_PAGE = 20
 
 export const PANEL_PERMISSIONS = [
   // ── عمومی ─────────────────────────────────────────────────────────────────
-  { key: 'dashboard',        label: 'داشبورد',           icon: '📊', group: 'عمومی'   },
+  { key: 'dashboard',  label: 'داشبورد', icon: '📊', group: 'عمومی' },
 
   // ── فروشگاه ───────────────────────────────────────────────────────────────
-  { key: 'products',         label: 'محصولات',            icon: '📦', group: 'فروشگاه' },
-  { key: 'categories',       label: 'دسته‌بندی‌ها',       icon: '🏷️', group: 'فروشگاه' },
-  { key: 'brands',           label: 'برندها',             icon: '🔖', group: 'فروشگاه' },
-  { key: 'colors',           label: 'رنگ‌ها',             icon: '🎨', group: 'فروشگاه' },
-  { key: 'banners',          label: 'بنرها',              icon: '🖼',  group: 'فروشگاه' },
-  { key: 'orders',           label: 'سفارشات',            icon: '🛒', group: 'فروشگاه' },
-  { key: 'discounts',        label: 'کدهای تخفیف',       icon: '🎟️', group: 'فروشگاه' },
+  {
+    key: 'products', label: 'محصولات', icon: '📦', group: 'فروشگاه',
+    actions: [
+      { key: 'view',            label: 'مشاهده'    },
+      { key: 'create',          label: 'افزودن'    },
+      { key: 'edit',            label: 'ویرایش'   },
+      { key: 'delete',          label: 'حذف'       },
+      { key: 'view_buy_price',  label: 'قیمت خرید' },
+      { key: 'view_sell_price', label: 'قیمت فروش' },
+    ],
+  },
+  { key: 'categories', label: 'دسته‌بندی‌ها', icon: '🏷️', group: 'فروشگاه' },
+  { key: 'brands',     label: 'برندها',       icon: '🔖', group: 'فروشگاه' },
+  { key: 'colors',     label: 'رنگ‌ها',       icon: '🎨', group: 'فروشگاه' },
+  { key: 'banners',    label: 'بنرها',        icon: '🖼',  group: 'فروشگاه' },
+  {
+    key: 'orders', label: 'سفارشات', icon: '🛒', group: 'فروشگاه',
+    actions: [
+      { key: 'view',   label: 'مشاهده' },
+      { key: 'edit',   label: 'ویرایش' },
+      { key: 'delete', label: 'حذف'    },
+    ],
+  },
+  { key: 'discounts', label: 'کدهای تخفیف', icon: '🎟️', group: 'فروشگاه' },
 
   // ── عمده ──────────────────────────────────────────────────────────────────
-  { key: 'wholesale',        label: 'درخواست‌های عمده',  icon: '🏪', group: 'عمده'    },
-  { key: 'wholesale-orders', label: 'سفارشات عمده',      icon: '📋', group: 'عمده'    },
+  { key: 'wholesale',        label: 'درخواست‌های عمده', icon: '🏪', group: 'عمده' },
+  { key: 'wholesale-orders', label: 'سفارشات عمده',     icon: '📋', group: 'عمده' },
 
   // ── مدیریت ────────────────────────────────────────────────────────────────
-  { key: 'users',            label: 'کاربران',            icon: '👥', group: 'مدیریت'  },
-  { key: 'reviews',          label: 'نظرات محصولات',      icon: '⭐', group: 'مدیریت'  },
+  { key: 'users',   label: 'کاربران',       icon: '👥', group: 'مدیریت' },
+  { key: 'reviews', label: 'نظرات محصولات', icon: '⭐', group: 'مدیریت' },
 
   // ── محتوا ─────────────────────────────────────────────────────────────────
-  { key: 'blog',             label: 'بلاگ',               icon: '📝', group: 'محتوا'   },
-  { key: 'blog-comments',    label: 'نظرات مقالات',       icon: '💬', group: 'محتوا'   },
-  { key: 'pages',            label: 'صفحات',              icon: '📄', group: 'محتوا'   },
+  { key: 'blog',          label: 'بلاگ',          icon: '📝', group: 'محتوا' },
+  { key: 'blog-comments', label: 'نظرات مقالات',  icon: '💬', group: 'محتوا' },
+  { key: 'pages',         label: 'صفحات',          icon: '📄', group: 'محتوا' },
 ]

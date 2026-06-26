@@ -313,17 +313,121 @@ describe('useAuthStore', () => {
   })
 
   describe('hasPermission', () => {
-    it('admin always returns true', () => {
+
+    // ── Admin bypass ──────────────────────────────────────────────────────────
+
+    it('admin always returns true regardless of permissions', () => {
       const store = useAuthStore()
-      store.user = adminProfile
-      expect(store.hasPermission('anything')).toBe(true)
+      store.user = { ...adminProfile, permissions: [] }
+      expect(store.hasPermission('products:delete')).toBe(true)
+      expect(store.hasPermission('products')).toBe(true)
+      expect(store.hasPermission('nonexistent')).toBe(true)
     })
 
-    it('non-admin checks permissions array', () => {
+    // ── Action-level checks (section:action format) ───────────────────────────
+
+    it('exact sub-permission grants access', () => {
       const store = useAuthStore()
-      store.user = { ...userProfile, permissions: ['orders:read'] }
-      expect(store.hasPermission('orders:read')).toBe(true)
-      expect(store.hasPermission('orders:write')).toBe(false)
+      store.user = { ...managerProfile, permissions: ['products:view'] }
+      expect(store.hasPermission('products:view')).toBe(true)
+    })
+
+    it('ungranted sub-permission is denied', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products:view'] }
+      expect(store.hasPermission('products:delete')).toBe(false)
+    })
+
+    it('legacy flat section key grants access to any sub-permission (backward compat)', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products'] }
+      expect(store.hasPermission('products:view')).toBe(true)
+      expect(store.hasPermission('products:delete')).toBe(true)
+      expect(store.hasPermission('products:view_buy_price')).toBe(true)
+    })
+
+    it('other section key does NOT grant access', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['orders'] }
+      expect(store.hasPermission('products:view')).toBe(false)
+    })
+
+    it('partial prefix match does not grant access', () => {
+      const store = useAuthStore()
+      // 'products:view' should not grant 'products:view_buy_price'
+      store.user = { ...managerProfile, permissions: ['products:view'] }
+      expect(store.hasPermission('products:view_buy_price')).toBe(false)
+    })
+
+    it('multiple actions granted independently', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products:view', 'products:edit'] }
+      expect(store.hasPermission('products:view')).toBe(true)
+      expect(store.hasPermission('products:edit')).toBe(true)
+      expect(store.hasPermission('products:delete')).toBe(false)
+    })
+
+    // ── Section-level checks (no colon) ──────────────────────────────────────
+
+    it('section-level check returns true when any sub-permission exists', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products:view', 'products:edit'] }
+      expect(store.hasPermission('products')).toBe(true)
+    })
+
+    it('section-level check with legacy flat key returns true', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products'] }
+      expect(store.hasPermission('products')).toBe(true)
+    })
+
+    it('section-level check returns false when no matching permission', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['orders'] }
+      expect(store.hasPermission('products')).toBe(false)
+    })
+
+    it('section-level check does not bleed between sections', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products:view'] }
+      expect(store.hasPermission('orders')).toBe(false)
+    })
+
+    // ── Edge cases ────────────────────────────────────────────────────────────
+
+    it('returns false when permissions array is empty', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: [] }
+      expect(store.hasPermission('products')).toBe(false)
+      expect(store.hasPermission('products:view')).toBe(false)
+    })
+
+    it('returns false when user has no permissions field', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile }
+      expect(store.hasPermission('products:view')).toBe(false)
+    })
+
+    it('returns false when user is null', () => {
+      const store = useAuthStore()
+      store.user = null
+      expect(store.hasPermission('products:view')).toBe(false)
+    })
+
+    // ── Price visibility sub-permissions ─────────────────────────────────────
+
+    it('view_buy_price and view_sell_price are independently gated', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products:view_buy_price'] }
+      expect(store.hasPermission('products:view_buy_price')).toBe(true)
+      expect(store.hasPermission('products:view_sell_price')).toBe(false)
+    })
+
+    it('flat products key grants both price sub-permissions', () => {
+      const store = useAuthStore()
+      store.user = { ...managerProfile, permissions: ['products'] }
+      expect(store.hasPermission('products:view_buy_price')).toBe(true)
+      expect(store.hasPermission('products:view_sell_price')).toBe(true)
     })
   })
 

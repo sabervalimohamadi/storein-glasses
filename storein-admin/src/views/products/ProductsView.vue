@@ -9,7 +9,7 @@
           {{ formatNumber(total) }} کالا
         </p>
       </div>
-      <RouterLink :to="{ name: 'product-create' }">
+      <RouterLink v-if="canCreate" :to="{ name: 'product-create' }">
         <AdminButton>
           <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" d="M12 4v16m8-8H4"/>
@@ -65,10 +65,17 @@
           <span class="text-text-secondary text-sm">{{ row.category?.name ?? '—' }}</span>
         </template>
 
-        <!-- Price -->
+        <!-- Sell price -->
         <template #cell-minPrice="{ row }">
           <span class="font-fanum text-sm font-medium text-text-primary">
             {{ formatPrice(row.minPrice) }}
+          </span>
+        </template>
+
+        <!-- Buy / wholesale price -->
+        <template #cell-minWholesalePrice="{ row }">
+          <span class="font-fanum text-sm font-medium text-amber-600 dark:text-amber-400">
+            {{ row.minWholesalePrice ? formatPrice(row.minWholesalePrice) : '—' }}
           </span>
         </template>
 
@@ -141,7 +148,7 @@
                 <path stroke-linecap="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
               </svg>
             </button>
-            <button @click="duplicateProduct(row)"
+            <button v-if="canCreate" @click="duplicateProduct(row)"
               :disabled="duplicatingId === row._id"
               class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-violet-50 hover:text-violet-600 dark:hover:bg-violet-900/20 transition-colors disabled:opacity-40"
               title="کپی محصول">
@@ -154,14 +161,14 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
               </svg>
             </button>
-            <RouterLink :to="{ name: 'product-edit', params: { id: row._id } }"
+            <RouterLink v-if="canEdit" :to="{ name: 'product-edit', params: { id: row._id } }"
               class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-primary/10 hover:text-primary transition-colors"
               title="ویرایش">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
               </svg>
             </RouterLink>
-            <button @click="confirmDelete(row)"
+            <button v-if="canDelete" @click="confirmDelete(row)"
               class="w-8 h-8 rounded-lg flex items-center justify-center text-text-secondary hover:bg-red-50 hover:text-error transition-colors"
               title="حذف">
               <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -266,6 +273,7 @@ import { productService }  from '@/services/product.service'
 import { categoryService } from '@/services/category.service'
 import { brandService }    from '@/services/brand.service'
 import { useUiStore }      from '@/stores/ui.store'
+import { useAuthStore }    from '@/stores/auth.store'
 import { formatPrice, formatNumber } from '@/utils/formatters'
 import { ITEMS_PER_PAGE } from '@/utils/constants'
 
@@ -277,7 +285,15 @@ import AdminPagination    from '@/components/common/AdminPagination.vue'
 import AdminConfirm       from '@/components/common/AdminConfirm.vue'
 
 const ui     = useUiStore()
+const auth   = useAuthStore()
 const router = useRouter()
+
+// ── Granular product permissions ──────────────────────────────
+const canCreate         = computed(() => auth.hasPermission('products:create'))
+const canEdit           = computed(() => auth.hasPermission('products:edit'))
+const canDelete         = computed(() => auth.hasPermission('products:delete'))
+const canViewSellPrice  = computed(() => auth.hasPermission('products:view_sell_price'))
+const canViewBuyPrice   = computed(() => auth.hasPermission('products:view_buy_price'))
 
 // SVG shown inside the image container when the image URL fails to load
 const noImagePlaceholder = `<svg class="w-6 h-6" style="color:#CBD5E1" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M6.75 7.5h.008v.008H6.75V7.5zm10.5 0h.008v.008h-.008V7.5zM3 6.75A2.25 2.25 0 015.25 4.5h13.5A2.25 2.25 0 0121 6.75v10.5A2.25 2.25 0 0118.75 19.5H5.25A2.25 2.25 0 013 17.25V6.75z"/></svg>`
@@ -315,15 +331,20 @@ function openDetail(row) {
 
 const totalPages = computed(() => Math.ceil(total.value / ITEMS_PER_PAGE))
 
-const columns = [
-  { key: 'name',       label: 'نام محصول',  width: '260px' },
-  { key: 'category',   label: 'دسته‌بندی',  width: '110px' },
-  { key: 'minPrice',   label: 'قیمت',        width: '130px', align: 'center' },
-  { key: 'discount',   label: 'تخفیف',       width: '120px', align: 'center' },
-  { key: 'totalStock', label: 'موجودی',      width: '90px',  align: 'center', sortable: true },
-  { key: 'status',     label: 'وضعیت',       width: '110px', align: 'center' },
-  { key: 'actions',    label: '',            width: '144px', align: 'center' },
-]
+const columns = computed(() => [
+  { key: 'name',     label: 'نام محصول', width: '260px' },
+  { key: 'category', label: 'دسته‌بندی', width: '110px' },
+  ...(canViewSellPrice.value
+    ? [{ key: 'minPrice', label: 'قیمت فروش', width: '130px', align: 'center' }]
+    : []),
+  ...(canViewBuyPrice.value
+    ? [{ key: 'minWholesalePrice', label: 'قیمت خرید', width: '130px', align: 'center' }]
+    : []),
+  { key: 'discount',   label: 'تخفیف',  width: '120px', align: 'center' },
+  { key: 'totalStock', label: 'موجودی', width: '90px',  align: 'center', sortable: true },
+  { key: 'status',     label: 'وضعیت',  width: '110px', align: 'center' },
+  { key: 'actions',   label: '',        width: '144px', align: 'center' },
+])
 
 async function fetchProducts() {
   loading.value = true

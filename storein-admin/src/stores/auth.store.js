@@ -17,9 +17,27 @@ export const useAuthStore = defineStore('auth', () => {
   const isLoggedIn  = computed(() => !!token.value && (user.value?.isAdmin === true || user.value?.role === 'manager'))
   const permissions = computed(() => user.value?.permissions ?? [])
 
+  /**
+   * Checks whether the current user has a given permission.
+   *
+   * Supports two formats:
+   *   'products'        — section-level: true if the user has the legacy key OR any products:* sub-permission
+   *   'products:edit'   — action-level:  true if the user has the exact key OR the legacy section key
+   *
+   * Admins always pass regardless of permissions.
+   */
   function hasPermission(perm) {
     if (isAdmin.value) return true
-    return permissions.value.includes(perm)
+    const perms = permissions.value
+
+    if (perm.includes(':')) {
+      // Action-level check: exact sub-permission OR legacy section key grants full access
+      const section = perm.split(':')[0]
+      return perms.includes(perm) || perms.includes(section)
+    }
+
+    // Section-level check: legacy flat key OR any sub-permission for this section
+    return perms.includes(perm) || perms.some(p => p.startsWith(perm + ':'))
   }
 
   function hasAdminAccess(profile) {

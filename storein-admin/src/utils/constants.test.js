@@ -14,10 +14,9 @@ describe('PANEL_PERMISSIONS', () => {
     }
   })
 
-  it('keys are unique', () => {
+  it('top-level keys are unique', () => {
     const keys = PANEL_PERMISSIONS.map(p => p.key)
-    const unique = new Set(keys)
-    expect(unique.size).toBe(keys.length)
+    expect(new Set(keys).size).toBe(keys.length)
   })
 
   // ── Core permissions present ───────────────────────────────────────────────
@@ -34,32 +33,68 @@ describe('PANEL_PERMISSIONS', () => {
     expect(PANEL_PERMISSIONS.some(p => p.key === key)).toBe(true)
   })
 
+  // ── Sub-actions ────────────────────────────────────────────────────────────
+
+  describe('products sub-actions', () => {
+    const products = PANEL_PERMISSIONS.find(p => p.key === 'products')
+
+    it('products has actions array', () => {
+      expect(Array.isArray(products?.actions)).toBe(true)
+      expect(products.actions.length).toBeGreaterThan(0)
+    })
+
+    const requiredProductActions = ['view', 'create', 'edit', 'delete', 'view_buy_price', 'view_sell_price']
+
+    it.each(requiredProductActions)('products has "%s" action', (actionKey) => {
+      expect(products.actions.some(a => a.key === actionKey)).toBe(true)
+    })
+
+    it('every product action has key and label', () => {
+      for (const a of products.actions) {
+        expect(a.key).toBeTruthy()
+        expect(a.label).toBeTruthy()
+      }
+    })
+
+    it('product action keys are unique within the section', () => {
+      const keys = products.actions.map(a => a.key)
+      expect(new Set(keys).size).toBe(keys.length)
+    })
+  })
+
+  describe('orders sub-actions', () => {
+    const orders = PANEL_PERMISSIONS.find(p => p.key === 'orders')
+
+    it('orders has actions array', () => {
+      expect(Array.isArray(orders?.actions)).toBe(true)
+    })
+
+    it.each(['view', 'edit', 'delete'])('orders has "%s" action', (actionKey) => {
+      expect(orders.actions.some(a => a.key === actionKey)).toBe(true)
+    })
+  })
+
   // ── Groups ─────────────────────────────────────────────────────────────────
 
   const expectedGroups = ['عمومی', 'فروشگاه', 'عمده', 'مدیریت', 'محتوا']
 
   it('contains all expected groups', () => {
     const groups = [...new Set(PANEL_PERMISSIONS.map(p => p.group))]
-    for (const g of expectedGroups) {
-      expect(groups).toContain(g)
-    }
+    for (const g of expectedGroups) expect(groups).toContain(g)
   })
 
   it('wholesale permissions are in "عمده" group', () => {
-    const wholesalePerms = PANEL_PERMISSIONS.filter(p =>
-      p.key === 'wholesale' || p.key === 'wholesale-orders'
-    )
-    expect(wholesalePerms).toHaveLength(2)
-    wholesalePerms.forEach(p => expect(p.group).toBe('عمده'))
+    const wp = PANEL_PERMISSIONS.filter(p => p.key === 'wholesale' || p.key === 'wholesale-orders')
+    expect(wp).toHaveLength(2)
+    wp.forEach(p => expect(p.group).toBe('عمده'))
   })
 
   it('pages permission is in "محتوا" group', () => {
     const pages = PANEL_PERMISSIONS.find(p => p.key === 'pages')
-    expect(pages).toBeDefined()
-    expect(pages.group).toBe('محتوا')
+    expect(pages?.group).toBe('محتوا')
   })
 
-  it('blog-comments is a separate permission from blog', () => {
+  it('blog-comments is separate from blog', () => {
     const blog         = PANEL_PERMISSIONS.find(p => p.key === 'blog')
     const blogComments = PANEL_PERMISSIONS.find(p => p.key === 'blog-comments')
     expect(blog).toBeDefined()
@@ -69,8 +104,7 @@ describe('PANEL_PERMISSIONS', () => {
 
   // ── Router alignment ───────────────────────────────────────────────────────
 
-  it('router-referenced permissions all exist in PANEL_PERMISSIONS', async () => {
-    // These are the permission values used in router/index.js meta.permission
+  it('router-referenced permissions all exist in PANEL_PERMISSIONS', () => {
     const routerPermissions = [
       'dashboard', 'products', 'categories', 'brands', 'colors',
       'orders', 'users', 'reviews', 'discounts', 'banners',
