@@ -133,28 +133,24 @@
 
               <!-- Divider + subcategory circles — after root cats -->
               <template v-if="visibleSubcategories.length">
-                <div class="shrink-0 self-stretch flex items-center px-0.5">
-                  <div class="w-px h-16 rounded-full" style="background:var(--color-border);"/>
-                </div>
-
-<button v-for="sub in visibleSubcategories" :key="sub._id"
+                <button v-for="sub in visibleSubcategories" :key="sub._id"
                         @click="selectSubcategory(sub)"
                         class="shrink-0 flex flex-col items-center gap-1.5 active:scale-95 transition-transform duration-150">
-                  <div class="w-14 h-14 rounded-full overflow-hidden transition-all duration-200"
+                  <div class="w-16 h-16 rounded-full overflow-hidden transition-all duration-200"
                        :style="selectedSubcategory?._id === sub._id
-                         ? 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px #7c3aed;'
-                         : 'box-shadow:0 0 0 2.5px var(--color-bg),0 0 0 5px var(--color-border);'">
+                         ? 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px #7c3aed;'
+                         : 'box-shadow:0 0 0 3px var(--color-bg),0 0 0 5.5px var(--color-border);'">
                     <img v-if="sub.image" :src="sub.image" :alt="sub.name" class="w-full h-full object-cover"/>
                     <div v-else class="w-full h-full flex items-center justify-center"
                          :style="selectedSubcategory?._id === sub._id ? 'background:rgba(124,58,237,0.18);' : 'background:var(--color-surface);'">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-5 h-5"
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="w-7 h-7"
                            :style="selectedSubcategory?._id === sub._id ? 'color:#a78bfa;' : 'color:var(--color-text-secondary);'">
                         <path d="M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z"/>
                         <line x1="7" y1="7" x2="7.01" y2="7"/>
                       </svg>
                     </div>
                   </div>
-                  <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:56px;"
+                  <span class="text-[11px] font-bold text-center leading-tight line-clamp-2" style="width:64px;"
                         :class="selectedSubcategory?._id === sub._id ? 'text-violet-400' : 'text-text-primary'">{{ sub.name }}</span>
                 </button>
               </template>
