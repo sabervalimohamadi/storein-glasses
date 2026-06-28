@@ -147,12 +147,15 @@
             </div>
           </div>
 
-          <div v-if="durationText" class="duration-bar">
-            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <circle cx="12" cy="12" r="10"/>
-              <path stroke-linecap="round" d="M12 6v6l4 2"/>
+          <div v-if="dateRangeText" class="duration-bar">
+            <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+              <rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>
             </svg>
-            {{ durationText }}
+            {{ dateRangeText }}
+            <template v-if="durationText">
+              <span class="dur-sep">|</span>
+              <span class="dur-days">{{ durationText }}</span>
+            </template>
           </div>
         </div>
 
@@ -269,12 +272,8 @@
             </div>
           </div>
           <div class="preview-title">{{ form.title || 'عنوان تخفیف' }}</div>
-          <div v-if="form.startDate || form.endDate" class="preview-range">
-            <span>{{ form.startDate ? form.startDate.slice(0, 10) : '؟' }}</span>
-            <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
-            </svg>
-            <span>{{ form.endDate ? form.endDate.slice(0, 10) : '؟' }}</span>
+          <div v-if="dateRangeText" class="preview-range">
+            {{ dateRangeText }}
           </div>
         </div>
 
@@ -349,6 +348,27 @@ const valueHint = computed(() => {
   return `${Number(v).toLocaleString('fa-IR')} تومان از قیمت کسر می‌شود`
 })
 
+const _jalaliFmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
+  year: 'numeric', month: '2-digit', day: '2-digit',
+})
+function toJalali(isoStr) {
+  if (!isoStr) return ''
+  try {
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return ''
+    return _jalaliFmt.format(d)
+  } catch { return '' }
+}
+
+const dateRangeText = computed(() => {
+  const s = toJalali(form.value.startDate)
+  const e = toJalali(form.value.endDate)
+  if (!s && !e) return ''
+  if (s && !e) return `از ${s}`
+  if (!s && e) return `تا ${e}`
+  return `از ${s} تا ${e}`
+})
+
 const durationText = computed(() => {
   if (!form.value.startDate || !form.value.endDate) return ''
   const s = new Date(form.value.startDate)
@@ -357,8 +377,8 @@ const durationText = computed(() => {
   const diffMs  = e - s
   const diffDay = Math.floor(diffMs / (1000 * 60 * 60 * 24))
   const diffHr  = Math.floor((diffMs % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60))
-  if (diffDay >= 1) return `مدت تخفیف: ${diffDay} روز${diffHr > 0 ? ` و ${diffHr} ساعت` : ''}`
-  return `مدت تخفیف: ${diffHr} ساعت`
+  if (diffDay >= 1) return `${diffDay} روز${diffHr > 0 ? ` و ${diffHr} ساعت` : ''}`
+  return `${diffHr} ساعت`
 })
 
 const debouncedSearch = useDebounce(async (q) => {
@@ -617,7 +637,10 @@ html.dark .vpd-input-group input.date-input {
   background: rgba(37,99,235,0.07);
   border: 1px solid rgba(37,99,235,0.18);
   padding: 0.3rem 0.65rem; border-radius: 20px;
+  flex-wrap: wrap;
 }
+.dur-sep  { color: rgba(37,99,235,0.4); margin: 0 0.1rem; }
+.dur-days { font-weight: 700; }
 
 /* ── Target grid ── */
 .target-grid {
