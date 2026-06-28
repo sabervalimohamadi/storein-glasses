@@ -3,227 +3,209 @@
     :modelValue="modelValue"
     :title="isEdit ? 'ویرایش کد تخفیف' : 'کد تخفیف جدید'"
     size="lg"
-    @close="$emit('update:modelValue', false)">
+    @close="$emit('update:modelValue', false)"
+  >
+    <div class="modal-body">
 
-    <div class="space-y-5">
-
-      <!-- ── Live preview badge ── -->
-      <div class="flex items-center justify-center">
-        <div class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border-2 border-dashed transition-all"
-             :class="form.code ? 'border-primary/40 bg-primary/5' : 'border-border bg-surface'">
-          <code class="font-mono font-black tracking-widest text-base"
-                :class="form.code ? 'text-primary' : 'text-text-disabled'">
-            {{ form.code || 'SUMMER20' }}
-          </code>
-          <span v-if="previewLabel"
-                class="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+      <!-- ── Preview badge ── -->
+      <div class="preview-wrap">
+        <div :class="['preview-badge', form.code ? 'preview-active' : '']">
+          <code class="preview-code">{{ form.code || 'SUMMER20' }}</code>
+          <span v-if="previewLabel" class="preview-pill"
                 :style="{ background: form.type === 'percentage' ? '#16a34a' : '#2563eb' }">
             {{ previewLabel }}
           </span>
         </div>
       </div>
 
-      <!-- ── Section: کد و توضیح ── -->
-      <div class="space-y-3">
-        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
-          <span class="h-px flex-1 bg-border"></span> کد تخفیف <span class="h-px flex-1 bg-border"></span>
-        </p>
+      <!-- ── Section: کد تخفیف ── -->
+      <div class="modal-section">
+        <div class="section-head">
+          <span class="section-icon">🏷️</span>
+          <span class="section-label">کد تخفیف</span>
+        </div>
 
-        <div>
-          <label class="field-label">
-            کد تخفیف <span class="text-error">*</span>
-          </label>
-          <div class="flex gap-2">
-            <input v-model="form.code"
+        <div class="form-group">
+          <label class="field-label">کد تخفیف <span class="req">*</span></label>
+          <div class="code-row">
+            <input
+              v-model="form.code"
               type="text" dir="ltr"
               placeholder="مثلاً: SUMMER20"
               @input="form.code = form.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
-              :class="['field-input flex-1 uppercase font-mono tracking-widest',
-                errors.code ? 'border-error ring-2 ring-error/15' : '']" />
-            <button type="button"
-              @click="generateCode"
-              class="px-3 py-2 rounded-xl border border-border text-sm text-text-secondary
-                     hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all
-                     flex items-center gap-1.5 font-medium whitespace-nowrap">
-              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              :class="['code-input', errors.code ? 'input-error' : '']"
+            />
+            <button type="button" class="gen-btn" @click="generateCode">
+              <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <path stroke-linecap="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
               </svg>
               تولید خودکار
             </button>
           </div>
           <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
-          <p v-else class="text-text-disabled text-xs mt-1">فقط حروف انگلیسی، اعداد و خط‌تیره</p>
+          <p v-else class="field-hint">فقط حروف انگلیسی، اعداد و خط‌تیره</p>
         </div>
 
-        <AdminInput
-          v-model="form.description"
-          label="توضیحات (اختیاری)"
-          placeholder="مثلاً: تخفیف ویژه تابستان" />
+        <div class="form-group">
+          <AdminInput v-model="form.description" label="توضیحات" placeholder="مثلاً: تخفیف ویژه تابستان" />
+          <p class="field-hint">اختیاری — برای یادآوری داخلی</p>
+        </div>
       </div>
 
       <!-- ── Section: میزان تخفیف ── -->
-      <div class="space-y-3">
-        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
-          <span class="h-px flex-1 bg-border"></span> میزان تخفیف <span class="h-px flex-1 bg-border"></span>
-        </p>
+      <div class="modal-section">
+        <div class="section-head">
+          <span class="section-icon">💰</span>
+          <span class="section-label">میزان تخفیف</span>
+        </div>
 
         <!-- Type toggle -->
-        <div class="grid grid-cols-2 gap-2 p-1 rounded-xl" style="background: var(--color-surface);">
-          <button
-            v-for="opt in typeOptions" :key="opt.value"
-            type="button"
-            @click="form.type = opt.value"
-            :class="[
-              'py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
-              form.type === opt.value
-                ? 'bg-card shadow-sm text-primary'
-                : 'text-text-secondary hover:text-text-primary',
-            ]">
-            <span class="text-base mr-1">{{ opt.icon }}</span>
-            {{ opt.label }}
-          </button>
+        <div class="form-group">
+          <label class="field-label">نوع تخفیف <span class="req">*</span></label>
+          <div class="type-toggle">
+            <button
+              type="button"
+              :class="['toggle-btn', form.type === 'percentage' ? 'toggle-active' : '']"
+              @click="form.type = 'percentage'"
+            >
+              <span class="toggle-symbol">٪</span>
+              درصدی
+            </button>
+            <button
+              type="button"
+              :class="['toggle-btn', form.type === 'fixed' ? 'toggle-active' : '']"
+              @click="form.type = 'fixed'"
+            >
+              <span class="toggle-symbol">₮</span>
+              مبلغ ثابت
+            </button>
+          </div>
         </div>
 
-        <!-- Value input -->
-        <div>
+        <!-- Value -->
+        <div class="form-group">
           <label class="field-label">
-            مقدار تخفیف <span class="text-error">*</span>
+            {{ form.type === 'percentage' ? 'درصد تخفیف' : 'مبلغ تخفیف (تومان)' }}
+            <span class="req">*</span>
           </label>
-          <div :class="[
-            'flex items-stretch border rounded-xl overflow-hidden transition-all',
-            errors.value
-              ? 'border-error ring-2 ring-error/15'
-              : 'border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15',
-          ]">
-            <span class="flex items-center px-3.5 border-l border-border text-sm font-bold shrink-0"
-                  :class="form.type === 'percentage' ? 'text-green-600 bg-green-50' : 'text-blue-600 bg-blue-50'">
+          <div class="value-wrap">
+            <span :class="['val-badge', form.type === 'percentage' ? 'val-pct' : 'val-fix']">
               {{ form.type === 'percentage' ? '٪' : 'تومان' }}
             </span>
-            <input v-model.number="form.value"
-              type="number" min="1"
+            <input
+              v-model.number="form.value"
+              type="number" min="1" dir="ltr"
               :max="form.type === 'percentage' ? 100 : undefined"
-              dir="ltr"
               :placeholder="form.type === 'percentage' ? '20' : '500000'"
-              class="flex-1 px-3.5 py-2.5 outline-none text-sm font-fanum"
-              style="background:transparent; color: var(--color-text-primary);" />
+              :class="['val-input', errors.value ? 'input-error' : '']"
+            />
           </div>
           <p v-if="errors.value" class="field-error">{{ errors.value }}</p>
+          <p v-else-if="valueHint" class="field-hint hint-green">{{ valueHint }}</p>
         </div>
 
-        <!-- Max discount — percentage only -->
-        <div v-if="form.type === 'percentage'"
-             class="rounded-xl p-3 flex items-center gap-3"
-             style="background: var(--color-surface);">
-          <div class="flex-1">
-            <label class="field-label mb-1">سقف مبلغ تخفیف (تومان، اختیاری)</label>
-            <input v-model.number="form.maxDiscount"
-              type="number" min="0" dir="ltr"
-              placeholder="مثلاً: 500000"
-              class="field-input w-full text-sm font-fanum" />
+        <!-- Max cap -->
+        <div v-if="form.type === 'percentage'" class="form-group optional-group">
+          <label class="field-label">
+            سقف تخفیف
+            <span class="badge-opt">اختیاری</span>
+          </label>
+          <div class="value-wrap">
+            <span class="val-badge val-fix">تومان</span>
+            <input v-model.number="form.maxDiscount" type="number" min="0" dir="ltr"
+                   placeholder="بدون سقف" class="val-input" />
           </div>
-          <div class="text-text-disabled text-xs text-center shrink-0 mt-5">
-            <svg class="w-5 h-5 mx-auto mb-0.5 opacity-40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-              <path stroke-linecap="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
-            </svg>
-            اگر خالی: بدون سقف
-          </div>
-        </div>
-      </div>
-
-      <!-- ── Section: شرایط اعمال ── -->
-      <div class="space-y-3">
-        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
-          <span class="h-px flex-1 bg-border"></span> شرایط اعمال <span class="h-px flex-1 bg-border"></span>
-        </p>
-
-        <div class="grid grid-cols-2 gap-3">
-          <div>
-            <label class="field-label">حداقل مبلغ سبد (تومان)</label>
-            <input v-model.number="form.minOrderAmount"
-              type="number" min="0" dir="ltr"
-              placeholder="بدون محدودیت"
-              class="field-input w-full text-sm font-fanum" />
-          </div>
-          <div>
-            <label class="field-label">سقف تعداد استفاده</label>
-            <input v-model.number="form.usageLimit"
-              type="number" min="1" dir="ltr"
-              placeholder="نامحدود"
-              class="field-input w-full text-sm font-fanum" />
-          </div>
+          <p class="field-hint">حداکثر مبلغ تخفیف — اگر خالی باشد سقفی وجود ندارد</p>
         </div>
       </div>
 
       <!-- ── Section: بازه زمانی ── -->
-      <div class="space-y-3">
-        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
-          <span class="h-px flex-1 bg-border"></span> بازه زمانی <span class="h-px flex-1 bg-border"></span>
-        </p>
-
-        <div class="grid grid-cols-2 gap-3">
-          <AdminDatePicker
-            v-model="form.startDate"
-            label="تاریخ شروع"
-            placeholder="از ابتدا"
-          />
-          <AdminDatePicker
-            v-model="form.endDate"
-            label="تاریخ انقضا"
-            placeholder="بدون انقضا"
-            :error="errors.endDate"
-          />
+      <div class="modal-section">
+        <div class="section-head">
+          <span class="section-icon">📅</span>
+          <span class="section-label">بازه زمانی</span>
+          <span class="badge-opt">اختیاری</span>
         </div>
 
-        <!-- Validity visual hint -->
-        <div v-if="form.startDate || form.endDate"
-             class="rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs"
-             style="background: var(--color-surface);">
-          <svg class="w-4 h-4 shrink-0 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-            <path stroke-linecap="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+        <div class="date-row">
+          <div class="form-group">
+            <AdminDatePicker v-model="form.startDate" label="تاریخ شروع" placeholder="از ابتدا" />
+          </div>
+          <div class="date-sep">
+            <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M17 8l4 4m0 0l-4 4m4-4H3"/>
+            </svg>
+          </div>
+          <div class="form-group">
+            <AdminDatePicker v-model="form.endDate" label="تاریخ انقضا" placeholder="بدون انقضا" :error="errors.endDate" />
+          </div>
+        </div>
+
+        <div v-if="dateRangeText" class="duration-bar">
+          <svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+            <rect x="3" y="4" width="18" height="18" rx="2"/>
+            <line x1="16" y1="2" x2="16" y2="6"/>
+            <line x1="8" y1="2" x2="8" y2="6"/>
+            <line x1="3" y1="10" x2="21" y2="10"/>
           </svg>
-          <span class="text-text-secondary font-fanum">
-            <span v-if="form.startDate">از {{ form.startDate }}</span>
-            <span v-if="form.startDate && form.endDate"> تا </span>
-            <span v-if="form.endDate">{{ form.endDate }}</span>
-            <span v-else-if="form.startDate"> · بدون تاریخ انقضا</span>
-          </span>
+          {{ dateRangeText }}
+          <template v-if="!form.endDate">
+            <span class="dur-sep">·</span>
+            <span>بدون انقضا</span>
+          </template>
         </div>
-        <p v-if="errors.endDate" class="field-error -mt-1">{{ errors.endDate }}</p>
+        <p v-if="errors.endDate" class="field-error">{{ errors.endDate }}</p>
+      </div>
+
+      <!-- ── Section: شرایط اعمال ── -->
+      <div class="modal-section">
+        <div class="section-head">
+          <span class="section-icon">⚙️</span>
+          <span class="section-label">شرایط اعمال</span>
+          <span class="badge-opt">اختیاری</span>
+        </div>
+
+        <div class="two-col">
+          <div class="form-group">
+            <label class="field-label">حداقل مبلغ سبد</label>
+            <div class="value-wrap">
+              <span class="val-badge val-fix">تومان</span>
+              <input v-model.number="form.minOrderAmount" type="number" min="0" dir="ltr"
+                     placeholder="بدون محدودیت" class="val-input" />
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="field-label">سقف تعداد استفاده</label>
+            <input v-model.number="form.usageLimit" type="number" min="1" dir="ltr"
+                   placeholder="نامحدود" class="field-input" />
+          </div>
+        </div>
       </div>
 
       <!-- ── Status toggle ── -->
-      <div class="rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors"
-           :class="form.isActive ? 'bg-success/8' : 'bg-surface'"
+      <div :class="['status-toggle', form.isActive ? 'status-on' : 'status-off']"
            @click="form.isActive = !form.isActive">
         <div>
-          <p class="text-sm font-semibold" :class="form.isActive ? 'text-success' : 'text-text-secondary'">
+          <p class="status-title" :class="form.isActive ? 'status-title-on' : ''">
             {{ form.isActive ? 'کد تخفیف فعال است' : 'کد تخفیف غیرفعال است' }}
           </p>
-          <p class="text-xs text-text-disabled mt-0.5">
-            {{ form.isActive ? 'مشتریان می‌توانند این کد را استفاده کنند' : 'کد قابل استفاده نیست' }}
+          <p class="status-sub">
+            {{ form.isActive ? 'مشتریان می‌توانند این کد را استفاده کنند' : 'این کد در حال حاضر قابل استفاده نیست' }}
           </p>
         </div>
-        <!-- Toggle -->
-        <div :class="[
-          'relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0',
-          form.isActive ? 'bg-success' : 'bg-gray-300 dark:bg-slate-600',
-        ]">
-          <span :class="[
-            'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
-            form.isActive ? 'translate-x-6 left-0.5' : 'translate-x-0 left-0.5',
-          ]" />
+        <div :class="['sw-track', form.isActive ? 'sw-on' : 'sw-off']">
+          <span :class="['sw-thumb', form.isActive ? 'sw-thumb-on' : '']" />
         </div>
       </div>
 
     </div>
 
     <template #footer>
-      <div class="flex gap-3">
-        <AdminButton variant="ghost" class="flex-1"
-          @click="$emit('update:modelValue', false)">
+      <div class="modal-footer">
+        <AdminButton variant="ghost" class="footer-btn" @click="$emit('update:modelValue', false)">
           انصراف
         </AdminButton>
-        <AdminButton :loading="saving" class="flex-1" @click="submit">
+        <AdminButton :loading="saving" class="footer-btn" @click="submit">
           {{ isEdit ? 'ذخیره تغییرات' : 'ایجاد کد تخفیف' }}
         </AdminButton>
       </div>
@@ -260,17 +242,47 @@ const form = reactive({
 })
 const errors = reactive({ code: '', value: '', endDate: '' })
 
-const typeOptions = [
-  { value: 'percentage', label: 'درصدی', icon: '٪' },
-  { value: 'fixed',      label: 'مبلغ ثابت', icon: '💰' },
-]
+// ── Jalali date conversion ──
+const _jalaliFmt = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
+  year: 'numeric', month: '2-digit', day: '2-digit',
+})
+function toJalali(isoStr) {
+  if (!isoStr) return ''
+  try {
+    const d = new Date(isoStr)
+    if (isNaN(d.getTime())) return ''
+    return _jalaliFmt.format(d)
+  } catch { return '' }
+}
 
+// ── Computeds ──
 const previewLabel = computed(() => {
   if (!form.value) return ''
-  if (form.type === 'percentage') return `${form.value}٪ تخفیف`
-  return `${formatPrice(form.value)} تومان`
+  return form.type === 'percentage'
+    ? `${form.value}٪ تخفیف`
+    : `${formatPrice(form.value)} تومان`
 })
 
+const valueHint = computed(() => {
+  const v = form.value
+  if (!v || v <= 0) return ''
+  if (form.type === 'percentage') {
+    if (v > 100) return ''
+    return `تخفیف ${v}٪ اعمال خواهد شد`
+  }
+  return `${Number(v).toLocaleString('fa-IR')} تومان از قیمت کسر می‌شود`
+})
+
+const dateRangeText = computed(() => {
+  const s = toJalali(form.startDate)
+  const e = toJalali(form.endDate)
+  if (!s && !e) return ''
+  if (s && !e) return `از ${s}`
+  if (!s && e) return `تا ${e}`
+  return `از ${s} تا ${e}`
+})
+
+// ── Watchers ──
 watch(() => props.modelValue, (open) => {
   if (!open) return
   Object.keys(errors).forEach(k => (errors[k] = ''))
@@ -295,6 +307,7 @@ watch(() => props.modelValue, (open) => {
   }
 })
 
+// ── Helpers ──
 function generateCode() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
   form.code = Array.from({ length: 8 }, () =>
@@ -360,3 +373,213 @@ async function submit() {
   }
 }
 </script>
+
+<style scoped>
+/* ── Modal body ── */
+.modal-body { display: flex; flex-direction: column; gap: 0.875rem; }
+
+/* ── Preview badge ── */
+.preview-wrap { display: flex; justify-content: center; padding: 0.25rem 0 0.5rem; }
+.preview-badge {
+  display: inline-flex; align-items: center; gap: 0.75rem;
+  padding: 0.6rem 1.25rem; border-radius: 14px;
+  border: 2px dashed var(--color-border);
+  background: var(--color-surface);
+  transition: all 0.2s;
+}
+.preview-active {
+  border-color: rgba(27,79,138,0.4) !important;
+  background: rgba(27,79,138,0.05) !important;
+}
+.preview-code {
+  font-family: monospace; font-weight: 900; letter-spacing: 0.12em;
+  font-size: 1rem; color: var(--color-text-primary);
+}
+.preview-active .preview-code { color: var(--color-primary); }
+.preview-pill {
+  font-size: 0.7rem; font-weight: 700;
+  padding: 0.15rem 0.5rem; border-radius: 20px; color: #fff;
+}
+
+/* ── Sections ── */
+.modal-section {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 1rem 1rem 0.5rem;
+}
+
+.section-head {
+  display: flex; align-items: center; gap: 0.45rem;
+  margin-bottom: 0.875rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid var(--color-border);
+}
+.section-icon  { font-size: 0.95rem; line-height: 1; }
+.section-label { font-size: 0.82rem; font-weight: 700; color: var(--color-text-primary); }
+
+.form-group { margin-bottom: 0.75rem; }
+
+.field-label {
+  display: flex; align-items: center; gap: 0.3rem;
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--color-text-primary);
+  margin-bottom: 0.35rem;
+}
+.req        { color: #ef4444; }
+.field-hint { font-size: 0.72rem; color: var(--color-text-secondary); margin-top: 0.25rem; }
+.hint-green { color: #16a34a !important; }
+.field-error { font-size: 0.72rem; color: #ef4444; margin-top: 0.2rem; }
+
+.badge-opt {
+  font-size: 0.65rem; font-weight: 500;
+  padding: 1px 6px; border-radius: 20px;
+  background: var(--color-card); color: var(--color-text-secondary);
+  border: 1px solid var(--color-border);
+  margin-right: auto;
+}
+
+.optional-group {
+  background: var(--color-card);
+  border: 1px dashed var(--color-border);
+  border-radius: 8px; padding: 0.65rem;
+  margin-bottom: 0.5rem;
+}
+
+/* ── Code input ── */
+.code-row { display: flex; gap: 0.5rem; }
+.code-input {
+  flex: 1; padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--color-border); border-radius: 8px;
+  font-family: monospace; font-weight: 700; letter-spacing: 0.1em;
+  font-size: 0.9rem; text-transform: uppercase;
+  background: var(--color-bg, #fff); color: var(--color-text-primary);
+  outline: none; transition: border-color 0.15s;
+}
+.code-input:focus { border-color: var(--color-primary); }
+.gen-btn {
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.5rem 0.75rem; border-radius: 8px; white-space: nowrap;
+  font-size: 0.78rem; font-weight: 600; cursor: pointer;
+  background: var(--color-bg); color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border); transition: all 0.15s;
+}
+.gen-btn:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+  background: rgba(27,79,138,0.05);
+}
+
+.field-input {
+  width: 100%; padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--color-border); border-radius: 8px;
+  font-size: 0.875rem; background: var(--color-bg, #fff);
+  color: var(--color-text-primary); outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.field-input:focus { border-color: var(--color-primary); }
+
+.input-error { border-color: #ef4444 !important; }
+
+/* ── Type toggle ── */
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
+.toggle-btn {
+  display: flex; align-items: center; justify-content: center; gap: 0.35rem;
+  padding: 0.55rem 0.75rem; border-radius: 8px;
+  font-size: 0.82rem; font-weight: 600; cursor: pointer;
+  transition: all 0.15s;
+  background: var(--color-card); color: var(--color-text-secondary);
+  border: 1.5px solid var(--color-border);
+}
+.toggle-btn:hover { border-color: var(--color-primary); color: var(--color-primary); }
+.toggle-active {
+  background: var(--color-primary) !important;
+  color: #fff !important;
+  border-color: var(--color-primary) !important;
+}
+.toggle-symbol { font-size: 0.95rem; font-weight: 700; line-height: 1; }
+
+/* ── Value input with prefix ── */
+.value-wrap { display: flex; align-items: stretch; }
+.val-badge {
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 0.6rem; flex-shrink: 0;
+  font-size: 0.72rem; font-weight: 700;
+  border-radius: 8px 0 0 8px; border: 1.5px solid; border-left: none;
+}
+.val-pct { background: rgba(99,102,241,0.1); color: #6366f1; border-color: rgba(99,102,241,0.3); }
+.val-fix { background: rgba(245,158,11,0.1); color: #d97706; border-color: rgba(245,158,11,0.3); }
+.val-input {
+  flex: 1; padding: 0.5rem 0.75rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 0 8px 8px 0; border-right: none;
+  font-size: 0.875rem; background: var(--color-bg, #fff);
+  color: var(--color-text-primary); outline: none; font-family: inherit;
+  transition: border-color 0.15s;
+}
+.val-input:focus { border-color: var(--color-primary); }
+.val-input.input-error { border-color: #ef4444; }
+
+/* ── Date range ── */
+.date-row {
+  display: grid; grid-template-columns: 1fr auto 1fr;
+  gap: 0.5rem; align-items: end;
+}
+.date-sep {
+  display: flex; align-items: center; justify-content: center;
+  padding-bottom: 0.4rem; color: var(--color-text-secondary);
+}
+
+.duration-bar {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  flex-wrap: wrap;
+  margin-top: 0.5rem; margin-bottom: 0.25rem;
+  font-size: 0.72rem; font-weight: 500;
+  color: #2563eb;
+  background: rgba(37,99,235,0.07);
+  border: 1px solid rgba(37,99,235,0.18);
+  padding: 0.25rem 0.6rem; border-radius: 20px;
+}
+.dur-sep { color: rgba(37,99,235,0.4); margin: 0 0.1rem; }
+
+/* ── Two columns ── */
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+@media (max-width: 480px) {
+  .two-col  { grid-template-columns: 1fr; }
+  .date-row { grid-template-columns: 1fr; }
+  .date-sep { display: none; }
+}
+
+/* ── Status toggle ── */
+.status-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.85rem 1rem; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--color-border);
+  transition: all 0.15s;
+}
+.status-on  { background: rgba(22,163,74,0.07); border-color: rgba(22,163,74,0.25); }
+.status-off { background: var(--color-surface); }
+.status-title     { font-size: 0.82rem; font-weight: 700; color: var(--color-text-secondary); }
+.status-title-on  { color: #16a34a; }
+.status-sub       { font-size: 0.72rem; color: var(--color-text-disabled); margin-top: 0.15rem; }
+
+.sw-track {
+  position: relative; width: 44px; height: 24px;
+  border-radius: 999px; transition: background 0.2s; flex-shrink: 0;
+}
+.sw-on  { background: #16a34a; }
+.sw-off { background: #d1d5db; }
+html.dark .sw-off { background: #475569; }
+
+.sw-thumb {
+  position: absolute; top: 2px; left: 2px;
+  width: 20px; height: 20px; border-radius: 50%;
+  background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s;
+}
+.sw-thumb-on { transform: translateX(20px); }
+
+/* ── Footer ── */
+.modal-footer { display: flex; gap: 0.75rem; }
+.footer-btn   { flex: 1; }
+</style>
