@@ -325,7 +325,7 @@ async function fetchDiscounts() {
       ...(dSearch.value             ? { search:   dSearch.value }        : {}),
       ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-    discounts.value = data?.discounts ?? []
+    discounts.value = data?.coupons ?? data?.discounts ?? []
     total.value     = data?.total   ?? 0
     logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
   } catch (err) {

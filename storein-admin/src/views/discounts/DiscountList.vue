@@ -35,7 +35,7 @@
     </div>
 
     <!-- Empty state -->
-    <div v-else-if="!discounts.length" class="flex flex-col items-center justify-center py-20 text-center">
+    <div v-else-if="!discounts?.length" class="flex flex-col items-center justify-center py-20 text-center">
       <svg class="w-12 h-12 text-text-disabled mb-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
         <path stroke-linecap="round" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"/>
       </svg>
@@ -71,8 +71,8 @@
 
             <!-- Value -->
             <td class="td text-text-secondary font-fanum dir-ltr">
-              <span v-if="d.discountType === 'percentage'">{{ d.value }}٪</span>
-              <span v-else>{{ d.value.toLocaleString('fa-IR') }} تومان</span>
+              <span v-if="d.discountType === 'percentage' || d.type === 'percentage'">{{ d.value }}٪</span>
+              <span v-else>{{ d.value?.toLocaleString('fa-IR') ?? '—' }} تومان</span>
             </td>
 
             <!-- Start date -->
@@ -206,9 +206,9 @@ async function load() {
       limit: 15,
       ...(kindFilter.value && { kind: kindFilter.value }),
     })
-    discounts.value  = data?.discounts ?? []
+    discounts.value  = data?.discounts ?? data?.coupons ?? data?.items ?? []
     total.value      = data?.total ?? 0
-    totalPages.value = data?.totalPages ?? 1
+    totalPages.value = data?.totalPages ?? Math.ceil((data?.total ?? 0) / 15) || 1
   } catch (err) {
     ui.addToast('خطا در بارگذاری تخفیف‌ها', 'error')
   } finally {
