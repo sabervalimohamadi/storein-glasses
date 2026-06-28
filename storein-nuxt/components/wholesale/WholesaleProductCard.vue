@@ -40,10 +40,32 @@
       <img
         :src="imgSrc"
         :alt="product.name"
-        class="w-full h-full object-contain p-2 transition-transform duration-300 group-hover:scale-105"
+        class="w-full h-full object-contain p-2 transition-all duration-300 group-hover:scale-105"
         loading="lazy"
         @error="imgError = true"
       />
+
+      <!-- Color swatches overlay (bottom of image) -->
+      <div
+        v-if="colorVariants.length > 1"
+        class="absolute bottom-2 start-0 end-0 flex justify-center gap-1.5 px-2"
+        @click.stop
+      >
+        <button
+          v-for="cv in colorVariants"
+          :key="cv._id"
+          type="button"
+          :title="cv.colorName"
+          :class="[
+            'w-5 h-5 rounded-full border-2 transition-all duration-150 shrink-0',
+            activeVariantId === cv._id
+              ? 'border-white scale-110 shadow-md'
+              : 'border-transparent opacity-75 hover:opacity-100 hover:scale-105',
+          ]"
+          :style="{ backgroundColor: cv.hex || '#ccc' }"
+          @click="activeVariantId = cv._id; imgError = false"
+        />
+      </div>
 
       <!-- Out of stock overlay -->
       <div v-if="product.totalStock === 0"
@@ -181,11 +203,12 @@
 </template>
 
 <script setup>
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { formatPrice, formatNumber } from '~/utils/formatters'
-import { useCartStore } from '~/stores/cart.store'
-import { useUiStore }   from '~/stores/ui.store'
+import { useCartStore }  from '~/stores/cart.store'
+import { useUiStore }    from '~/stores/ui.store'
+import { useColorStore } from '~/stores/color.store'
 import { PRODUCT_PLACEHOLDER } from '~/utils/constants'
 
 const props = defineProps({
@@ -193,20 +216,58 @@ const props = defineProps({
   loading: { type: Boolean, default: false },
 })
 
-const router       = useRouter()
-const cart         = useCartStore()
-const ui           = useUiStore()
-const imgError     = ref(false)
+const router      = useRouter()
+const cart        = useCartStore()
+const ui          = useUiStore()
+const colorStore  = useColorStore()
+const imgError    = ref(false)
 const addingToCart = ref(false)
 
-const wholesaleVariant = computed(() =>
-  (props.product.variants ?? []).find(v => v.wholesalePrice && v.wholesalePrice > 0 && v.isActive !== false),
+onMounted(() => colorStore.fetch())
+
+// All variants that have a wholesale price
+const wholesaleVariants = computed(() =>
+  (props.product.variants ?? []).filter(v => v.wholesalePrice && v.wholesalePrice > 0 && v.isActive !== false)
 )
 
-const minQty    = computed(() => wholesaleVariant.value?.wholesaleMinQty || 10)
-const savings   = computed(() => Math.max(0, (wholesaleVariant.value?.price ?? 0) - (wholesaleVariant.value?.wholesalePrice ?? 0)))
+// First wholesale variant (default)
+const firstWholesaleVariant = computed(() => wholesaleVariants.value[0] ?? null)
+
+// Variants that have a color attribute — used for swatches
+const colorVariants = computed(() =>
+  wholesaleVariants.value
+    .map(v => {
+      const colorAttr = (v.attributes ?? []).find(a => a.key === 'رنگ')
+      if (!colorAttr?.value) return null
+      return {
+        _id:       v._id,
+        colorName: colorAttr.value,
+        hex:       colorStore.hexOf(colorAttr.value),
+        images:    v.images ?? [],
+      }
+    })
+    .filter(Boolean)
+)
+
+// Which variant is currently active (selected by swatch click)
+const activeVariantId = ref(null)
+watch(firstWholesaleVariant, v => { activeVariantId.value = v?._id ?? null }, { immediate: true })
+watch(() => props.product?._id, () => {
+  activeVariantId.value = firstWholesaleVariant.value?._id ?? null
+  imgError.value = false
+})
+
+const activeVariant = computed(() =>
+  wholesaleVariants.value.find(v => v._id === activeVariantId.value) ?? firstWholesaleVariant.value
+)
+
+// Alias for template compatibility
+const wholesaleVariant = activeVariant
+
+const minQty     = computed(() => activeVariant.value?.wholesaleMinQty || 10)
+const savings    = computed(() => Math.max(0, (activeVariant.value?.price ?? 0) - (activeVariant.value?.wholesalePrice ?? 0)))
 const savingsPct = computed(() => {
-  const wv = wholesaleVariant.value
+  const wv = activeVariant.value
   if (!wv?.price || !wv?.wholesalePrice) return 0
   return Math.round((1 - wv.wholesalePrice / wv.price) * 100)
 })
@@ -215,12 +276,12 @@ const qty = ref(10)
 watch(minQty, v => { qty.value = v }, { immediate: true })
 
 const qtyExceedsStock = computed(() => {
-  const stock = wholesaleVariant.value?.stock ?? Infinity
+  const stock = activeVariant.value?.stock ?? Infinity
   return qty.value > stock
 })
 
 function onQtyChange() {
-  const stock = wholesaleVariant.value?.stock ?? Infinity
+  const stock = activeVariant.value?.stock ?? Infinity
   if (!qty.value || qty.value < minQty.value) qty.value = minQty.value
   else if (qty.value > stock) qty.value = stock
 }
@@ -229,6 +290,10 @@ const isInCart = computed(() => cart.items.some(i => i.productId === props.produ
 
 const imgSrc = computed(() => {
   if (imgError.value) return PRODUCT_PLACEHOLDER
+  // Show active variant's own image if it has one
+  const variantImg = activeVariant.value?.images?.[0]
+  if (variantImg) return typeof variantImg === 'string' ? variantImg : (variantImg.url || variantImg.thumbnail || PRODUCT_PLACEHOLDER)
+  // Fallback to product thumbnail / first image
   const p = props.product
   if (p.thumbnail) return p.thumbnail
   const img = p.images?.[0]
@@ -236,13 +301,11 @@ const imgSrc = computed(() => {
   return typeof img === 'string' ? img : (img.thumbnail || img.url || PRODUCT_PLACEHOLDER)
 })
 
-watch(() => props.product?._id, () => { imgError.value = false })
-
 async function addToCart() {
-  if (!wholesaleVariant.value) return
+  if (!activeVariant.value) return
   addingToCart.value = true
   try {
-    await cart.addItem(props.product._id, wholesaleVariant.value._id, qty.value)
+    await cart.addItem(props.product._id, activeVariant.value._id, qty.value)
     ui.addToast(`${formatNumber(qty.value)} عدد به سبد عمده افزوده شد`, 'success')
   } catch (e) {
     ui.addToast(e?.response?.data?.message || 'خطا در افزودن به سبد', 'error')
