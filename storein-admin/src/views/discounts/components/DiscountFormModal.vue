@@ -453,7 +453,7 @@ async function submit() {
   border: 1.5px solid var(--color-border); border-radius: 8px;
   font-family: monospace; font-weight: 700; letter-spacing: 0.1em;
   font-size: 0.9rem; text-transform: uppercase;
-  background: var(--color-bg, #fff); color: var(--color-text-primary);
+  background: var(--color-card); color: var(--color-text-primary);
   outline: none; transition: border-color 0.15s;
 }
 .code-input:focus { border-color: var(--color-primary); }
@@ -461,7 +461,7 @@ async function submit() {
   display: flex; align-items: center; gap: 0.35rem;
   padding: 0.5rem 0.75rem; border-radius: 8px; white-space: nowrap;
   font-size: 0.78rem; font-weight: 600; cursor: pointer;
-  background: var(--color-bg); color: var(--color-text-secondary);
+  background: var(--color-card); color: var(--color-text-secondary);
   border: 1.5px solid var(--color-border); transition: all 0.15s;
 }
 .gen-btn:hover {
@@ -473,7 +473,7 @@ async function submit() {
 .field-input {
   width: 100%; padding: 0.5rem 0.75rem;
   border: 1.5px solid var(--color-border); border-radius: 8px;
-  font-size: 0.875rem; background: var(--color-bg, #fff);
+  font-size: 0.875rem; background: var(--color-card);
   color: var(--color-text-primary); outline: none; font-family: inherit;
   transition: border-color 0.15s;
 }
@@ -513,7 +513,7 @@ async function submit() {
   flex: 1; padding: 0.5rem 0.75rem;
   border: 1.5px solid var(--color-border);
   border-radius: 0 8px 8px 0; border-right: none;
-  font-size: 0.875rem; background: var(--color-bg, #fff);
+  font-size: 0.875rem; background: var(--color-card);
   color: var(--color-text-primary); outline: none; font-family: inherit;
   transition: border-color 0.15s;
 }
