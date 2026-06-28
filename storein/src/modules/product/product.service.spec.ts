@@ -239,38 +239,48 @@ describe('ProductService', () => {
   });
 
   describe('findAll — frame attribute filters', () => {
-    it('filters frameShape via tags OR variant attributes', async () => {
+    it('filters frameShape via tags OR variant attributes (English value)', async () => {
       await service.findAll({ frameShape: 'round' } as any)
       const filter = model.find.mock.calls[0][0]
-      expect(filter.$and).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          $or: expect.arrayContaining([
-            { tags: { $in: ['round'] } },
-            { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: ['round'] } } } } } },
-          ]),
-        }),
-      ]))
+      const cond = filter.$and?.find((c: any) => c.$or)
+      expect(cond.$or[0].tags.$in).toContain('round')
+      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('round')
     })
 
-    it('filters frameMaterial via tags OR variant attributes', async () => {
+    it('also includes Persian label for legacy products (round → گرد)', async () => {
+      await service.findAll({ frameShape: 'round' } as any)
+      const filter = model.find.mock.calls[0][0]
+      const cond = filter.$and?.find((c: any) => c.$or)
+      expect(cond.$or[0].tags.$in).toContain('گرد')
+      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('گرد')
+    })
+
+    it('also includes Persian label for square → مربعی', async () => {
+      await service.findAll({ frameShape: 'square' } as any)
+      const filter = model.find.mock.calls[0][0]
+      const cond = filter.$and?.find((c: any) => c.$or)
+      expect(cond.$or[0].tags.$in).toContain('مربعی')
+      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('مربعی')
+    })
+
+    it('filters frameMaterial via tags OR variant attributes including Persian label', async () => {
       await service.findAll({ frameMaterial: 'acetate' } as any)
       const filter = model.find.mock.calls[0][0]
-      expect(filter.$and).toEqual(expect.arrayContaining([
-        expect.objectContaining({
-          $or: expect.arrayContaining([
-            { tags: { $in: ['acetate'] } },
-            { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: ['acetate'] } } } } } },
-          ]),
-        }),
-      ]))
+      const cond = filter.$and?.find((c: any) => c.$or)
+      expect(cond.$or[0].tags.$in).toContain('acetate')
+      expect(cond.$or[0].tags.$in).toContain('استات')
+      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('استات')
     })
 
-    it('supports multiple comma-separated frame shapes', async () => {
+    it('supports multiple comma-separated frame shapes (each with its label)', async () => {
       await service.findAll({ frameShape: 'round,square' } as any)
       const filter = model.find.mock.calls[0][0]
-      const cond = filter.$and?.find((c: any) => c.$or?.[0]?.tags?.$in?.includes('round'))
-      expect(cond.$or[0].tags.$in).toEqual(['round', 'square'])
-      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toEqual(['round', 'square'])
+      const cond = filter.$and?.find((c: any) => c.$or)
+      const $in = cond.$or[0].tags.$in
+      expect($in).toContain('round')
+      expect($in).toContain('square')
+      expect($in).toContain('گرد')
+      expect($in).toContain('مربعی')
     })
 
     it('adds one $and entry per frame filter type', async () => {
@@ -284,7 +294,7 @@ describe('ProductService', () => {
     it('adds no $and frame conditions when no frame filters given', async () => {
       await service.findAll({} as any)
       const filter = model.find.mock.calls[0][0]
-      const hasFrameCond = (filter.$and ?? []).some((c: any) => c.$or?.[0]?.tags !== undefined)
+      const hasFrameCond = (filter.$and ?? []).some((c: any) => c.$or !== undefined)
       expect(hasFrameCond).toBe(false)
     })
   })

@@ -210,10 +210,10 @@
                   <button type="button" @click.stop="toggleDropdown(idx, key)"
                     class="field-input w-full flex items-center gap-2 text-sm text-right">
                     <span v-if="val" class="text-base flex-shrink-0">
-                      {{ shapeIcon(FRAME_SHAPES.find(s => s.label === val)?.value) }}
+                      {{ shapeIcon(FRAME_SHAPES.find(s => s.value === val || s.label === val)?.value ?? val) }}
                     </span>
                     <span :class="['flex-1 text-right truncate', val ? '' : 'text-text-disabled']">
-                      {{ val || 'انتخاب شکل فریم...' }}
+                      {{ FRAME_SHAPES.find(s => s.value === val || s.label === val)?.label || val || 'انتخاب شکل فریم...' }}
                     </span>
                     <svg class="w-4 h-4 text-text-disabled flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
@@ -229,10 +229,10 @@
                     </button>
                     <button v-for="shape in FRAME_SHAPES" :key="shape.value"
                       type="button"
-                      @click="selectValue(idx, key, shape.label)"
+                      @click="selectValue(idx, key, shape.value)"
                       :class="[
                         'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors text-right',
-                        val === shape.label
+                        val === shape.value || val === shape.label
                           ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-blue-300 font-medium'
                           : 'text-text-primary hover:bg-slate-100 dark:hover:bg-white/5',
                       ]">
@@ -240,7 +240,7 @@
                         {{ shape.icon || shapeIcon(shape.value) }}
                       </span>
                       <span class="flex-1">{{ shape.label }}</span>
-                      <span v-if="val === shape.label" class="text-primary dark:text-blue-300 text-xs">✓</span>
+                      <span v-if="val === shape.value || val === shape.label" class="text-primary dark:text-blue-300 text-xs">✓</span>
                     </button>
                     <p v-if="!FRAME_SHAPES.length" class="text-xs text-text-disabled px-3 py-2 text-center">
                       ابتدا از منوی ویژگی‌های اختصاصی شکل فریم اضافه کنید
@@ -255,10 +255,10 @@
                   <button type="button" @click.stop="toggleDropdown(idx, key)"
                     class="field-input w-full flex items-center gap-2 text-sm text-right">
                     <span v-if="val" class="text-base flex-shrink-0">
-                      {{ materialIcon(FRAME_MATERIALS.find(m => m.label === val)?.value) }}
+                      {{ materialIcon(FRAME_MATERIALS.find(m => m.value === val || m.label === val)?.value ?? val) }}
                     </span>
                     <span :class="['flex-1 text-right truncate', val ? '' : 'text-text-disabled']">
-                      {{ val || 'انتخاب جنس فریم...' }}
+                      {{ FRAME_MATERIALS.find(m => m.value === val || m.label === val)?.label || val || 'انتخاب جنس فریم...' }}
                     </span>
                     <svg class="w-4 h-4 text-text-disabled flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                       <path stroke-linecap="round" d="M19 9l-7 7-7-7"/>
@@ -274,10 +274,10 @@
                     </button>
                     <button v-for="mat in FRAME_MATERIALS" :key="mat.value"
                       type="button"
-                      @click="selectValue(idx, key, mat.label)"
+                      @click="selectValue(idx, key, mat.value)"
                       :class="[
                         'w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors text-right',
-                        val === mat.label
+                        val === mat.value || val === mat.label
                           ? 'bg-primary/10 dark:bg-primary/20 text-primary dark:text-blue-300 font-medium'
                           : 'text-text-primary hover:bg-slate-100 dark:hover:bg-white/5',
                       ]">
@@ -285,7 +285,7 @@
                         {{ mat.icon || materialIcon(mat.value) }}
                       </span>
                       <span class="flex-1">{{ mat.label }}</span>
-                      <span v-if="val === mat.label" class="text-primary dark:text-blue-300 text-xs">✓</span>
+                      <span v-if="val === mat.value || val === mat.label" class="text-primary dark:text-blue-300 text-xs">✓</span>
                     </button>
                     <p v-if="!FRAME_MATERIALS.length" class="text-xs text-text-disabled px-3 py-2 text-center">
                       ابتدا از منوی ویژگی‌های اختصاصی جنس فریم اضافه کنید

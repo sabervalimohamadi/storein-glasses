@@ -141,20 +141,30 @@ export class ProductService {
       }
     }
 
-    // Frame attribute filters — check product.tags OR variant.attributes (two storage conventions)
+    // Frame attribute filters — match English value (new products) or Persian label (legacy products)
+    const SHAPE_LABEL: Record<string, string> = {
+      round: 'گرد', square: 'مربعی', oval: 'بیضی', rectangular: 'مستطیلی',
+      aviator: 'پایلوت', 'cat-eye': 'گربه‌ای', octagonal: 'هشت‌ضلعی', rimless: 'بی‌فریم',
+    };
+    const MATERIAL_LABEL: Record<string, string> = {
+      steel: 'استیل', titanium: 'تیتانیوم', acetate: 'استات', tr90: 'TR90', carbon: 'کربن',
+    };
+
     const tagConditions: any[] = [];
     if (frameShape) {
       const shapes = frameShape.split(',').map((s: string) => s.trim()).filter(Boolean);
+      const allShapes = [...new Set([...shapes, ...shapes.map(s => SHAPE_LABEL[s]).filter(Boolean)])];
       tagConditions.push({ $or: [
-        { tags: { $in: shapes } },
-        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: shapes } } } } } },
+        { tags: { $in: allShapes } },
+        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: allShapes } } } } } },
       ]});
     }
     if (frameMaterial) {
       const materials = frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean);
+      const allMaterials = [...new Set([...materials, ...materials.map(s => MATERIAL_LABEL[s]).filter(Boolean)])];
       tagConditions.push({ $or: [
-        { tags: { $in: materials } },
-        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: materials } } } } } },
+        { tags: { $in: allMaterials } },
+        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: allMaterials } } } } } },
       ]});
     }
     if (tagConditions.length) filter.$and = [...(filter.$and ?? []), ...tagConditions];
