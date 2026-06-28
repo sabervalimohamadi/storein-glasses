@@ -461,6 +461,79 @@ describe('ProductFormView', () => {
     })
   })
 
+  // ── slug sanitization & validation ────────────────────────
+  describe('slug field (edit mode)', () => {
+    beforeEach(() => {
+      routeParams.id = 'prod_slug_1'
+      productService.update.mockResolvedValue({ data: {} })
+      productService.getById.mockResolvedValue({
+        data: { name: 'عینک آفتابی', slug: 'rayban-aviator', category: 'cat1', brand: null,
+                images: [], variants: [], tags: [], status: 'active' },
+      })
+    })
+
+    it('loads original slug from server into form', async () => {
+      const w = mountView()
+      await flushPromises()
+      expect(w.vm.form.slug).toBe('rayban-aviator')
+    })
+
+    it('onSlugInput lowercases and strips Persian/Arabic chars', () => {
+      const w = mountView()
+      const fakeEvent = (val) => ({ target: { value: val } })
+      w.vm.onSlugInput(fakeEvent('Rayban Aviator'))
+      expect(w.vm.form.slug).toBe('rayban-aviator')
+    })
+
+    it('onSlugInput strips non-ASCII characters', () => {
+      const w = mountView()
+      const fakeEvent = (val) => ({ target: { value: val } })
+      w.vm.onSlugInput(fakeEvent('عینک-rayban'))
+      expect(w.vm.form.slug).toBe('rayban')
+    })
+
+    it('onSlugInput collapses multiple dashes', () => {
+      const w = mountView()
+      const fakeEvent = (val) => ({ target: { value: val } })
+      w.vm.onSlugInput(fakeEvent('rayban--aviator---gold'))
+      expect(w.vm.form.slug).toBe('rayban-aviator-gold')
+    })
+
+    it('slugError is empty for a valid slug', async () => {
+      const w = mountView()
+      await flushPromises()
+      w.vm.form.slug = 'rayban-aviator-2'
+      await w.vm.$nextTick()
+      expect(w.vm.slugError).toBe('')
+    })
+
+    it('slugError is non-empty for slug with Persian chars', async () => {
+      const w = mountView()
+      await flushPromises()
+      w.vm.form.slug = 'عینک-rayban'
+      await w.vm.$nextTick()
+      expect(w.vm.slugError).toBeTruthy()
+    })
+
+    it('validate() rejects invalid slug in edit mode', async () => {
+      const w = mountView()
+      await flushPromises()
+      makeValidDraft(w.vm)
+      w.vm.form.slug = 'UPPER_CASE'
+      expect(w.vm.validate('draft')).toBe(false)
+      expect(w.vm.errors.slug).toBeTruthy()
+    })
+
+    it('validate() accepts valid lowercase slug in edit mode', async () => {
+      const w = mountView()
+      await flushPromises()
+      makeValidDraft(w.vm)
+      w.vm.form.slug = 'rayban-aviator-2'
+      expect(w.vm.validate('draft')).toBe(true)
+      expect(w.vm.errors.slug).toBeFalsy()
+    })
+  })
+
   // ── isDirty tracking ───────────────────────────────────────
   describe('isDirty', () => {
     it('starts as false on create mode', async () => {

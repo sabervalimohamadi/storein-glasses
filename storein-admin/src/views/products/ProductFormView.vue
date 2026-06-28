@@ -55,9 +55,15 @@
 
             <div v-if="isEdit">
               <label class="field-label">آدرس (Slug)</label>
-              <input :value="form.slug" readonly dir="ltr"
-                class="field-input bg-surface text-text-secondary cursor-not-allowed text-sm" />
-              <p class="text-text-disabled text-xs mt-1">اسلاگ پس از ایجاد قابل تغییر نیست</p>
+              <input
+                v-model="form.slug"
+                dir="ltr"
+                placeholder="rayban-aviator-sunglasses"
+                :class="['field-input text-sm', slugError ? 'border-error focus:ring-error/20' : '']"
+                @input="onSlugInput"
+              />
+              <p v-if="slugError" class="text-error text-xs mt-1">{{ slugError }}</p>
+              <p v-else class="text-text-disabled text-xs mt-1">فقط حروف انگلیسی کوچک، اعداد و خط‌تیره (مثال: rayban-aviator)</p>
             </div>
 
             <AdminSelect
@@ -366,6 +372,24 @@ watch(() => form.discountPct, (pct) => {
 const errors        = reactive({})
 const variantErrors = ref({})
 
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+const slugError = computed(() => {
+  if (!form.slug) return ''
+  return SLUG_RE.test(form.slug) ? '' : 'فقط حروف انگلیسی کوچک، اعداد و خط‌تیره مجاز است'
+})
+
+function onSlugInput(e) {
+  const sanitized = e.target.value
+    .toLowerCase()
+    .replace(/\s+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+  if (sanitized !== e.target.value) e.target.value = sanitized
+  form.slug = sanitized
+  logger.debug('Slug edited', { slug: form.slug }, CTX)
+}
+
 // ── Dirty / saved state ───────────────────────────────────────
 const isDirty       = ref(false)
 const savedRecently = ref(false)
@@ -410,6 +434,10 @@ function validate(targetStatus) {
 
   if (!form.name.trim() || form.name.length < 3) {
     errors.name = 'نام محصول حداقل ۳ کاراکتر باشد'
+    valid = false
+  }
+  if (isEdit.value && form.slug && !SLUG_RE.test(form.slug)) {
+    errors.slug = 'فقط حروف انگلیسی کوچک، اعداد و خط‌تیره مجاز است'
     valid = false
   }
   if (!form.categoryId) {

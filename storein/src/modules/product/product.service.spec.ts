@@ -621,4 +621,52 @@ describe('ProductService', () => {
       expect(variant?.images).toBeUndefined();
     });
   });
+
+  describe('duplicate', () => {
+    it('uses original slug (no -copy suffix) when no collision', async () => {
+      const src = mockProduct({ slug: 'rayban-aviator', variants: [mockVariant()] });
+      model.findById.mockReturnValue(lean(src));
+      // uniqueSlug: first findOne returns null → no collision
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({ ...src, _id: new Types.ObjectId(), toObject: () => src });
+
+      await service.duplicate(prodId);
+
+      const createArg = model.create.mock.calls[0][0];
+      expect(createArg.slug).toBe('rayban-aviator');
+    });
+
+    it('appends -1 when original slug is taken', async () => {
+      const src = mockProduct({ slug: 'rayban-aviator', variants: [mockVariant()] });
+      model.findById.mockReturnValue(lean(src));
+      // first findOne (slug='rayban-aviator') → collision, second (slug='rayban-aviator-1') → free
+      model.findOne
+        .mockReturnValueOnce(lean({ _id: new Types.ObjectId() }))
+        .mockReturnValue(lean(null));
+      model.create.mockResolvedValue({ ...src, _id: new Types.ObjectId(), toObject: () => src });
+
+      await service.duplicate(prodId);
+
+      const createArg = model.create.mock.calls[0][0];
+      expect(createArg.slug).toBe('rayban-aviator-1');
+    });
+
+    it('sets status to draft and clears variant SKUs', async () => {
+      const src = mockProduct({ slug: 'rayban-aviator', variants: [mockVariant({ sku: 'SKU-123' })] });
+      model.findById.mockReturnValue(lean(src));
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({ ...src, _id: new Types.ObjectId(), toObject: () => src });
+
+      await service.duplicate(prodId);
+
+      const createArg = model.create.mock.calls[0][0];
+      expect(createArg.status).toBe('draft');
+      expect(createArg.variants[0].sku).toBe('');
+    });
+
+    it('throws NotFoundException for unknown id', async () => {
+      model.findById.mockReturnValue(lean(null));
+      await expect(service.duplicate(prodId)).rejects.toThrow(NotFoundException);
+    });
+  });
 });

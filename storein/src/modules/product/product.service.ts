@@ -424,7 +424,8 @@ export class ProductService {
     const src = await this.productModel.findById(id).lean<ProductDocument>();
     if (!src) throw new NotFoundException('محصول یافت نشد');
 
-    const baseSlug = await this.uniqueSlug(`${(src as any).slug}-copy`);
+    const baseSlug = await this.uniqueSlug((src as any).slug);
+    this.logger.debug('Duplicate slug resolved', { srcSlug: (src as any).slug, baseSlug });
 
     const { _id, __v, createdAt, updatedAt, ...rest } = src as any;
 
