@@ -124,7 +124,7 @@ onMounted(async () => {
   try {
     const [productRes, activeRes] = await Promise.all([
       productService.getAll({ hasDiscount: true, inStock: true, limit: 8, status: 'active' }),
-      $fetch('/api/v1/time-discounts/active').catch(() => ({ data: [] })),
+      $fetch('/api/v1/discounts/active').catch(() => ({ data: [] })),
     ])
     products.value = productRes?.data?.products ?? productRes?.data?.items ?? []
     const actives = activeRes?.data ?? []

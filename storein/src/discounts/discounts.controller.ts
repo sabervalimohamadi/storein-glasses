@@ -14,21 +14,41 @@ import {
 import { DiscountsService } from './discounts.service';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
+import { ValidateDiscountDto } from './dto/validate-discount.dto';
 import { JwtAuthGuard } from '../modules/auth/guards/jwt-auth.guard';
 import { AdminGuard } from '../common/guards/admin.guard';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('discounts')
 export class DiscountsController {
   constructor(private readonly service: DiscountsService) {}
 
-  // ── Public ──────────────────────────────────────────────────────────────────
+  // ── Public ────────────────────────────────────────────────────
+
   @Get('active')
   async getActive() {
     const discounts = await this.service.getActiveDiscounts();
     return { data: discounts };
   }
 
-  // ── Admin ────────────────────────────────────────────────────────────────────
+  // ── User: validate coupon code ────────────────────────────────
+
+  @UseGuards(JwtAuthGuard)
+  @Post('validate')
+  async validateCoupon(
+    @CurrentUser() user: any,
+    @Body() dto: ValidateDiscountDto,
+  ) {
+    const result = await this.service.validateCoupon(
+      user._id.toString(),
+      dto.code,
+      dto.cartTotal,
+    );
+    return { data: result };
+  }
+
+  // ── Admin ─────────────────────────────────────────────────────
+
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   async create(@Body() dto: CreateDiscountDto) {
@@ -39,16 +59,18 @@ export class DiscountsController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get()
   async findAll(
-    @Query('page') page = '1',
-    @Query('limit') limit = '20',
+    @Query('page')     page      = '1',
+    @Query('limit')    limit     = '20',
     @Query('isActive') isActive?: string,
-    @Query('kind') kind?: string,
+    @Query('kind')     kind?:     string,
+    @Query('hasCode')  hasCode?:  string,
   ) {
     const result = await this.service.findAll({
-      page: Number(page),
-      limit: Number(limit),
+      page:     Number(page),
+      limit:    Number(limit),
       isActive: isActive === undefined ? undefined : isActive === 'true',
       kind,
+      hasCode:  hasCode === undefined ? undefined : hasCode === 'true',
     });
     return { data: result };
   }

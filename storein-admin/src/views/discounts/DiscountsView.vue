@@ -61,12 +61,12 @@
         <template #cell-type="{ row }">
           <div>
             <p class="font-bold text-text-primary text-sm font-fanum">
-              {{ row.type === 'percentage'
+              {{ (row.discountType || row.type) === 'percentage'
                 ? row.value + '٪'
                 : formatPrice(row.value) }}
             </p>
             <p class="text-text-disabled text-xs">
-              {{ row.type === 'percentage' ? 'درصدی' : 'مبلغ ثابت' }}
+              {{ (row.discountType || row.type) === 'percentage' ? 'درصدی' : 'مبلغ ثابت' }}
             </p>
           </div>
         </template>
@@ -325,7 +325,7 @@ async function fetchDiscounts() {
       ...(dSearch.value             ? { search:   dSearch.value }        : {}),
       ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-    discounts.value = data?.coupons ?? data?.items ?? []
+    discounts.value = data?.discounts ?? data?.coupons ?? data?.items ?? []
     total.value     = data?.total   ?? 0
     logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
   } catch (err) {

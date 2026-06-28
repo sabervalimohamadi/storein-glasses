@@ -1,12 +1,12 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
 
-export type CouponUsageDocument = CouponUsage & Document;
+export type DiscountUsageDocument = DiscountUsage & Document;
 
 @Schema({ timestamps: true })
-export class CouponUsage {
-  @Prop({ type: Types.ObjectId, ref: 'Coupon', required: true, index: true })
-  couponId: Types.ObjectId;
+export class DiscountUsage {
+  @Prop({ type: Types.ObjectId, ref: 'Discount', required: true, index: true })
+  discountId: Types.ObjectId;
 
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, index: true })
   userId: Types.ObjectId;
@@ -18,5 +18,5 @@ export class CouponUsage {
   discountAmount: number;
 }
 
-export const CouponUsageSchema = SchemaFactory.createForClass(CouponUsage);
-CouponUsageSchema.index({ couponId: 1, userId: 1 });
+export const DiscountUsageSchema = SchemaFactory.createForClass(DiscountUsage);
+DiscountUsageSchema.index({ discountId: 1, userId: 1 });

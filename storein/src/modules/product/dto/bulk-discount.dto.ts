@@ -9,7 +9,7 @@ import {
   Min,
   ValidateIf,
 } from 'class-validator';
-import { IsEndDateAfterStartDate } from '../../time-discount/validators/date-range.validator';
+import { IsEndDateAfterStartDate } from '../../../discounts/validators/date-range.validator';
 
 export class BulkDiscountDto {
   @IsArray()

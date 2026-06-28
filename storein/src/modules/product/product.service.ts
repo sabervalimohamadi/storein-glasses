@@ -522,14 +522,13 @@ export class ProductService {
       });
 
       await this.discountsService.create({
-        kind: 'time_limited',
-        title: title?.trim() || `تخفیف گروهی ${pct}٪`,
+        title:        title?.trim() || `تخفیف گروهی ${pct}٪`,
         discountType: 'percentage',
-        value: pct,
+        value:        pct,
         startDate,
         endDate,
-        targetType: 'products',
-        targetIds: productIds,
+        targetType:   'products',
+        targetIds:    productIds,
       });
 
       this.logger.log('BulkDiscount[timed]: done', { pct, count: productIds.length });

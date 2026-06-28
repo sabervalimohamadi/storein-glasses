@@ -8,7 +8,7 @@ import { Order, OrderStatus } from './entities/order.schema';
 import { User } from '../user/entities/user.schema';
 import { CartService } from '../cart/cart.service';
 import { ProductService } from '../product/product.service';
-import { DiscountService } from '../discount/discount.service';
+import { DiscountsService } from '../../discounts/discounts.service';
 import { AppLoggerService }    from '../../common/logger/app-logger.service';
 import { NotificationsGateway } from '../../common/gateway/notifications.gateway';
 
@@ -96,7 +96,7 @@ describe('OrderService', () => {
         { provide: getModelToken(User.name),  useValue: userModel },
         { provide: CartService,               useValue: cartService },
         { provide: ProductService,            useValue: productService },
-        { provide: DiscountService,           useValue: discountService },
+        { provide: DiscountsService,           useValue: discountService },
         { provide: EventEmitter2,             useValue: eventEmitter },
         { provide: AppLoggerService,          useValue: mockLogger },
         { provide: NotificationsGateway,      useValue: { emitNewOrder: jest.fn() } },

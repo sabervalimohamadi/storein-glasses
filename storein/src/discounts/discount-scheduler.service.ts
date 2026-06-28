@@ -10,10 +10,12 @@ export class DiscountSchedulerService {
   private readonly logger = new Logger(DiscountSchedulerService.name);
 
   constructor(
-    @InjectModel(Discount.name) private readonly discountModel: Model<DiscountDocument>,
+    @InjectModel(Discount.name)
+    private readonly discountModel: Model<DiscountDocument>,
     private readonly discountsService: DiscountsService,
   ) {}
 
+  // Refresh Redis cache every 5 minutes
   @Cron('0 */5 * * * *')
   async refreshCache() {
     await this.discountsService.invalidateCache();
@@ -21,13 +23,14 @@ export class DiscountSchedulerService {
     this.logger.log('Discount cache refreshed');
   }
 
+  // Deactivate expired time-limited discounts every minute
+  // Note: filters by endDate presence — no longer depends on legacy `kind` field
   @Cron('* * * * *')
   async deactivateExpired() {
     const result = await this.discountModel.updateMany(
       {
         isActive: true,
-        kind: 'time_limited',
-        endDate: { $lt: new Date() },
+        endDate:  { $lt: new Date(), $ne: null },
       },
       { $set: { isActive: false } },
     );

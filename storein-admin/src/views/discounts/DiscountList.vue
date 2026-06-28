@@ -190,9 +190,10 @@ const deleting   = ref(false)
 const deleteTarget = ref(null)
 
 const tabs = [
-  { value: '', label: 'همه' },
+  { value: '',             label: 'همه' },
   { value: 'time_limited', label: '🔴 زمان‌دار' },
   { value: 'wholesale',    label: '🔵 عمده‌فروشی' },
+  { value: 'coupon',       label: '🏷️ کوپن' },
 ]
 
 const currentPage  = computed(() => Number(route.query.page  || 1))
@@ -257,8 +258,8 @@ async function doDelete() {
 function statusClass(d) {
   if (!d.isActive) return 'status-badge--off'
   const now = Date.now()
-  if (d.kind === 'wholesale') return 'status-badge--active'
-  if (!d.startDate || !d.endDate) return 'status-badge--off'
+  if (d.code || d.customerGroup) return 'status-badge--active'
+  if (!d.startDate || !d.endDate) return 'status-badge--active'
   const start = new Date(d.startDate).getTime()
   const end   = new Date(d.endDate).getTime()
   if (now > end)   return 'status-badge--expired'
@@ -269,8 +270,8 @@ function statusClass(d) {
 function statusLabel(d) {
   if (!d.isActive) return '⚫ غیرفعال'
   const now = Date.now()
-  if (d.kind === 'wholesale') return '🟢 فعال'
-  if (!d.startDate || !d.endDate) return '⚫ غیرفعال'
+  if (d.code || d.customerGroup) return '🟢 فعال'
+  if (!d.startDate || !d.endDate) return '🟢 فعال'
   const start = new Date(d.startDate).getTime()
   const end   = new Date(d.endDate).getTime()
   if (now > end)   return '🔴 منقضی'

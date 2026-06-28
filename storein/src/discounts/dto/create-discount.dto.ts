@@ -1,6 +1,6 @@
 import {
   IsString, IsNotEmpty, IsEnum, IsNumber, IsOptional,
-  IsDateString, IsArray, IsBoolean, Min, ValidateIf,
+  IsDateString, IsArray, IsBoolean, Min, Matches, MaxLength,
   registerDecorator, ValidationOptions, ValidationArguments,
 } from 'class-validator';
 import { Type } from 'class-transformer';
@@ -25,14 +25,12 @@ export function IsAfterStartDate(validationOptions?: ValidationOptions) {
 }
 
 export class CreateDiscountDto {
-  @IsString() @IsNotEmpty()
+  // ── Core ─────────────────────────────────────────────────────
+  @IsString() @IsNotEmpty() @MaxLength(200)
   title: string;
 
-  @IsOptional() @IsString()
+  @IsOptional() @IsString() @MaxLength(500)
   description?: string;
-
-  @IsEnum(['time_limited', 'wholesale'])
-  kind: 'time_limited' | 'wholesale';
 
   @IsEnum(['percentage', 'fixed'])
   discountType: 'percentage' | 'fixed';
@@ -43,21 +41,35 @@ export class CreateDiscountDto {
   @IsOptional() @IsNumber() @Min(0) @Type(() => Number)
   maxDiscountAmount?: number;
 
-  @ValidateIf((o) => o.kind === 'time_limited')
-  @IsDateString()
+  // ── Coupon (optional) ─────────────────────────────────────────
+  // اگر code وجود داشت → کوپن؛ اگر null/undefined → auto-apply
+  @IsOptional()
+  @IsString()
+  @Matches(/^[A-Z0-9\-]{3,20}$/, {
+    message: 'کد فقط شامل حروف انگلیسی بزرگ، اعداد و خط‌تیره باشد (۳ تا ۲۰ کاراکتر)',
+  })
+  code?: string;
+
+  @IsOptional() @IsNumber() @Min(1) @Type(() => Number)
+  perUserLimit?: number;
+
+  // ── Time gate (optional) ─────────────────────────────────────
+  @IsOptional() @IsDateString()
   startDate?: string;
 
-  @ValidateIf((o) => o.kind === 'time_limited')
+  @IsOptional()
   @IsDateString()
   @IsAfterStartDate({ message: 'endDate باید بعد از startDate باشد' })
   endDate?: string;
 
+  // ── Target ───────────────────────────────────────────────────
   @IsEnum(['all', 'products', 'categories'])
   targetType: 'all' | 'products' | 'categories';
 
   @IsOptional() @IsArray() @IsString({ each: true })
   targetIds?: string[];
 
+  // ── Conditions ───────────────────────────────────────────────
   @IsOptional() @IsNumber() @Min(0) @Type(() => Number)
   minOrderAmount?: number;
 

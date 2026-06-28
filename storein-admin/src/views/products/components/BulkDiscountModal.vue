@@ -281,12 +281,12 @@
                         <p class="text-xs text-text-disabled mb-1.5">
                           تاریخ شروع <span class="text-danger">*</span>
                         </p>
-                        <input
+                        <PersianDatePicker
                           v-model="startDate"
                           data-testid="timed-start"
-                          type="datetime-local"
-                          class="datetime-input field-input text-sm w-full h-9 px-3 rounded-lg"
-                          :class="{ 'datetime-input--filled': startDate }"
+                          placeholder="انتخاب تاریخ شروع"
+                          :show-time="true"
+                          class="w-full"
                         />
                       </div>
                       <!-- End date -->
@@ -294,12 +294,12 @@
                         <p class="text-xs text-text-disabled mb-1.5">
                           تاریخ پایان <span class="text-danger">*</span>
                         </p>
-                        <input
+                        <PersianDatePicker
                           v-model="endDate"
                           data-testid="timed-end"
-                          type="datetime-local"
-                          class="datetime-input field-input text-sm w-full h-9 px-3 rounded-lg"
-                          :class="{ 'datetime-input--filled': endDate }"
+                          placeholder="انتخاب تاریخ پایان"
+                          :show-time="true"
+                          class="w-full"
                         />
                         <p v-if="endDate && startDate && new Date(endDate) <= new Date(startDate)"
                           class="text-xs text-danger mt-1">
@@ -393,6 +393,7 @@ import { productService } from '@/services/product.service'
 import { useUiStore }     from '@/stores/ui.store'
 import { formatPrice }    from '@/utils/formatters'
 import { logger }         from '@/utils/logger'
+import PersianDatePicker  from '@/components/ui/PersianDatePicker.vue'
 
 const props = defineProps({
   modelValue:      { type: Boolean, default: false },
