@@ -19,7 +19,7 @@
     <!-- Table -->
     <div class="card overflow-hidden">
       <AdminSkeleton v-if="loading" :rows="8" />
-      <div v-else-if="!discounts.length" class="empty-state">هیچ تخفیفی یافت نشد</div>
+      <div v-else-if="!discounts?.length" class="empty-state">هیچ تخفیفی یافت نشد</div>
       <table v-else class="admin-table w-full">
         <thead>
           <tr>
@@ -110,8 +110,8 @@ async function fetchDiscounts(p = 1) {
     const params = { page: p, limit: 20 }
     if (filterActive.value !== '') params.isActive = filterActive.value
     const { data } = await timeDiscountService.getAll(params)
-    discounts.value  = data.discounts
-    totalPages.value = data.totalPages
+    discounts.value  = data?.discounts ?? []
+    totalPages.value = data?.totalPages ?? 1
   } catch {
     ui.addToast('خطا در بارگذاری تخفیف‌ها', 'error')
   } finally {
