@@ -12,19 +12,25 @@ vi.mock('~/stores/category.store', () => ({
   }),
 }))
 
+vi.mock('~/stores/frame-attribute.store', () => ({
+  useFrameAttributeStore: () => ({
+    frameShapes:    [
+      { label: 'گرد',   value: 'round'  },
+      { label: 'مربعی', value: 'square' },
+      { label: 'بیضی',  value: 'oval'   },
+    ],
+    frameMaterials: [
+      { label: 'استیل', value: 'steel'   },
+      { label: 'استات', value: 'acetate' },
+    ],
+    fetch: vi.fn(),
+  }),
+}))
+
 vi.mock('~/utils/constants', () => ({
   GENDER_OPTIONS: [
     { label: 'مردانه', value: 'male' },
     { label: 'زنانه',  value: 'female' },
-  ],
-  FRAME_SHAPES: [
-    { label: 'گرد',     value: 'round'  },
-    { label: 'مربعی',   value: 'square' },
-    { label: 'بیضی',    value: 'oval'   },
-  ],
-  FRAME_MATERIALS: [
-    { label: 'استیل',   value: 'steel'   },
-    { label: 'استات',   value: 'acetate' },
   ],
 }))
 

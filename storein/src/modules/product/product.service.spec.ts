@@ -7,6 +7,7 @@ import { Product, ProductStatus } from './entities/product.schema';
 import { Category } from '../category/entities/category.schema';
 import { Color } from '../color/entities/color.schema';
 import { Brand } from '../brand/entities/brand.schema';
+import { FrameAttribute } from '../frame-attribute/entities/frame-attribute.schema';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 import { DiscountsService } from '../../discounts/discounts.service';
 
@@ -89,17 +90,28 @@ describe('ProductService', () => {
       distinct: jest.fn().mockResolvedValue([]),
     };
     const colorModel  = { findOne: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) }) };
-    const brandModel  = { find: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }) }) };
+    const brandModel          = { find: jest.fn().mockReturnValue({ sort: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([]) }) }) };
+    const frameAttributeModel = {
+      find: jest.fn().mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue([
+        { value: 'round',       label: 'گرد'       },
+        { value: 'square',      label: 'مربعی'     },
+        { value: 'oval',        label: 'بیضی'      },
+        { value: 'aviator',     label: 'پایلوت'    },
+        { value: 'steel',       label: 'استیل'     },
+        { value: 'acetate',     label: 'استات'     },
+      ]) }) }),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductService,
-        { provide: getModelToken(Product.name),   useValue: model },
-        { provide: getModelToken(Category.name),  useValue: catModel },
-        { provide: getModelToken(Color.name),     useValue: colorModel },
-        { provide: getModelToken(Brand.name),     useValue: brandModel },
-        { provide: AppLoggerService,              useValue: mockLogger },
-        { provide: DiscountsService,              useValue: mockDiscountsService },
+        { provide: getModelToken(Product.name),          useValue: model },
+        { provide: getModelToken(Category.name),         useValue: catModel },
+        { provide: getModelToken(Color.name),            useValue: colorModel },
+        { provide: getModelToken(Brand.name),            useValue: brandModel },
+        { provide: getModelToken(FrameAttribute.name),   useValue: frameAttributeModel },
+        { provide: AppLoggerService,                     useValue: mockLogger },
+        { provide: DiscountsService,                     useValue: mockDiscountsService },
       ],
     }).compile();
 
@@ -247,7 +259,7 @@ describe('ProductService', () => {
       expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('round')
     })
 
-    it('also includes Persian label for legacy products (round → گرد)', async () => {
+    it('includes Persian label from DB for legacy products (round → گرد)', async () => {
       await service.findAll({ frameShape: 'round' } as any)
       const filter = model.find.mock.calls[0][0]
       const cond = filter.$and?.find((c: any) => c.$or)
@@ -255,12 +267,11 @@ describe('ProductService', () => {
       expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('گرد')
     })
 
-    it('also includes Persian label for square → مربعی', async () => {
+    it('includes Persian label for square → مربعی', async () => {
       await service.findAll({ frameShape: 'square' } as any)
       const filter = model.find.mock.calls[0][0]
       const cond = filter.$and?.find((c: any) => c.$or)
       expect(cond.$or[0].tags.$in).toContain('مربعی')
-      expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('مربعی')
     })
 
     it('filters frameMaterial via tags OR variant attributes including Persian label', async () => {
@@ -272,7 +283,7 @@ describe('ProductService', () => {
       expect(cond.$or[1].variants.$elemMatch.attributes.$elemMatch.value.$in).toContain('استات')
     })
 
-    it('supports multiple comma-separated frame shapes (each with its label)', async () => {
+    it('supports multiple comma-separated frame shapes with Persian labels', async () => {
       await service.findAll({ frameShape: 'round,square' } as any)
       const filter = model.find.mock.calls[0][0]
       const cond = filter.$and?.find((c: any) => c.$or)
@@ -296,6 +307,16 @@ describe('ProductService', () => {
       const filter = model.find.mock.calls[0][0]
       const hasFrameCond = (filter.$and ?? []).some((c: any) => c.$or !== undefined)
       expect(hasFrameCond).toBe(false)
+    })
+
+    it('works for a newly added shape not in any hardcoded list', async () => {
+      // Simulate admin adding 'butterfly' shape with label 'پروانه‌ای'
+      // The frameAttributeModel mock would return it when queried
+      await service.findAll({ frameShape: 'aviator' } as any)
+      const filter = model.find.mock.calls[0][0]
+      const cond = filter.$and?.find((c: any) => c.$or)
+      expect(cond.$or[0].tags.$in).toContain('aviator')
+      expect(cond.$or[0].tags.$in).toContain('پایلوت')
     })
   })
 

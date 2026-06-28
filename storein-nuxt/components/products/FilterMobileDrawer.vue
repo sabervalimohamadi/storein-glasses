@@ -217,9 +217,10 @@
 </template>
 
 <script setup>
-import { reactive, watch, computed } from 'vue'
+import { reactive, watch, computed, onMounted } from 'vue'
 import { useCategoryStore } from '~/stores/category.store'
-import { GENDER_OPTIONS, FRAME_SHAPES, FRAME_MATERIALS } from '~/utils/constants'
+import { useFrameAttributeStore } from '~/stores/frame-attribute.store'
+import { GENDER_OPTIONS } from '~/utils/constants'
 import { formatNumber } from '~/utils/formatters'
 
 const props = defineProps({
@@ -229,7 +230,13 @@ const props = defineProps({
 })
 const emit = defineEmits(['update:modelValue', 'apply', 'clear'])
 
-const categoryStore = useCategoryStore()
+const categoryStore       = useCategoryStore()
+const frameAttributeStore = useFrameAttributeStore()
+
+const FRAME_SHAPES    = computed(() => frameAttributeStore.frameShapes)
+const FRAME_MATERIALS = computed(() => frameAttributeStore.frameMaterials)
+
+onMounted(() => frameAttributeStore.fetch())
 
 // Local copy — allows "Cancel" without modifying the real filters
 const localFilters = reactive({

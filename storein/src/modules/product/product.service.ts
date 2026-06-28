@@ -10,6 +10,7 @@ import { Product, ProductDocument, ProductStatus } from './entities/product.sche
 import { Category, CategoryDocument } from '../category/entities/category.schema';
 import { Color, ColorDocument } from '../color/entities/color.schema';
 import { Brand, BrandDocument } from '../brand/entities/brand.schema';
+import { FrameAttribute, FrameAttributeDocument } from '../frame-attribute/entities/frame-attribute.schema';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
 import { CreateVariantDto } from './dto/create-variant.dto';
@@ -24,7 +25,8 @@ export class ProductService {
     @InjectModel(Product.name)   private productModel:   Model<ProductDocument>,
     @InjectModel(Category.name)  private categoryModel:  Model<CategoryDocument>,
     @InjectModel(Color.name)     private colorModel:     Model<ColorDocument>,
-    @InjectModel(Brand.name)     private brandModel:     Model<BrandDocument>,
+    @InjectModel(Brand.name)           private brandModel:           Model<BrandDocument>,
+    @InjectModel(FrameAttribute.name)  private frameAttributeModel:  Model<FrameAttributeDocument>,
     private readonly logger: AppLoggerService,
     private readonly discountsService: DiscountsService,
   ) {
@@ -141,31 +143,38 @@ export class ProductService {
       }
     }
 
-    // Frame attribute filters — match English value (new products) or Persian label (legacy products)
-    const SHAPE_LABEL: Record<string, string> = {
-      round: 'گرد', square: 'مربعی', oval: 'بیضی', rectangular: 'مستطیلی',
-      aviator: 'پایلوت', 'cat-eye': 'گربه‌ای', octagonal: 'هشت‌ضلعی', rimless: 'بی‌فریم',
-    };
-    const MATERIAL_LABEL: Record<string, string> = {
-      steel: 'استیل', titanium: 'تیتانیوم', acetate: 'استات', tr90: 'TR90', carbon: 'کربن',
-    };
-
+    // Frame attribute filters — match English value (new products) or Persian label (legacy products).
+    // Labels are looked up dynamically from FrameAttribute collection so new shapes are always covered.
     const tagConditions: any[] = [];
-    if (frameShape) {
-      const shapes = frameShape.split(',').map((s: string) => s.trim()).filter(Boolean);
-      const allShapes = [...new Set([...shapes, ...shapes.map(s => SHAPE_LABEL[s]).filter(Boolean)])];
-      tagConditions.push({ $or: [
-        { tags: { $in: allShapes } },
-        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: allShapes } } } } } },
-      ]});
-    }
-    if (frameMaterial) {
-      const materials = frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean);
-      const allMaterials = [...new Set([...materials, ...materials.map(s => MATERIAL_LABEL[s]).filter(Boolean)])];
-      tagConditions.push({ $or: [
-        { tags: { $in: allMaterials } },
-        { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: allMaterials } } } } } },
-      ]});
+    if (frameShape || frameMaterial) {
+      const shapeValues    = frameShape    ? frameShape.split(',').map((s: string) => s.trim()).filter(Boolean)    : [];
+      const materialValues = frameMaterial ? frameMaterial.split(',').map((s: string) => s.trim()).filter(Boolean) : [];
+
+      const allValues = [...shapeValues, ...materialValues];
+      const attrDocs = allValues.length
+        ? await this.frameAttributeModel.find({ value: { $in: allValues } }).select('value label').lean()
+        : [];
+      const labelOf = (v: string) => attrDocs.find(a => a.value === v)?.label;
+
+      this.logger.debug('Frame filter lookup', {
+        shapeValues, materialValues,
+        labels: attrDocs.map(a => `${a.value}→${a.label}`),
+      });
+
+      if (shapeValues.length) {
+        const allShapes = [...new Set([...shapeValues, ...shapeValues.map(labelOf).filter(Boolean)])];
+        tagConditions.push({ $or: [
+          { tags: { $in: allShapes } },
+          { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'شکل فریم', value: { $in: allShapes } } } } } },
+        ]});
+      }
+      if (materialValues.length) {
+        const allMaterials = [...new Set([...materialValues, ...materialValues.map(labelOf).filter(Boolean)])];
+        tagConditions.push({ $or: [
+          { tags: { $in: allMaterials } },
+          { variants: { $elemMatch: { attributes: { $elemMatch: { key: 'جنس فریم', value: { $in: allMaterials } } } } } },
+        ]});
+      }
     }
     if (tagConditions.length) filter.$and = [...(filter.$and ?? []), ...tagConditions];
 

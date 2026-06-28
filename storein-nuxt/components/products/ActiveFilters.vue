@@ -42,13 +42,16 @@
 
 <script setup>
 import { computed } from 'vue'
-import { GENDER_OPTIONS, FRAME_SHAPES, FRAME_MATERIALS, EYEWEAR_CATEGORIES } from '~/utils/constants'
+import { useFrameAttributeStore } from '~/stores/frame-attribute.store'
+import { GENDER_OPTIONS, EYEWEAR_CATEGORIES } from '~/utils/constants'
 import { formatNumber } from '~/utils/formatters'
 
 const props = defineProps({
   filters: { type: Object, required: true },
 })
 defineEmits(['remove', 'clear-all'])
+
+const frameAttributeStore = useFrameAttributeStore()
 
 const activeChips = computed(() => {
   const chips = []
@@ -68,13 +71,13 @@ const activeChips = computed(() => {
 
   // Frame shapes
   for (const v of (f.frameShapes || [])) {
-    const opt = FRAME_SHAPES.find(o => o.value === v)
+    const opt = frameAttributeStore.frameShapes.find(o => o.value === v)
     chips.push({ key: 'frameShapes', value: v, label: opt?.label || v })
   }
 
   // Frame materials
   for (const v of (f.frameMaterials || [])) {
-    const opt = FRAME_MATERIALS.find(o => o.value === v)
+    const opt = frameAttributeStore.frameMaterials.find(o => o.value === v)
     chips.push({ key: 'frameMaterials', value: v, label: opt?.label || v })
   }
 
