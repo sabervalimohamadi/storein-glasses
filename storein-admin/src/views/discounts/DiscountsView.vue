@@ -188,7 +188,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue'
-import { discountService } from '@/services/discount.service'
+import { couponService } from '@/services/coupon.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { useDebounce }     from '@/composables/useDebounce'
 import { formatPrice, formatNumber, formatDate } from '@/utils/formatters'
@@ -272,7 +272,7 @@ async function toggleActive(row) {
   const prev = row.isActive
   row.isActive = !prev
   try {
-    const { data } = await discountService.toggle(row._id)
+    const { data } = await couponService.toggle(row._id)
     row.isActive = data?.isActive ?? !prev
     logger.info('discounts: toggled', { code: row.code, isActive: row.isActive }, CTX)
     ui.addToast(
@@ -296,7 +296,7 @@ async function doDelete() {
   deleteDialog.value.loading = true
   const item = deleteDialog.value.item
   try {
-    await discountService.softDelete(item._id)
+    await couponService.softDelete(item._id)
     discounts.value = discounts.value.filter(d => d._id !== item._id)
     total.value--
     logger.info('discounts: deleted', { code: item.code }, CTX)
@@ -319,13 +319,13 @@ async function fetchDiscounts() {
   loading.value = true
   logger.debug('discounts: fetching', { page: page.value, search: dSearch.value, isActive: activeFilter.value }, CTX)
   try {
-    const { data } = await discountService.getAll({
+    const { data } = await couponService.getAll({
       page:  page.value,
       limit: ITEMS_PER_PAGE,
       ...(dSearch.value             ? { search:   dSearch.value }        : {}),
       ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-    discounts.value = data?.coupons ?? data?.discounts ?? []
+    discounts.value = data?.coupons ?? data?.items ?? []
     total.value     = data?.total   ?? 0
     logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
   } catch (err) {

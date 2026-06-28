@@ -215,7 +215,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { discountService } from '@/services/discount.service'
+import { couponService } from '@/services/coupon.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { formatPrice }     from '@/utils/formatters'
 import AdminModal      from '@/components/common/AdminModal.vue'
@@ -355,11 +355,11 @@ async function submit() {
     }
     let result
     if (isEdit.value) {
-      const { data } = await discountService.update(props.discount._id, dto)
+      const { data } = await couponService.update(props.discount._id, dto)
       result = data
       ui.addToast('کد تخفیف ویرایش شد', 'success')
     } else {
-      const { data } = await discountService.create(dto)
+      const { data } = await couponService.create(dto)
       result = data
       ui.addToast('کد تخفیف ایجاد شد', 'success')
     }
