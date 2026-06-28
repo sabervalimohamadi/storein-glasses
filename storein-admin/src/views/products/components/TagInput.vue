@@ -30,6 +30,28 @@
       <AdminButton variant="secondary" size="sm" @click="add">+ افزودن</AdminButton>
     </div>
     <p class="text-text-disabled text-xs mt-1">Enter یا ویرگول برای افزودن تگ</p>
+
+    <!-- Preset tags -->
+    <div v-if="presetTags.length" class="mt-3">
+      <p class="text-text-disabled text-xs mb-2">تگ‌های پیشنهادی:</p>
+      <div class="flex flex-wrap gap-1.5">
+        <button
+          v-for="tag in presetTags"
+          :key="tag"
+          type="button"
+          :disabled="modelValue.includes(tag)"
+          :class="[
+            'text-xs px-2.5 py-1 rounded-full border transition-all',
+            modelValue.includes(tag)
+              ? 'border-primary/20 text-primary/30 bg-primary/5 cursor-default'
+              : 'border-border text-text-secondary hover:border-primary hover:text-primary hover:bg-primary/5 cursor-pointer',
+          ]"
+          @click="addPreset(tag)"
+        >
+          {{ tag }}
+        </button>
+      </div>
+    </div>
   </div>
 </template>
 
@@ -37,8 +59,11 @@
 import { ref } from 'vue'
 import AdminButton from '@/components/common/AdminButton.vue'
 
-const props = defineProps({ modelValue: { type: Array, default: () => [] } })
-const emit  = defineEmits(['update:modelValue'])
+const props = defineProps({
+  modelValue: { type: Array, default: () => [] },
+  presetTags: { type: Array, default: () => [] },
+})
+const emit = defineEmits(['update:modelValue'])
 
 const inputValue = ref('')
 
@@ -48,6 +73,12 @@ function add() {
     emit('update:modelValue', [...props.modelValue, tag])
   }
   inputValue.value = ''
+}
+
+function addPreset(tag) {
+  if (!props.modelValue.includes(tag)) {
+    emit('update:modelValue', [...props.modelValue, tag])
+  }
 }
 
 function remove(tag) {

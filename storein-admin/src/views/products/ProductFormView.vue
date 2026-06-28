@@ -195,7 +195,7 @@
           <h2 class="section-title mb-3 flex items-center gap-2">
             <span>🏷️</span> برچسب‌های دیگر
           </h2>
-          <TagInput v-model="form.tags" />
+          <TagInput v-model="form.tags" :preset-tags="PRESET_TAGS" />
           <p class="text-text-disabled text-xs mt-2">برچسب‌هایی برای فیلتر و جستجو (مثلاً: UV400، پلاریزه)</p>
         </div>
 
@@ -320,6 +320,21 @@ import { translationService }   from '@/services/translation.service'
 import { logger } from '@/utils/logger'
 
 const CTX = 'ProductFormView'
+
+const PRESET_TAGS = [
+  // محافظت عدسی
+  'UV400', 'UV100', 'پلاریزه', 'آنتی‌رفلکس', 'فتوکرومیک', 'ضدخش', 'ضداب', 'بلوکات',
+  // جنس فریم
+  'تیتانیوم', 'استیل', 'استات', 'TR90', 'کربن', 'فلکسیبل', 'سبک‌وزن',
+  // کاربرد
+  'آفتابی', 'طبی', 'اسپرت', 'ورزشی', 'ایمنی', 'کار با کامپیوتر',
+  // مخاطب
+  'مردانه', 'زنانه', 'بچگانه', 'یونیسکس',
+  // سبک
+  'کلاسیک', 'رترو', 'لوکس', 'مینیمال', 'اوورسایز',
+  // ویژگی
+  'دست‌ساز', 'اورجینال', 'تنظیم‌پذیر',
+]
 
 import ImageUploader from './components/ImageUploader.vue'
 import VariantEditor from './components/VariantEditor.vue'
