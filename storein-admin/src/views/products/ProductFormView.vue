@@ -53,7 +53,7 @@
               :error="errors.name"
             />
 
-            <div v-if="isEdit">
+            <div>
               <label class="field-label">آدرس (Slug)</label>
               <input
                 v-model="form.slug"
@@ -378,7 +378,41 @@ const slugError = computed(() => {
   return SLUG_RE.test(form.slug) ? '' : 'فقط حروف انگلیسی کوچک، اعداد و خط‌تیره مجاز است'
 })
 
+// Persian character → Latin transliteration map
+const FA_MAP = {
+  'ا':'a','أ':'a','إ':'e','آ':'a','ء':'',
+  'ب':'b','پ':'p','ت':'t','ث':'s',
+  'ج':'j','چ':'ch','ح':'h','خ':'kh',
+  'د':'d','ذ':'z','ر':'r','ز':'z',
+  'ژ':'zh','س':'s','ش':'sh','ص':'s',
+  'ض':'z','ط':'t','ظ':'z','ع':'a',
+  'غ':'gh','ف':'f','ق':'q','ک':'k','ك':'k',
+  'گ':'g','ل':'l','م':'m','ن':'n',
+  'و':'v','ه':'h','ة':'h',
+  'ی':'i','ي':'i','ئ':'y','ى':'a',
+  '‌':'',  // ZWNJ
+  ' ':'-',
+}
+
+function persianToSlug(text) {
+  return text
+    .split('')
+    .map(c => (c in FA_MAP ? FA_MAP[c] : /[a-zA-Z0-9]/.test(c) ? c.toLowerCase() : ''))
+    .join('')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+// true = slug is auto-derived from name; false = user manually typed it
+let _slugAutoMode = true
+
+watch(() => form.name, (name) => {
+  if (!_slugAutoMode) return
+  form.slug = persianToSlug(name)
+})
+
 function onSlugInput(e) {
+  _slugAutoMode = false
   const sanitized = e.target.value
     .toLowerCase()
     .replace(/\s+/g, '-')
@@ -436,7 +470,7 @@ function validate(targetStatus) {
     errors.name = 'نام محصول حداقل ۳ کاراکتر باشد'
     valid = false
   }
-  if (isEdit.value && form.slug && !SLUG_RE.test(form.slug)) {
+  if (form.slug && !SLUG_RE.test(form.slug)) {
     errors.slug = 'فقط حروف انگلیسی کوچک، اعداد و خط‌تیره مجاز است'
     valid = false
   }
@@ -466,8 +500,7 @@ function validate(targetStatus) {
 function buildDto(statusOverride) {
   return {
     name:        form.name.trim(),
-    // Send existing slug on edit to prevent backend from regenerating it from Persian name
-    ...(isEdit.value && form.slug ? { slug: form.slug } : {}),
+    ...(form.slug ? { slug: form.slug } : {}),
     description: form.description.trim() || undefined,
     category:    form.categoryId,
     brand:       form.brandId || undefined,
@@ -558,6 +591,7 @@ async function publish() {
 // ── Fill form from product ────────────────────────
 function fillForm(p) {
   _fillingForm = true
+  _slugAutoMode = false  // slug comes from server; don't overwrite on name changes
   form.name        = p.name        ?? ''
   form.slug        = p.slug        ?? ''
   form.description = p.description ?? ''

@@ -461,6 +461,38 @@ describe('ProductFormView', () => {
     })
   })
 
+  // ── slug auto-generate from Persian name ──────────────────
+  describe('slug auto-generation (create mode)', () => {
+    it('auto-populates slug as user types Persian name', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      w.vm.form.name = 'عینک آفتابی'
+      await w.vm.$nextTick()
+      expect(w.vm.form.slug).toBeTruthy()
+      expect(w.vm.form.slug).toMatch(/^[a-z0-9-]+$/)
+    })
+
+    it('stops auto-updating after user manually edits slug', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      w.vm.onSlugInput({ target: { value: 'my-custom-slug' } })
+      w.vm.form.name = 'اسم جدید'
+      await w.vm.$nextTick()
+      expect(w.vm.form.slug).toBe('my-custom-slug')
+    })
+
+    it('persianToSlug maps common Persian chars to Latin', () => {
+      const w = mountView()
+      const result = w.vm.persianToSlug('ریبن')
+      expect(result).toMatch(/^[a-z-]+$/)
+    })
+
+    it('persianToSlug preserves existing Latin chars', () => {
+      const w = mountView()
+      expect(w.vm.persianToSlug('RayBan')).toBe('rayban')
+    })
+  })
+
   // ── slug sanitization & validation ────────────────────────
   describe('slug field (edit mode)', () => {
     beforeEach(() => {
@@ -475,6 +507,14 @@ describe('ProductFormView', () => {
     it('loads original slug from server into form', async () => {
       const w = mountView()
       await flushPromises()
+      expect(w.vm.form.slug).toBe('rayban-aviator')
+    })
+
+    it('does not overwrite server slug when name changes in edit mode', async () => {
+      const w = mountView()
+      await flushPromises()
+      w.vm.form.name = 'اسم تغییر یافته'
+      await w.vm.$nextTick()
       expect(w.vm.form.slug).toBe('rayban-aviator')
     })
 
@@ -515,7 +555,7 @@ describe('ProductFormView', () => {
       expect(w.vm.slugError).toBeTruthy()
     })
 
-    it('validate() rejects invalid slug in edit mode', async () => {
+    it('validate() rejects invalid slug', async () => {
       const w = mountView()
       await flushPromises()
       makeValidDraft(w.vm)
@@ -524,7 +564,7 @@ describe('ProductFormView', () => {
       expect(w.vm.errors.slug).toBeTruthy()
     })
 
-    it('validate() accepts valid lowercase slug in edit mode', async () => {
+    it('validate() accepts valid lowercase slug', async () => {
       const w = mountView()
       await flushPromises()
       makeValidDraft(w.vm)
