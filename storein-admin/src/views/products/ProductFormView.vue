@@ -316,6 +316,7 @@ import { brandService }    from '@/services/brand.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { formatNumber, formatPrice } from '@/utils/formatters'
 import { frameAttributeService } from '@/services/frame-attribute.service'
+import { translationService }   from '@/services/translation.service'
 import { logger } from '@/utils/logger'
 
 const CTX = 'ProductFormView'
@@ -404,11 +405,31 @@ function persianToSlug(text) {
 }
 
 // true = slug is auto-derived from name; false = user manually typed it
-let _slugAutoMode = true
+let _slugAutoMode   = true
+let _debounceTimer  = null
+
+function slugFrom(text) {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+}
+
+async function autoGenSlug(name) {
+  if (!_slugAutoMode || !name?.trim()) return
+  try {
+    const en = await translationService.toEnglish(name.trim())
+    if (_slugAutoMode) form.slug = slugFrom(en)
+    logger.debug('Slug auto-generated', { name, slug: form.slug }, CTX)
+  } catch {
+    if (_slugAutoMode) form.slug = persianToSlug(name)
+  }
+}
 
 watch(() => form.name, (name) => {
   if (!_slugAutoMode) return
-  form.slug = persianToSlug(name)
+  clearTimeout(_debounceTimer)
+  _debounceTimer = setTimeout(() => autoGenSlug(name), 500)
 })
 
 function onSlugInput(e) {

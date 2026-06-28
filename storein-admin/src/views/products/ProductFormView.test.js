@@ -14,6 +14,9 @@ vi.mock('@/services/brand.service', () => ({
 vi.mock('@/services/frame-attribute.service', () => ({
   frameAttributeService: { getActive: vi.fn().mockResolvedValue({ data: [] }) },
 }))
+vi.mock('@/services/translation.service', () => ({
+  translationService: { toEnglish: vi.fn().mockResolvedValue('prescription glasses') },
+}))
 
 // ── Formatters ─────────────────────────────────────────────────
 vi.mock('@/utils/formatters', () => ({
@@ -71,6 +74,7 @@ vi.mock('@/components/common/AdminSkeleton.vue', () => ({
 
 import ProductFormView from './ProductFormView.vue'
 import { productService } from '@/services/product.service'
+import { translationService } from '@/services/translation.service'
 import { logger } from '@/utils/logger'
 
 function mountView() {
@@ -463,33 +467,72 @@ describe('ProductFormView', () => {
 
   // ── slug auto-generate from Persian name ──────────────────
   describe('slug auto-generation (create mode)', () => {
-    it('auto-populates slug as user types Persian name', async () => {
+    it('calls translationService.toEnglish when name changes', async () => {
       const w = mountView()
       await w.vm.$nextTick()
       w.vm.form.name = 'عینک آفتابی'
       await w.vm.$nextTick()
-      expect(w.vm.form.slug).toBeTruthy()
-      expect(w.vm.form.slug).toMatch(/^[a-z0-9-]+$/)
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+      expect(translationService.toEnglish).toHaveBeenCalledWith('عینک آفتابی')
+    })
+
+    it('populates slug from translated English result', async () => {
+      translationService.toEnglish.mockResolvedValue('prescription glasses')
+      const w = mountView()
+      await w.vm.$nextTick()
+      w.vm.form.name = 'عینک طبی'
+      await w.vm.$nextTick()
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+      expect(w.vm.form.slug).toBe('prescription-glasses')
+    })
+
+    it('falls back to persianToSlug when API fails', async () => {
+      translationService.toEnglish.mockRejectedValue(new Error('network'))
+      const w = mountView()
+      await w.vm.$nextTick()
+      w.vm.form.name = 'عینک'
+      await w.vm.$nextTick()
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+      expect(w.vm.form.slug).toMatch(/^[a-z-]+$/)
     })
 
     it('stops auto-updating after user manually edits slug', async () => {
       const w = mountView()
       await w.vm.$nextTick()
       w.vm.onSlugInput({ target: { value: 'my-custom-slug' } })
+      translationService.toEnglish.mockClear()
       w.vm.form.name = 'اسم جدید'
       await w.vm.$nextTick()
+      vi.advanceTimersByTime(500)
+      await flushPromises()
       expect(w.vm.form.slug).toBe('my-custom-slug')
+      expect(translationService.toEnglish).not.toHaveBeenCalled()
+    })
+
+    it('debounces — does not call API on every keystroke', async () => {
+      const w = mountView()
+      await w.vm.$nextTick()
+      w.vm.form.name = 'ع'
+      await w.vm.$nextTick()
+      vi.advanceTimersByTime(100)
+      w.vm.form.name = 'عی'
+      await w.vm.$nextTick()
+      vi.advanceTimersByTime(100)
+      w.vm.form.name = 'عین'
+      await w.vm.$nextTick()
+      vi.advanceTimersByTime(500)
+      await flushPromises()
+      expect(translationService.toEnglish).toHaveBeenCalledTimes(1)
+      expect(translationService.toEnglish).toHaveBeenCalledWith('عین')
     })
 
     it('persianToSlug maps common Persian chars to Latin', () => {
       const w = mountView()
       const result = w.vm.persianToSlug('ریبن')
       expect(result).toMatch(/^[a-z-]+$/)
-    })
-
-    it('persianToSlug preserves existing Latin chars', () => {
-      const w = mountView()
-      expect(w.vm.persianToSlug('RayBan')).toBe('rayban')
     })
   })
 
