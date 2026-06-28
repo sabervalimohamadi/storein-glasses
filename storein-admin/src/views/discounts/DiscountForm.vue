@@ -99,25 +99,26 @@
 
       <!-- 7 & 8. بازه زمانی (only time_limited) -->
       <div v-if="form.kind === 'time_limited'" class="form-card">
-        <p class="field-label mb-3">بازه زمانی <span class="text-danger">*</span></p>
+        <p class="field-label mb-3">بازه زمانی <span class="text-xs font-normal text-text-disabled">(اختیاری)</span></p>
         <div class="grid grid-cols-2 gap-4">
           <PersianDatePicker
             v-model="form.startDate"
             label="تاریخ شروع"
-            :required="true"
+            :required="false"
             :error="errors.startDate"
             placeholder="انتخاب تاریخ شروع"
           />
           <PersianDatePicker
             v-model="form.endDate"
             label="تاریخ پایان"
-            :required="true"
+            :required="false"
             :min-date="form.startDate || ''"
             :error="errors.endDate"
             placeholder="انتخاب تاریخ پایان"
           />
         </div>
         <p v-if="dateRangeError" class="err-msg mt-2">{{ dateRangeError }}</p>
+        <p class="text-xs text-text-disabled mt-2">اگر تاریخ وارد نشود، تخفیف بدون محدودیت زمانی اعمال می‌شود</p>
       </div>
 
       <!-- 9 & 10. عمده‌فروشی (only wholesale) -->
@@ -384,10 +385,8 @@ function validate() {
   if (!form.kind)  { errors.kind = 'نوع تخفیف الزامی است'; ok = false }
   if (!form.title.trim()) { errors.title = 'عنوان الزامی است'; ok = false }
   if (form.value == null || form.value < 0) { errors.value = 'مقدار الزامی است'; ok = false }
-  if (form.kind === 'time_limited') {
-    if (!form.startDate) { errors.startDate = 'تاریخ شروع الزامی است'; ok = false }
-    if (!form.endDate)   { errors.endDate   = 'تاریخ پایان الزامی است'; ok = false }
-    if (dateRangeError.value) { errors.endDate = dateRangeError.value; ok = false }
+  if (form.kind === 'time_limited' && dateRangeError.value) {
+    errors.endDate = dateRangeError.value; ok = false
   }
   return ok
 }
