@@ -208,7 +208,7 @@ async function load() {
     })
     discounts.value  = data?.discounts ?? data?.coupons ?? data?.items ?? []
     total.value      = data?.total ?? 0
-    totalPages.value = data?.totalPages ?? Math.ceil((data?.total ?? 0) / 15) || 1
+    totalPages.value = data?.totalPages ?? (Math.ceil((data?.total ?? 0) / 15) || 1)
   } catch (err) {
     ui.addToast('خطا در بارگذاری تخفیف‌ها', 'error')
   } finally {
