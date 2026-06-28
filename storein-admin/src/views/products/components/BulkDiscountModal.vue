@@ -540,9 +540,9 @@ async function apply() {
     emit('applied', { productIds: targetProducts.value.map(p => p._id), discountPct: pct, mode: data.mode })
     close()
 
-    // After timed discount, navigate to list so user can confirm it was created
+    // After timed discount, navigate to discounts list
     if (data.mode === 'timed') {
-      router.push('/time-discounts')
+      router.push('/discounts')
     }
   } catch (err) {
     logger.error('BulkDiscountModal: apply failed', err, {

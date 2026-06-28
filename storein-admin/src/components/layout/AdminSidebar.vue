@@ -237,7 +237,6 @@ const navGroups = computed(() => {
         { name: 'colors',         perm: 'colors',     icon: 'features',   label: 'ویژگی‌های اختصاصی' },
         { name: 'banners',   perm: 'banners',   icon: 'banners',   label: 'بنرها' },
         { name: 'discounts',     perm: 'discounts', icon: 'discounts', label: 'تخفیف‌ها' },
-        { name: 'time-discounts', perm: 'discounts', icon: 'discounts', label: 'تخفیف‌های مدت‌دار' },
         { name: 'coupon-codes',   perm: 'discounts', icon: 'discounts', label: 'کدهای تخفیف' },
         { name: 'orders',    perm: 'orders',     icon: 'orders',     label: 'سفارشات' },
         { name: 'blog',          perm: 'blog', icon: 'blog',          label: 'بلاگ' },
