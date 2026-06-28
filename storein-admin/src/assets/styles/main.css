@@ -88,3 +88,20 @@ html.dark .field-label {
 html.dark .shadow-card {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
 }
+
+/* ── vue3-persian-datetime-picker: force input text visible in all modes ─────
+   The library CSS doesn't set text color, and WebKit browsers may use
+   -webkit-text-fill-color separately from `color`. Both must be set.
+   CSS variables resolve correctly in light (#0F172A) and dark (#F1F5F9).
+   ─────────────────────────────────────────────────────────────────────────── */
+.vpd-input-group > input {
+  color: var(--color-text-primary) !important;
+  -webkit-text-fill-color: var(--color-text-primary) !important;
+  caret-color: var(--color-text-primary) !important;
+  opacity: 1 !important;
+}
+.vpd-input-group > input::placeholder {
+  color: var(--color-text-disabled) !important;
+  -webkit-text-fill-color: var(--color-text-disabled) !important;
+  opacity: 1 !important;
+}

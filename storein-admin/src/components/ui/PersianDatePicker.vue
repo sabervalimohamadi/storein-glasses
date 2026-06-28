@@ -97,14 +97,5 @@ html.dark .vpd-header { background-color: #1B4F8A !important; }
 html.dark .vpd-time .vpd-time-hour,
 html.dark .vpd-time .vpd-time-minute { color: #F1F5F9 !important; }
 html.dark .vpd-time-separator { color: #94A3B8 !important; }
-.vpd-input-group input {
-  color: var(--color-text-primary, #0f172a) !important;
-  background-color: var(--color-surface, #f8fafc) !important;
-  border-color: var(--color-border, #e2e8f0) !important;
-}
-html.dark .vpd-input-group input {
-  background-color: var(--color-surface, #1E293B) !important;
-  color: #F1F5F9 !important;
-  border-color: var(--color-border, #334155) !important;
-}
+/* input text color is handled globally in main.css */
 </style>
