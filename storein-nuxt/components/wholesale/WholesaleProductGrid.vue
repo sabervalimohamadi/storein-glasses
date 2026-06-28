@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+  <div class="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 max-w-[67%] sm:max-w-none mx-auto sm:mx-0">
     <template v-if="loading">
       <WholesaleProductCard v-for="n in 8" :key="n" loading />
     </template>
