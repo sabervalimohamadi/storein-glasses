@@ -57,6 +57,15 @@ const inputClass = computed(() =>
 .vpd-clear-btn { left: 8px; top: 50%; transform: translateY(-50%); line-height: 1; width: 20px; opacity: 0.5; }
 .vpd-clear-btn:hover { opacity: 1; }
 
+/* ── Force input text to be always visible ── */
+.vpd-input-group input {
+  color: var(--color-text-primary, #0f172a) !important;
+  background-color: var(--color-card, #ffffff) !important;
+}
+.vpd-input-group input::placeholder {
+  color: var(--color-text-disabled, #94a3b8) !important;
+}
+
 /* ── Dark mode overrides ── */
 html.dark .vpd-content {
   background-color: #1E293B !important;

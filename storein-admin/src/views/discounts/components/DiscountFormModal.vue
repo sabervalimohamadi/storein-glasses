@@ -5,147 +5,214 @@
     size="lg"
     @close="$emit('update:modelValue', false)">
 
-    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+    <div class="space-y-5">
 
-      <!-- Code -->
-      <div class="sm:col-span-2">
-        <label class="field-label">
-          کد تخفیف <span class="text-error">*</span>
-        </label>
-        <div class="flex gap-2">
-          <input v-model="form.code"
-            type="text" dir="ltr"
-            placeholder="مثلاً: SUMMER20"
-            @input="form.code = form.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
-            :class="['field-input flex-1 uppercase font-mono tracking-widest',
-              errors.code ? 'border-error ring-2 ring-error/15' : '']" />
-          <AdminButton variant="secondary" size="md" @click="generateCode">
-            تولید خودکار
-          </AdminButton>
+      <!-- ── Live preview badge ── -->
+      <div class="flex items-center justify-center">
+        <div class="inline-flex items-center gap-2.5 px-5 py-2.5 rounded-2xl border-2 border-dashed transition-all"
+             :class="form.code ? 'border-primary/40 bg-primary/5' : 'border-border bg-surface'">
+          <code class="font-mono font-black tracking-widest text-base"
+                :class="form.code ? 'text-primary' : 'text-text-disabled'">
+            {{ form.code || 'SUMMER20' }}
+          </code>
+          <span v-if="previewLabel"
+                class="text-xs font-bold px-2 py-0.5 rounded-full text-white"
+                :style="{ background: form.type === 'percentage' ? '#16a34a' : '#2563eb' }">
+            {{ previewLabel }}
+          </span>
         </div>
-        <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
-        <p v-else class="text-text-disabled text-xs mt-1">
-          فقط حروف انگلیسی، اعداد و خط‌تیره مجاز است
-        </p>
       </div>
 
-      <!-- Description -->
-      <div class="sm:col-span-2">
+      <!-- ── Section: کد و توضیح ── -->
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
+          <span class="h-px flex-1 bg-border"></span> کد تخفیف <span class="h-px flex-1 bg-border"></span>
+        </p>
+
+        <div>
+          <label class="field-label">
+            کد تخفیف <span class="text-error">*</span>
+          </label>
+          <div class="flex gap-2">
+            <input v-model="form.code"
+              type="text" dir="ltr"
+              placeholder="مثلاً: SUMMER20"
+              @input="form.code = form.code.toUpperCase().replace(/[^A-Z0-9\-]/g, '')"
+              :class="['field-input flex-1 uppercase font-mono tracking-widest',
+                errors.code ? 'border-error ring-2 ring-error/15' : '']" />
+            <button type="button"
+              @click="generateCode"
+              class="px-3 py-2 rounded-xl border border-border text-sm text-text-secondary
+                     hover:border-primary/40 hover:text-primary hover:bg-primary/5 transition-all
+                     flex items-center gap-1.5 font-medium whitespace-nowrap">
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+              </svg>
+              تولید خودکار
+            </button>
+          </div>
+          <p v-if="errors.code" class="field-error">{{ errors.code }}</p>
+          <p v-else class="text-text-disabled text-xs mt-1">فقط حروف انگلیسی، اعداد و خط‌تیره</p>
+        </div>
+
         <AdminInput
           v-model="form.description"
           label="توضیحات (اختیاری)"
           placeholder="مثلاً: تخفیف ویژه تابستان" />
       </div>
 
-      <!-- Type selector -->
-      <div>
-        <label class="field-label">
-          نوع تخفیف <span class="text-error">*</span>
-        </label>
-        <div class="flex gap-2">
+      <!-- ── Section: میزان تخفیف ── -->
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
+          <span class="h-px flex-1 bg-border"></span> میزان تخفیف <span class="h-px flex-1 bg-border"></span>
+        </p>
+
+        <!-- Type toggle -->
+        <div class="grid grid-cols-2 gap-2 p-1 rounded-xl" style="background: var(--color-surface);">
           <button
             v-for="opt in typeOptions" :key="opt.value"
+            type="button"
             @click="form.type = opt.value"
             :class="[
-              'flex-1 py-2.5 rounded-xl border-2 text-sm font-medium',
-              'transition-all duration-150',
+              'py-2.5 rounded-lg text-sm font-semibold transition-all duration-150',
               form.type === opt.value
-                ? 'border-primary bg-primary/5 text-primary'
-                : 'border-border text-text-secondary hover:border-primary/40',
+                ? 'bg-card shadow-sm text-primary'
+                : 'text-text-secondary hover:text-text-primary',
             ]">
+            <span class="text-base mr-1">{{ opt.icon }}</span>
             {{ opt.label }}
           </button>
         </div>
+
+        <!-- Value input -->
+        <div>
+          <label class="field-label">
+            مقدار تخفیف <span class="text-error">*</span>
+          </label>
+          <div :class="[
+            'flex items-stretch border rounded-xl overflow-hidden transition-all',
+            errors.value
+              ? 'border-error ring-2 ring-error/15'
+              : 'border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15',
+          ]">
+            <span class="flex items-center px-3.5 border-l border-border text-sm font-bold shrink-0"
+                  :class="form.type === 'percentage' ? 'text-green-600 bg-green-50' : 'text-blue-600 bg-blue-50'">
+              {{ form.type === 'percentage' ? '٪' : 'تومان' }}
+            </span>
+            <input v-model.number="form.value"
+              type="number" min="1"
+              :max="form.type === 'percentage' ? 100 : undefined"
+              dir="ltr"
+              :placeholder="form.type === 'percentage' ? '20' : '500000'"
+              class="flex-1 px-3.5 py-2.5 outline-none text-sm font-fanum"
+              style="background:transparent; color: var(--color-text-primary);" />
+          </div>
+          <p v-if="errors.value" class="field-error">{{ errors.value }}</p>
+        </div>
+
+        <!-- Max discount — percentage only -->
+        <div v-if="form.type === 'percentage'"
+             class="rounded-xl p-3 flex items-center gap-3"
+             style="background: var(--color-surface);">
+          <div class="flex-1">
+            <label class="field-label mb-1">سقف مبلغ تخفیف (تومان، اختیاری)</label>
+            <input v-model.number="form.maxDiscount"
+              type="number" min="0" dir="ltr"
+              placeholder="مثلاً: 500000"
+              class="field-input w-full text-sm font-fanum" />
+          </div>
+          <div class="text-text-disabled text-xs text-center shrink-0 mt-5">
+            <svg class="w-5 h-5 mx-auto mb-0.5 opacity-40" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/>
+            </svg>
+            اگر خالی: بدون سقف
+          </div>
+        </div>
       </div>
 
-      <!-- Value -->
-      <div>
-        <label class="field-label">
-          مقدار تخفیف <span class="text-error">*</span>
-        </label>
-        <div :class="[
-          'flex items-center border rounded-lg overflow-hidden transition-all',
-          errors.value
-            ? 'border-error ring-2 ring-error/15'
-            : 'border-border focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/15',
-        ]">
-          <input v-model.number="form.value"
-            type="number" min="1"
-            :max="form.type === 'percentage' ? 100 : undefined"
-            dir="ltr"
-            :placeholder="form.type === 'percentage' ? '20' : '500000'"
-            class="flex-1 px-3 py-2.5 outline-none text-sm bg-card text-text-primary" />
-          <span class="px-3 py-2.5 bg-surface border-r border-border
-                       text-text-secondary text-sm flex-shrink-0 font-fanum">
-            {{ form.type === 'percentage' ? '٪' : 'تومان' }}
+      <!-- ── Section: شرایط اعمال ── -->
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
+          <span class="h-px flex-1 bg-border"></span> شرایط اعمال <span class="h-px flex-1 bg-border"></span>
+        </p>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="field-label">حداقل مبلغ سبد (تومان)</label>
+            <input v-model.number="form.minOrderAmount"
+              type="number" min="0" dir="ltr"
+              placeholder="بدون محدودیت"
+              class="field-input w-full text-sm font-fanum" />
+          </div>
+          <div>
+            <label class="field-label">سقف تعداد استفاده</label>
+            <input v-model.number="form.usageLimit"
+              type="number" min="1" dir="ltr"
+              placeholder="نامحدود"
+              class="field-input w-full text-sm font-fanum" />
+          </div>
+        </div>
+      </div>
+
+      <!-- ── Section: بازه زمانی ── -->
+      <div class="space-y-3">
+        <p class="text-xs font-bold text-text-disabled uppercase tracking-wider flex items-center gap-2">
+          <span class="h-px flex-1 bg-border"></span> بازه زمانی <span class="h-px flex-1 bg-border"></span>
+        </p>
+
+        <div class="grid grid-cols-2 gap-3">
+          <AdminDatePicker
+            v-model="form.startDate"
+            label="تاریخ شروع"
+            placeholder="از ابتدا"
+          />
+          <AdminDatePicker
+            v-model="form.endDate"
+            label="تاریخ انقضا"
+            placeholder="بدون انقضا"
+            :error="errors.endDate"
+          />
+        </div>
+
+        <!-- Validity visual hint -->
+        <div v-if="form.startDate || form.endDate"
+             class="rounded-xl px-4 py-2.5 flex items-center gap-2 text-xs"
+             style="background: var(--color-surface);">
+          <svg class="w-4 h-4 shrink-0 text-primary" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+          </svg>
+          <span class="text-text-secondary font-fanum">
+            <span v-if="form.startDate">از {{ form.startDate }}</span>
+            <span v-if="form.startDate && form.endDate"> تا </span>
+            <span v-if="form.endDate">{{ form.endDate }}</span>
+            <span v-else-if="form.startDate"> · بدون تاریخ انقضا</span>
           </span>
         </div>
-        <p v-if="errors.value" class="field-error">{{ errors.value }}</p>
+        <p v-if="errors.endDate" class="field-error -mt-1">{{ errors.endDate }}</p>
       </div>
 
-      <!-- Max discount (percentage only) -->
-      <div v-if="form.type === 'percentage'">
-        <AdminInput
-          v-model.number="form.maxDiscount"
-          label="حداکثر مبلغ تخفیف (تومان، اختیاری)"
-          type="number" min="0" dir="ltr"
-          placeholder="مثلاً: 500000"
-          hint="اگر خالی باشد، سقفی ندارد" />
-      </div>
-
-      <!-- Min order amount -->
-      <div :class="form.type === 'percentage' ? '' : 'sm:col-span-1'">
-        <AdminInput
-          v-model.number="form.minOrderAmount"
-          label="حداقل مبلغ سبد خرید (تومان)"
-          type="number" min="0" dir="ltr"
-          placeholder="مثلاً: 1000000"
-          hint="اگر خالی باشد، محدودیتی ندارد" />
-      </div>
-
-      <!-- Usage limit -->
-      <div>
-        <AdminInput
-          v-model.number="form.usageLimit"
-          label="سقف تعداد استفاده"
-          type="number" min="1" dir="ltr"
-          placeholder="مثلاً: 100"
-          hint="اگر خالی باشد، نامحدود است" />
-      </div>
-
-      <!-- Start date -->
-      <AdminDatePicker
-        v-model="form.startDate"
-        label="تاریخ شروع (اختیاری)"
-        placeholder="انتخاب تاریخ شروع"
-      />
-
-      <!-- End date -->
-      <AdminDatePicker
-        v-model="form.endDate"
-        label="تاریخ انقضا (اختیاری)"
-        placeholder="انتخاب تاریخ انقضا"
-        :error="errors.endDate"
-      />
-
-      <!-- isActive toggle -->
-      <div class="sm:col-span-2 flex items-center gap-3 pt-2">
-        <div @click="form.isActive = !form.isActive"
-          :class="[
-            'relative w-11 h-6 rounded-full cursor-pointer',
-            'transition-colors duration-200',
-            form.isActive ? 'bg-success' : 'bg-gray-300',
-          ]">
+      <!-- ── Status toggle ── -->
+      <div class="rounded-xl px-4 py-3 flex items-center justify-between cursor-pointer transition-colors"
+           :class="form.isActive ? 'bg-success/8' : 'bg-surface'"
+           @click="form.isActive = !form.isActive">
+        <div>
+          <p class="text-sm font-semibold" :class="form.isActive ? 'text-success' : 'text-text-secondary'">
+            {{ form.isActive ? 'کد تخفیف فعال است' : 'کد تخفیف غیرفعال است' }}
+          </p>
+          <p class="text-xs text-text-disabled mt-0.5">
+            {{ form.isActive ? 'مشتریان می‌توانند این کد را استفاده کنند' : 'کد قابل استفاده نیست' }}
+          </p>
+        </div>
+        <!-- Toggle -->
+        <div :class="[
+          'relative w-12 h-6 rounded-full transition-colors duration-200 shrink-0',
+          form.isActive ? 'bg-success' : 'bg-gray-300 dark:bg-slate-600',
+        ]">
           <span :class="[
-            'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow',
-            'transition-transform duration-200',
-            form.isActive ? 'left-0.5 translate-x-5' : 'left-0.5',
+            'absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform duration-200',
+            form.isActive ? 'translate-x-6 left-0.5' : 'translate-x-0 left-0.5',
           ]" />
         </div>
-        <span class="text-sm font-medium"
-              :class="form.isActive ? 'text-success' : 'text-text-secondary'">
-          {{ form.isActive ? 'کد تخفیف فعال است' : 'کد تخفیف غیرفعال است' }}
-        </span>
       </div>
 
     </div>
@@ -168,6 +235,7 @@
 import { ref, reactive, computed, watch } from 'vue'
 import { discountService } from '@/services/discount.service'
 import { useUiStore }      from '@/stores/ui.store'
+import { formatPrice }     from '@/utils/formatters'
 import AdminModal      from '@/components/common/AdminModal.vue'
 import AdminInput      from '@/components/common/AdminInput.vue'
 import AdminButton     from '@/components/common/AdminButton.vue'
@@ -193,9 +261,15 @@ const form = reactive({
 const errors = reactive({ code: '', value: '', endDate: '' })
 
 const typeOptions = [
-  { value: 'percentage', label: 'درصدی (٪)' },
-  { value: 'fixed',      label: 'مبلغ ثابت (تومان)' },
+  { value: 'percentage', label: 'درصدی', icon: '٪' },
+  { value: 'fixed',      label: 'مبلغ ثابت', icon: '💰' },
 ]
+
+const previewLabel = computed(() => {
+  if (!form.value) return ''
+  if (form.type === 'percentage') return `${form.value}٪ تخفیف`
+  return `${formatPrice(form.value)} تومان`
+})
 
 watch(() => props.modelValue, (open) => {
   if (!open) return
@@ -255,16 +329,16 @@ async function submit() {
   saving.value = true
   try {
     const dto = {
-      code:           form.code.trim(),
-      description:    form.description.trim() || undefined,
-      type:           form.type,
-      value:          Number(form.value),
-      maxDiscountAmount: form.maxDiscount ? Number(form.maxDiscount) : null,
-      minOrderAmount: form.minOrderAmount ? Number(form.minOrderAmount) : null,
-      usageLimit:     form.usageLimit     ? Number(form.usageLimit)     : null,
-      startDate:      form.startDate || null,
-      endDate:        form.endDate   || null,
-      isActive:       form.isActive,
+      code:              form.code.trim(),
+      description:       form.description.trim() || undefined,
+      type:              form.type,
+      value:             Number(form.value),
+      maxDiscountAmount: form.maxDiscount    ? Number(form.maxDiscount)    : null,
+      minOrderAmount:    form.minOrderAmount ? Number(form.minOrderAmount) : null,
+      usageLimit:        form.usageLimit     ? Number(form.usageLimit)     : null,
+      startDate:         form.startDate || null,
+      endDate:           form.endDate   || null,
+      isActive:          form.isActive,
     }
     let result
     if (isEdit.value) {
