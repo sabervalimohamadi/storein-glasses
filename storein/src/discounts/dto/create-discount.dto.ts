@@ -63,11 +63,14 @@ export class CreateDiscountDto {
   endDate?: string;
 
   // ── Target ───────────────────────────────────────────────────
-  @IsEnum(['all', 'products', 'categories'])
-  targetType: 'all' | 'products' | 'categories';
+  @IsEnum(['all', 'products', 'categories', 'brands', 'brand_category'])
+  targetType: 'all' | 'products' | 'categories' | 'brands' | 'brand_category';
 
   @IsOptional() @IsArray() @IsString({ each: true })
   targetIds?: string[];
+
+  @IsOptional() @IsArray() @IsString({ each: true })
+  brandIds?: string[];
 
   // ── Conditions ───────────────────────────────────────────────
   @IsOptional() @IsNumber() @Min(0) @Type(() => Number)

@@ -237,18 +237,119 @@
           </div>
         </div>
         <div class="section-body">
-          <div class="target-grid">
-            <label v-for="opt in targetOpts" :key="opt.value"
-              class="target-btn" :class="{ 'target-btn--on': form.targetType === opt.value }">
-              <input type="radio" v-model="form.targetType" :value="opt.value" class="sr-only"/>
-              <span class="target-icon">{{ opt.icon }}</span>
-              {{ opt.label }}
-            </label>
-          </div>
-          <p v-if="errors.targetType" class="err-msg mt-2">{{ errors.targetType }}</p>
 
-          <!-- Products -->
-          <div v-if="form.targetType === 'products'" class="target-picker">
+          <!-- همه محصولات toggle -->
+          <div :class="['all-toggle', form.targetAll ? 'all-toggle--on' : '']"
+               @click="form.targetAll = !form.targetAll">
+            <div class="all-toggle-text">
+              <span class="all-toggle-title">همه محصولات</span>
+              <span class="all-toggle-sub">تخفیف بدون محدودیت برای همه اعمال می‌شود</span>
+            </div>
+            <div :class="['sw-track', form.targetAll ? 'sw-on' : 'sw-off']">
+              <span :class="['sw-thumb', form.targetAll ? 'sw-thumb-on' : '']"/>
+            </div>
+          </div>
+
+          <!-- دو پنل دسته‌بندی + برند -->
+          <div v-if="!form.targetAll" class="target-panels">
+
+            <!-- Panel: دسته‌بندی‌ها -->
+            <div class="target-panel">
+              <div class="panel-head">
+                <span class="panel-icon">🗂️</span>
+                <span class="panel-title">دسته‌بندی‌ها</span>
+                <span v-if="form.targetIds.length" class="panel-badge">{{ form.targetIds.length }}</span>
+              </div>
+              <div class="panel-search">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input v-model="categorySearch" type="text" dir="rtl" placeholder="جستجو..." class="panel-search-input"/>
+              </div>
+              <div v-if="loadingCategories" class="panel-loading">در حال بارگذاری...</div>
+              <div v-else class="panel-list">
+                <label v-for="cat in filteredCategories" :key="cat._id" class="panel-item">
+                  <input type="checkbox" :value="cat._id" v-model="form.targetIds" class="sr-only"/>
+                  <span class="panel-checkbox" :class="{ 'panel-checkbox--on': form.targetIds.includes(cat._id) }">
+                    <svg v-if="form.targetIds.includes(cat._id)" width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </span>
+                  <span class="panel-item-name">{{ cat.name }}</span>
+                </label>
+                <p v-if="!filteredCategories.length" class="hint-text p-2">موردی یافت نشد</p>
+              </div>
+            </div>
+
+            <!-- divider -->
+            <div class="panels-divider">
+              <div class="divider-line"/>
+              <span class="divider-label">و / یا</span>
+              <div class="divider-line"/>
+            </div>
+
+            <!-- Panel: برندها -->
+            <div class="target-panel">
+              <div class="panel-head">
+                <span class="panel-icon">🏷️</span>
+                <span class="panel-title">برندها</span>
+                <span v-if="form.brandIds.length" class="panel-badge">{{ form.brandIds.length }}</span>
+              </div>
+              <div class="panel-search">
+                <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input v-model="brandSearch" type="text" dir="rtl" placeholder="جستجو..." class="panel-search-input"/>
+              </div>
+              <div v-if="loadingBrands" class="panel-loading">در حال بارگذاری...</div>
+              <div v-else class="panel-list">
+                <label v-for="brand in filteredBrands" :key="brand._id" class="panel-item">
+                  <input type="checkbox" :value="brand._id" v-model="form.brandIds" class="sr-only"/>
+                  <span class="panel-checkbox" :class="{ 'panel-checkbox--on': form.brandIds.includes(brand._id) }">
+                    <svg v-if="form.brandIds.includes(brand._id)" width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+                    </svg>
+                  </span>
+                  <img v-if="brand.logo" :src="brand.logo" class="brand-logo"
+                    @error="e => e.target.style.display='none'"/>
+                  <span class="panel-item-name">{{ brand.name }}</span>
+                </label>
+                <p v-if="!filteredBrands.length" class="hint-text p-2">موردی یافت نشد</p>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- خلاصه انتخاب -->
+          <div v-if="!form.targetAll && (form.targetIds.length || form.brandIds.length)" class="target-summary">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M22 11.08V12a10 10 0 11-5.93-9.14"/>
+              <polyline points="22 4 12 14.01 9 11.01"/>
+            </svg>
+            <span>تخفیف روی</span>
+            <template v-if="form.targetIds.length">
+              <strong>{{ form.targetIds.length }} دسته‌بندی</strong>
+            </template>
+            <template v-if="form.targetIds.length && form.brandIds.length">
+              <span>از</span>
+            </template>
+            <template v-if="form.brandIds.length">
+              <strong>{{ form.brandIds.length }} برند</strong>
+            </template>
+            <span>اعمال می‌شود</span>
+          </div>
+
+          <!-- محصولات خاص -->
+          <div class="specific-products-toggle" @click="showProductPicker = !showProductPicker">
+            <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+              <path d="M20 7H4a1 1 0 00-1 1v10a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1z"/>
+              <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+            </svg>
+            {{ showProductPicker ? 'بستن انتخاب محصولات خاص' : '+ یا محصولات خاص را انتخاب کنید' }}
+            <span v-if="selectedProducts.length" class="panel-badge">{{ selectedProducts.length }}</span>
+          </div>
+
+          <div v-if="showProductPicker" class="product-picker-wrap">
             <div class="search-row">
               <div class="input-wrap flex-1">
                 <span class="input-icon">
@@ -259,7 +360,7 @@
                 <input v-model="productSearch" type="text" dir="rtl"
                   placeholder="جستجوی محصول..." class="fi" @input="searchProducts"/>
               </div>
-              <svg v-if="searchingProducts" class="spin ml-2 flex-shrink-0" width="18" height="18" fill="none" viewBox="0 0 24 24">
+              <svg v-if="searchingProducts" class="spin flex-shrink-0" width="18" height="18" fill="none" viewBox="0 0 24 24">
                 <circle class="op25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"/>
                 <path fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"/>
               </svg>
@@ -274,40 +375,14 @@
                 </svg>
               </div>
             </div>
-            <div v-if="selectedProducts.length" class="tags-wrap">
+            <div v-if="selectedProducts.length" class="tags-wrap mt-2">
               <span v-for="p in selectedProducts" :key="p._id" class="tag">
                 {{ p.name }}
                 <button type="button" @click="removeProduct(p._id)" class="tag-remove">×</button>
               </span>
             </div>
-            <p v-if="!selectedProducts.length" class="hint-text mt-2">هنوز محصولی انتخاب نشده</p>
           </div>
 
-          <!-- Categories -->
-          <div v-if="form.targetType === 'categories'" class="target-picker">
-            <div v-if="loadingCategories" class="hint-text">در حال بارگذاری...</div>
-            <div v-else class="check-grid">
-              <label v-for="cat in categories" :key="cat._id" class="check-item">
-                <input type="checkbox" :value="cat._id" v-model="form.targetIds"/>
-                <span class="check-box"></span>
-                {{ cat.name }}
-              </label>
-            </div>
-          </div>
-
-          <!-- Brands -->
-          <div v-if="form.targetType === 'brands'" class="target-picker">
-            <div v-if="loadingBrands" class="hint-text">در حال بارگذاری...</div>
-            <div v-else class="check-grid">
-              <label v-for="brand in brands" :key="brand._id" class="check-item">
-                <input type="checkbox" :value="brand._id" v-model="form.targetIds"/>
-                <span class="check-box"></span>
-                <img v-if="brand.logo" :src="brand.logo" class="brand-logo"
-                  @error="e => e.target.style.display='none'"/>
-                {{ brand.name }}
-              </label>
-            </div>
-          </div>
         </div>
       </div>
 
@@ -409,8 +484,9 @@ const form = reactive({
   maxDiscountAmount: null,
   startDate:        null,
   endDate:          null,
-  targetType:       'all',
+  targetAll:        true,
   targetIds:        [],
+  brandIds:         [],
   minOrderAmount:   null,
   minQuantity:      null,
   customerGroup:    '',
@@ -419,7 +495,7 @@ const form = reactive({
 })
 
 const errors = reactive({
-  kind: '', title: '', value: '', startDate: '', endDate: '', targetType: '',
+  kind: '', title: '', value: '', startDate: '', endDate: '',
 })
 
 const dateRangeError = computed(() => {
@@ -443,6 +519,22 @@ const dateDuration = computed(() => {
   if (minutes && !days) parts.push(`${minutes} دقیقه`)
   return parts.join(' و ')
 })
+
+// Search filters
+const categorySearch = ref('')
+const brandSearch    = ref('')
+const showProductPicker = ref(false)
+
+const filteredCategories = computed(() =>
+  categorySearch.value.trim()
+    ? categories.value.filter(c => c.name.includes(categorySearch.value))
+    : categories.value
+)
+const filteredBrands = computed(() =>
+  brandSearch.value.trim()
+    ? brands.value.filter(b => b.name.includes(brandSearch.value))
+    : brands.value
+)
 
 // Products
 const productSearch     = ref('')
@@ -498,18 +590,16 @@ async function loadBrands() {
   } finally { loadingBrands.value = false }
 }
 
-const targetOpts = [
-  { value: 'all',        label: 'همه محصولات', icon: '🛍️' },
-  { value: 'products',   label: 'محصولات خاص', icon: '📦' },
-  { value: 'categories', label: 'دسته‌بندی',   icon: '🗂️' },
-  { value: 'brands',     label: 'برند',         icon: '🏷️' },
-]
-
-watch(() => form.targetType, () => {
-  form.targetIds = []
-  selectedProducts.value = []
-  productResults.value   = []
-  productSearch.value    = ''
+const resolvedTargetType = computed(() => {
+  if (form.targetAll) return 'all'
+  const hasCats   = form.targetIds.length > 0
+  const hasBrands = form.brandIds.length > 0
+  const hasProds  = selectedProducts.value.length > 0
+  if (hasProds) return 'products'
+  if (hasCats && hasBrands) return 'brand_category'
+  if (hasCats)   return 'categories'
+  if (hasBrands) return 'brands'
+  return 'all'
 })
 
 function validate() {
@@ -525,6 +615,7 @@ function validate() {
 }
 
 function buildPayload() {
+  const tt = resolvedTargetType.value
   return {
     title:        form.title.trim(),
     description:  form.description.trim() || undefined,
@@ -533,8 +624,11 @@ function buildPayload() {
     maxDiscountAmount: form.maxDiscountAmount || undefined,
     startDate:    form.kind === 'time_limited' ? form.startDate : undefined,
     endDate:      form.kind === 'time_limited' ? form.endDate   : undefined,
-    targetType:   form.targetType,
-    targetIds:    form.targetIds.length ? form.targetIds : undefined,
+    targetType:   tt,
+    targetIds:    (tt === 'categories' || tt === 'brand_category' || tt === 'products')
+                    ? (tt === 'products' ? selectedProducts.value.map(p => p._id) : form.targetIds)
+                    : undefined,
+    brandIds:     (tt === 'brands' || tt === 'brand_category') ? form.brandIds : undefined,
     minOrderAmount: form.minOrderAmount || undefined,
     minQuantity:    form.kind === 'wholesale' ? (form.minQuantity || undefined) : undefined,
     customerGroup:  form.kind === 'wholesale' && form.customerGroup ? form.customerGroup : undefined,
@@ -570,6 +664,7 @@ async function loadEdit() {
   loadingForm.value = true
   try {
     const { data } = await discountService.getById(route.params.id)
+    const tt = data.targetType ?? 'all'
     Object.assign(form, {
       kind:             data.kind,
       title:            data.title,
@@ -579,8 +674,13 @@ async function loadEdit() {
       maxDiscountAmount: data.maxDiscountAmount ?? null,
       startDate:        data.startDate ?? null,
       endDate:          data.endDate   ?? null,
-      targetType:       data.targetType,
-      targetIds:        (data.targetIds ?? []).map(id => id.toString?.() ?? id),
+      targetAll:        tt === 'all',
+      targetIds:        (tt === 'categories' || tt === 'brand_category')
+                          ? (data.targetIds ?? []).map(id => id.toString?.() ?? id)
+                          : [],
+      brandIds:         (tt === 'brands' || tt === 'brand_category')
+                          ? (data.brandIds ?? []).map(id => id.toString?.() ?? id)
+                          : [],
       minOrderAmount:   data.minOrderAmount ?? null,
       minQuantity:      data.minQuantity    ?? null,
       customerGroup:    data.customerGroup  ?? '',
@@ -799,22 +899,99 @@ html.dark .kind-icon--blue { background: rgba(37,99,235,0.18); }
 html.dark .duration-bar { color: #4ade80; background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2); }
 .duration-bar strong { font-weight: 700; }
 
-/* ── Target ── */
-.target-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
-.target-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 3px;
-  padding: 0.65rem 0.4rem; border-radius: 10px; cursor: pointer;
-  font-size: 0.72rem; font-weight: 600; text-align: center;
+/* ── Target: همه toggle ── */
+.all-toggle {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0.875rem 1rem; border-radius: 12px; cursor: pointer;
+  border: 1.5px solid var(--color-border); background: var(--color-surface);
+  transition: all 0.15s; margin-bottom: 0.875rem;
+}
+.all-toggle--on { border-color: rgba(22,163,74,0.3); background: rgba(22,163,74,0.05); }
+.all-toggle-text { display: flex; flex-direction: column; gap: 2px; }
+.all-toggle-title { font-size: 0.84rem; font-weight: 700; color: var(--color-text-primary); }
+.all-toggle-sub   { font-size: 0.7rem; color: var(--color-text-disabled); }
+.sw-track { position: relative; width: 40px; height: 22px; border-radius: 999px; transition: background 0.2s; flex-shrink: 0; }
+.sw-on { background: #16a34a; }
+.sw-off { background: #d1d5db; }
+html.dark .sw-off { background: #475569; }
+.sw-thumb { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.2); transition: transform 0.2s; display: block; }
+.sw-thumb-on { transform: translateX(18px); }
+
+/* ── Target panels ── */
+.target-panels { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0; }
+
+.target-panel {
+  border: 1.5px solid var(--color-border); border-radius: 12px; overflow: hidden;
+}
+.panel-head {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.6rem 0.875rem;
+  background: var(--color-surface); border-bottom: 1px solid var(--color-border);
+  font-size: 0.8rem; font-weight: 700; color: var(--color-text-primary);
+}
+.panel-icon { font-size: 0.95rem; line-height: 1; }
+.panel-title { flex: 1; }
+.panel-badge {
+  font-size: 0.65rem; font-weight: 700;
+  padding: 1px 7px; border-radius: 20px;
+  background: #1B4F8A; color: white;
+}
+.panel-search {
+  display: flex; align-items: center; gap: 6px;
+  padding: 0.5rem 0.75rem; border-bottom: 1px solid var(--color-border);
+  color: var(--color-text-disabled);
+}
+.panel-search-input {
+  flex: 1; font-size: 0.78rem; background: none; border: none;
+  outline: none; color: var(--color-text-primary);
+}
+.panel-loading { padding: 0.75rem; font-size: 0.74rem; color: var(--color-text-disabled); }
+.panel-list { max-height: 220px; overflow-y: auto; padding: 0.4rem; }
+
+.panel-item {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.35rem 0.5rem; border-radius: 8px; cursor: pointer;
+  font-size: 0.8rem; color: var(--color-text-secondary);
+  transition: background 0.1s;
+}
+.panel-item:hover { background: var(--color-surface); color: var(--color-text-primary); }
+.panel-checkbox {
+  width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
   border: 1.5px solid var(--color-border);
-  color: var(--color-text-secondary);
-  background: var(--color-surface);
+  display: flex; align-items: center; justify-content: center;
   transition: all 0.15s;
 }
-.target-btn:hover { border-color: rgba(27,79,138,0.4); }
-.target-btn--on { border-color: rgba(27,79,138,0.6); background: rgba(27,79,138,0.07); color: #1B4F8A; }
-.target-icon { font-size: 1.2rem; line-height: 1; }
+.panel-checkbox--on { background: #1B4F8A; border-color: #1B4F8A; }
+.panel-item-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-.target-picker { margin-top: 1rem; }
+/* ── Divider ── */
+.panels-divider {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  gap: 6px; padding: 0 0.75rem; color: var(--color-text-disabled); font-size: 0.68rem;
+}
+.divider-line { width: 1px; flex: 1; background: var(--color-border); }
+.divider-label { font-weight: 700; white-space: nowrap; }
+
+/* ── Summary ── */
+.target-summary {
+  display: inline-flex; align-items: center; gap: 5px; flex-wrap: wrap;
+  margin-top: 0.75rem; padding: 5px 12px; border-radius: 20px;
+  font-size: 0.74rem; color: #1B4F8A;
+  background: rgba(27,79,138,0.07); border: 1px solid rgba(27,79,138,0.2);
+}
+html.dark .target-summary { color: #93C5FD; background: rgba(147,197,253,0.08); border-color: rgba(147,197,253,0.2); }
+.target-summary strong { font-weight: 700; }
+
+/* ── Specific products ── */
+.specific-products-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 0.875rem; padding: 5px 12px; border-radius: 20px; cursor: pointer;
+  font-size: 0.74rem; font-weight: 600; color: var(--color-text-secondary);
+  border: 1.5px dashed var(--color-border); transition: all 0.15s;
+}
+.specific-products-toggle:hover { border-color: rgba(27,79,138,0.4); color: #1B4F8A; }
+.product-picker-wrap { margin-top: 0.75rem; }
+
 .search-row { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; }
 .results-list {
   border: 1px solid var(--color-border); border-radius: 10px;
@@ -834,35 +1011,11 @@ html.dark .duration-bar { color: #4ade80; background: rgba(74,222,128,0.08); bor
 .tag {
   display: inline-flex; align-items: center; gap: 4px;
   font-size: 0.74rem; padding: 3px 10px; border-radius: 20px;
-  background: rgba(27,79,138,0.1); color: #3B6FBE;
-  border: 1px solid rgba(27,79,138,0.2);
+  background: rgba(27,79,138,0.1); color: #3B6FBE; border: 1px solid rgba(27,79,138,0.2);
 }
 .tag-remove { color: inherit; opacity: 0.6; font-size: 1rem; line-height: 1; cursor: pointer; }
 .tag-remove:hover { opacity: 1; color: #ef4444; }
-
-/* ── Check grid ── */
-.check-grid {
-  display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem;
-  max-height: 200px; overflow-y: auto;
-  border: 1px solid var(--color-border); border-radius: 10px; padding: 0.75rem;
-}
-.check-item {
-  display: flex; align-items: center; gap: 0.5rem;
-  font-size: 0.8rem; cursor: pointer; padding: 3px 0;
-  color: var(--color-text-secondary);
-}
-.check-item:hover { color: var(--color-text-primary); }
-.check-item input[type="checkbox"] { display: none; }
-.check-box {
-  width: 16px; height: 16px; border-radius: 4px; flex-shrink: 0;
-  border: 1.5px solid var(--color-border); transition: all 0.15s;
-}
-.check-item input:checked ~ .check-box {
-  background: #1B4F8A; border-color: #1B4F8A;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='3' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' d='M5 13l4 4L19 7'/%3E%3C/svg%3E");
-  background-size: 10px; background-repeat: no-repeat; background-position: center;
-}
-.brand-logo { width: 18px; height: 18px; object-fit: contain; border-radius: 3px; }
+.brand-logo { width: 18px; height: 18px; object-fit: contain; border-radius: 3px; flex-shrink: 0; }
 
 /* ── Two col ── */
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 0.875rem; }

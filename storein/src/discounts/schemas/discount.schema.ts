@@ -46,11 +46,14 @@ export class Discount {
   endDate: Date | null;
 
   // ── Target ───────────────────────────────────────────────────
-  @Prop({ required: true, enum: ['all', 'products', 'categories'] })
-  targetType: 'all' | 'products' | 'categories';
+  @Prop({ required: true, enum: ['all', 'products', 'categories', 'brands', 'brand_category'] })
+  targetType: 'all' | 'products' | 'categories' | 'brands' | 'brand_category';
 
   @Prop({ type: [{ type: Types.ObjectId }], default: [] })
   targetIds: Types.ObjectId[];
+
+  @Prop({ type: [{ type: Types.ObjectId }], default: [] })
+  brandIds: Types.ObjectId[];
 
   // ── Conditions ───────────────────────────────────────────────
   @Prop({ type: Number, default: null })
