@@ -267,9 +267,21 @@
                 <input v-model="categorySearch" type="text" dir="rtl" placeholder="جستجو..." class="panel-search-input"/>
               </div>
               <div v-if="loadingCategories" class="panel-loading">در حال بارگذاری...</div>
+              <!-- tree view (no search active) -->
+              <div v-else-if="!categorySearch.trim()" class="panel-list">
+                <CategoryTreeNode
+                  v-for="node in categoryTree"
+                  :key="node._id"
+                  :node="node"
+                  :depth="0"
+                  :selected-ids="form.targetIds"
+                  @toggle="toggleCategory"
+                />
+                <p v-if="!categoryTree.length" class="hint-text p-2">دسته‌بندی یافت نشد</p>
+              </div>
+              <!-- flat search results -->
               <div v-else class="panel-list">
-                <label v-for="cat in filteredCategories" :key="cat._id" class="panel-item">
-                  <input type="checkbox" :value="cat._id" v-model="form.targetIds" class="sr-only"/>
+                <label v-for="cat in filteredCategories" :key="cat._id" class="panel-item" @click.prevent="toggleCategory(cat._id)">
                   <span class="panel-checkbox" :class="{ 'panel-checkbox--on': form.targetIds.includes(cat._id) }">
                     <svg v-if="form.targetIds.includes(cat._id)" width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -466,6 +478,7 @@ import { categoryService } from '@/services/category.service.js'
 import { brandService    } from '@/services/brand.service.js'
 import { useUiStore } from '@/stores/ui.store'
 import PersianDatePicker from '@/components/ui/PersianDatePicker.vue'
+import CategoryTreeNode  from './components/CategoryTreeNode.vue'
 
 const route  = useRoute()
 const router = useRouter()
@@ -527,8 +540,8 @@ const showProductPicker = ref(false)
 
 const filteredCategories = computed(() =>
   categorySearch.value.trim()
-    ? categories.value.filter(c => c.name.includes(categorySearch.value))
-    : categories.value
+    ? categoriesFlat.value.filter(c => c.name.includes(categorySearch.value))
+    : []
 )
 const filteredBrands = computed(() =>
   brandSearch.value.trim()
@@ -567,14 +580,30 @@ function removeProduct(id) {
 }
 
 // Categories
-const categories        = ref([])
+const categoryTree      = ref([])
+const categoriesFlat    = ref([])
 const loadingCategories = ref(false)
+
+function flattenTree(nodes, acc = []) {
+  for (const node of nodes) {
+    acc.push(node)
+    if (node.children?.length) flattenTree(node.children, acc)
+  }
+  return acc
+}
+
+function toggleCategory(id) {
+  const idx = form.targetIds.indexOf(id)
+  if (idx === -1) form.targetIds.push(id)
+  else            form.targetIds.splice(idx, 1)
+}
 
 async function loadCategories() {
   loadingCategories.value = true
   try {
-    const { data } = await categoryService.getAll({ limit: 200 })
-    categories.value = data?.categories ?? data ?? []
+    const { data } = await categoryService.getTree()
+    categoryTree.value   = Array.isArray(data) ? data : []
+    categoriesFlat.value = flattenTree(categoryTree.value)
   } finally { loadingCategories.value = false }
 }
 
