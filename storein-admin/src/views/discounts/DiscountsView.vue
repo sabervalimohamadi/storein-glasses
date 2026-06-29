@@ -326,13 +326,8 @@ async function fetchDiscounts() {
       ...(dSearch.value             ? { search:   dSearch.value }        : {}),
       ...(activeFilter.value !== '' ? { isActive: activeFilter.value }   : {}),
     })
-<<<<<<< HEAD
-    discounts.value = data?.discounts ?? data?.coupons ?? data?.items ?? []
-    total.value     = data?.total   ?? 0
-=======
     discounts.value = data?.discounts ?? []
     total.value     = data?.total     ?? 0
->>>>>>> bec96d5 (fix(admin): wire coupon-codes page to unified /discounts endpoint)
     logger.info('discounts: loaded', { count: discounts.value.length, total: total.value }, CTX)
   } catch (err) {
     logger.error('discounts: fetch failed', { err }, CTX)
