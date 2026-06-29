@@ -25,6 +25,11 @@
         <line x1="3" y1="10" x2="21" y2="10"/>
       </svg>
       <span dir="ltr">{{ formattedDisplay }}</span>
+      <button type="button" class="date-clear-btn" @click="clearValue" title="پاک کردن تاریخ">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
     </div>
     <p v-if="error" class="text-danger text-xs mt-1 text-right">{{ error }}</p>
   </div>
@@ -51,6 +56,11 @@ watch(() => props.modelValue, (val) => { internalValue.value = val ?? null })
 
 function onDateChange(val) {
   emit('update:modelValue', val || null)
+}
+
+function clearValue() {
+  internalValue.value = null
+  emit('update:modelValue', null)
 }
 
 const _jalaliDate = new Intl.DateTimeFormat('fa-IR-u-ca-persian-nu-latn', {
@@ -131,7 +141,7 @@ html.dark .vpd-time-separator { color: #94A3B8 !important; }
   align-items: center;
   gap: 5px;
   margin-top: 5px;
-  padding: 3px 10px;
+  padding: 3px 8px 3px 4px;
   border-radius: 20px;
   font-size: 0.72rem;
   font-weight: 600;
@@ -144,4 +154,22 @@ html.dark .date-value-display {
   background: rgba(147,197,253,0.1);
   border-color: rgba(147,197,253,0.2);
 }
+.date-clear-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(37,99,235,0.15);
+  color: #2563eb;
+  cursor: pointer;
+  padding: 0;
+  margin-right: 2px;
+  transition: background 0.15s;
+}
+.date-clear-btn:hover { background: rgba(239,68,68,0.15); color: #ef4444; }
+html.dark .date-clear-btn { background: rgba(147,197,253,0.15); color: #93C5FD; }
+html.dark .date-clear-btn:hover { background: rgba(239,68,68,0.2); color: #f87171; }
 </style>

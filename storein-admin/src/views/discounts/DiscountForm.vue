@@ -118,7 +118,13 @@
           />
         </div>
         <p v-if="dateRangeError" class="err-msg mt-2">{{ dateRangeError }}</p>
-        <p class="text-xs text-text-disabled mt-2">اگر تاریخ وارد نشود، تخفیف بدون محدودیت زمانی اعمال می‌شود</p>
+        <div v-if="dateDuration" class="duration-badge">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+          </svg>
+          مدت تخفیف: {{ dateDuration }}
+        </div>
+        <p v-else class="text-xs text-text-disabled mt-2">اگر تاریخ وارد نشود، تخفیف بدون محدودیت زمانی اعمال می‌شود</p>
       </div>
 
       <!-- 9 & 10. عمده‌فروشی (only wholesale) -->
@@ -309,6 +315,21 @@ const dateRangeError = computed(() => {
   if (form.startDate && form.endDate && new Date(form.endDate) <= new Date(form.startDate))
     return 'تاریخ پایان باید بعد از تاریخ شروع باشد'
   return ''
+})
+
+const dateDuration = computed(() => {
+  if (!form.startDate || !form.endDate) return ''
+  const diff = new Date(form.endDate) - new Date(form.startDate)
+  if (diff <= 0) return ''
+  const totalMinutes = Math.floor(diff / 60000)
+  const days    = Math.floor(totalMinutes / 1440)
+  const hours   = Math.floor((totalMinutes % 1440) / 60)
+  const minutes = totalMinutes % 60
+  const parts = []
+  if (days)    parts.push(`${days} روز`)
+  if (hours)   parts.push(`${hours} ساعت`)
+  if (minutes && !days) parts.push(`${minutes} دقیقه`)
+  return parts.join(' و ')
 })
 
 // Products
@@ -536,6 +557,15 @@ select.field-input { cursor: pointer; }
 }
 
 .err-msg { font-size: 0.75rem; color: #ef4444; margin-top: 0.25rem; }
+.duration-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  margin-top: 8px; padding: 4px 12px; border-radius: 20px;
+  font-size: 0.72rem; font-weight: 600;
+  color: #16a34a; background: rgba(22,163,74,0.08); border: 1px solid rgba(22,163,74,0.2);
+}
+html.dark .duration-badge {
+  color: #4ade80; background: rgba(74,222,128,0.08); border-color: rgba(74,222,128,0.2);
+}
 .text-danger { color: #ef4444; }
 
 .selected-tag {
