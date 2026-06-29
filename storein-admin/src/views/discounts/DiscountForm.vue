@@ -23,47 +23,68 @@
 
     <form v-else @submit.prevent="submit" class="dfp-form">
 
-      <!-- ── Step 0: نوع تخفیف ── -->
-      <div class="kind-grid">
-        <label class="kind-card" :class="{ 'kind-card--on': form.kind === 'time_limited' }">
-          <input type="radio" v-model="form.kind" value="time_limited" class="sr-only"/>
-          <div class="kind-icon kind-icon--red">
+      <!-- ── Step 0: مخاطب تخفیف ── -->
+      <div class="kind-grid kind-grid--3">
+        <label class="kind-card" :class="{ 'kind-card--on': form.customerGroup === '' }">
+          <input type="radio" v-model="form.customerGroup" value="" class="sr-only"/>
+          <div class="kind-icon kind-icon--green">
             <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <circle cx="12" cy="12" r="10"/>
-              <polyline points="12 6 12 12 16 14"/>
+              <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/>
+              <circle cx="9" cy="7" r="4"/>
+              <path d="M23 21v-2a4 4 0 00-3-3.87"/>
+              <path d="M16 3.13a4 4 0 010 7.75"/>
             </svg>
           </div>
           <div class="kind-text">
-            <span class="kind-title">تخفیف زمان‌دار</span>
-            <span class="kind-sub">فلش سیل، فصلی، رویداد ویژه</span>
+            <span class="kind-title">همه مشتریان</span>
+            <span class="kind-sub">عمده‌فروشی و تک‌فروشی</span>
           </div>
-          <div class="kind-check" :class="{ 'kind-check--on': form.kind === 'time_limited' }">
+          <div class="kind-check" :class="{ 'kind-check--on': form.customerGroup === '' }">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
             </svg>
           </div>
         </label>
 
-        <label class="kind-card" :class="{ 'kind-card--on': form.kind === 'wholesale' }">
-          <input type="radio" v-model="form.kind" value="wholesale" class="sr-only"/>
+        <label class="kind-card" :class="{ 'kind-card--on': form.customerGroup === 'wholesale' }">
+          <input type="radio" v-model="form.customerGroup" value="wholesale" class="sr-only"/>
           <div class="kind-icon kind-icon--blue">
             <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
-              <path d="M20 7H4a1 1 0 00-1 1v10a1 1 0 001 1h16a1 1 0 001-1V8a1 1 0 00-1-1z"/>
-              <path d="M16 7V5a2 2 0 00-2-2h-4a2 2 0 00-2 2v2"/>
+              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
             </svg>
           </div>
           <div class="kind-text">
-            <span class="kind-title">ویژه عمده‌فروشی</span>
-            <span class="kind-sub">قیمت خاص برای مشتریان عمده</span>
+            <span class="kind-title">فقط عمده‌فروشی</span>
+            <span class="kind-sub">ویژه مشتریان عمده</span>
           </div>
-          <div class="kind-check" :class="{ 'kind-check--on': form.kind === 'wholesale' }">
+          <div class="kind-check" :class="{ 'kind-check--on': form.customerGroup === 'wholesale' }">
+            <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
+            </svg>
+          </div>
+        </label>
+
+        <label class="kind-card" :class="{ 'kind-card--on': form.customerGroup === 'retail' }">
+          <input type="radio" v-model="form.customerGroup" value="retail" class="sr-only"/>
+          <div class="kind-icon kind-icon--purple">
+            <svg width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" viewBox="0 0 24 24">
+              <path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/>
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <path d="M16 10a4 4 0 01-8 0"/>
+            </svg>
+          </div>
+          <div class="kind-text">
+            <span class="kind-title">فقط تک‌فروشی</span>
+            <span class="kind-sub">ویژه مشتریان عادی</span>
+          </div>
+          <div class="kind-check" :class="{ 'kind-check--on': form.customerGroup === 'retail' }">
             <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="3" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
             </svg>
           </div>
         </label>
       </div>
-      <p v-if="errors.kind" class="err-msg px-1">{{ errors.kind }}</p>
 
       <!-- ── Section 1: اطلاعات پایه ── -->
       <div class="section-card">
@@ -155,8 +176,8 @@
         </div>
       </div>
 
-      <!-- ── Section 3: بازه زمانی (time_limited) ── -->
-      <div v-if="form.kind === 'time_limited'" class="section-card section-card--timed">
+      <!-- ── Section 3: بازه زمانی ── -->
+      <div class="section-card section-card--timed">
         <div class="section-head">
           <div class="section-num section-num--red">۳</div>
           <div>
@@ -192,40 +213,6 @@
         </div>
       </div>
 
-      <!-- ── Section 3: عمده‌فروشی (wholesale) ── -->
-      <div v-if="form.kind === 'wholesale'" class="section-card section-card--wholesale">
-        <div class="section-head">
-          <div class="section-num section-num--blue">۳</div>
-          <div>
-            <h2 class="section-title">تنظیمات عمده‌فروشی</h2>
-            <p class="section-desc">شرایط اعمال تخفیف برای مشتریان عمده</p>
-          </div>
-        </div>
-        <div class="section-body">
-          <div class="two-col">
-            <div class="field-group">
-              <label class="fl">حداقل تعداد سفارش</label>
-              <div class="input-wrap">
-                <span class="input-icon">
-                  <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                    <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/><path d="M12 7H7.5a2.5 2.5 0 010-5C11 2 12 7 12 7z"/><path d="M12 7h4.5a2.5 2.5 0 000-5C13 2 12 7 12 7z"/>
-                  </svg>
-                </span>
-                <input v-model.number="form.minQuantity" type="number" min="1"
-                  placeholder="مثال: 10" class="fi" dir="ltr"/>
-              </div>
-            </div>
-            <div class="field-group">
-              <label class="fl">گروه مشتری</label>
-              <select v-model="form.customerGroup" class="fi fi--select">
-                <option value="">هر دو گروه</option>
-                <option value="wholesale">عمده‌فروش</option>
-                <option value="vip">VIP</option>
-              </select>
-            </div>
-          </div>
-        </div>
-      </div>
 
       <!-- ── Section 4: هدف تخفیف ── -->
       <div class="section-card">
@@ -435,6 +422,19 @@
               </div>
             </div>
           </div>
+          <div v-if="form.customerGroup === 'wholesale'" class="field-group mt-3">
+            <label class="fl">حداقل تعداد سفارش (عمده)</label>
+            <div class="input-wrap" style="max-width:200px">
+              <span class="input-icon">
+                <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path d="M20 12V22H4V12"/><path d="M22 7H2v5h20V7z"/><path d="M12 22V7"/>
+                </svg>
+              </span>
+              <input v-model.number="form.minQuantity" type="number" min="1"
+                placeholder="مثال: 10" class="fi" dir="ltr"/>
+            </div>
+          </div>
+
           <div class="field-group mt-3">
             <label class="fl">اولویت <span class="opt">عدد بالاتر = اجرا اول</span></label>
             <div class="input-wrap" style="max-width:140px">
@@ -489,7 +489,7 @@ const loadingForm = ref(false)
 const saving      = ref(false)
 
 const form = reactive({
-  kind:             'time_limited',
+  customerGroup:    '',   // '' = همه | 'wholesale' = عمده | 'retail' = تک
   title:            '',
   description:      '',
   discountType:     'percentage',
@@ -502,17 +502,15 @@ const form = reactive({
   brandIds:         [],
   minOrderAmount:   null,
   minQuantity:      null,
-  customerGroup:    '',
   maxUsageCount:    null,
   priority:         0,
 })
 
 const errors = reactive({
-  kind: '', title: '', value: '', startDate: '', endDate: '',
+  title: '', value: '', startDate: '', endDate: '',
 })
 
 const dateRangeError = computed(() => {
-  if (form.kind !== 'time_limited') return ''
   if (form.startDate && form.endDate && new Date(form.endDate) <= new Date(form.startDate))
     return 'تاریخ پایان باید بعد از تاریخ شروع باشد'
   return ''
@@ -646,12 +644,9 @@ const resolvedTargetType = computed(() => {
 function validate() {
   let ok = true
   Object.keys(errors).forEach(k => errors[k] = '')
-  if (!form.kind)  { errors.kind = 'نوع تخفیف الزامی است'; ok = false }
   if (!form.title.trim()) { errors.title = 'عنوان الزامی است'; ok = false }
   if (form.value == null || form.value < 0) { errors.value = 'مقدار الزامی است'; ok = false }
-  if (form.kind === 'time_limited' && dateRangeError.value) {
-    errors.endDate = dateRangeError.value; ok = false
-  }
+  if (dateRangeError.value) { errors.endDate = dateRangeError.value; ok = false }
   return ok
 }
 
@@ -663,16 +658,16 @@ function buildPayload() {
     discountType: form.discountType,
     value:        Number(form.value),
     maxDiscountAmount: form.maxDiscountAmount || undefined,
-    startDate:    form.kind === 'time_limited' ? form.startDate : undefined,
-    endDate:      form.kind === 'time_limited' ? form.endDate   : undefined,
+    startDate:    form.startDate || undefined,
+    endDate:      form.endDate   || undefined,
     targetType:   tt,
     targetIds:    (tt === 'categories' || tt === 'brand_category' || tt === 'products')
                     ? (tt === 'products' ? selectedProducts.value.map(p => p._id) : form.targetIds)
                     : undefined,
     brandIds:     (tt === 'brands' || tt === 'brand_category') ? form.brandIds : undefined,
     minOrderAmount: form.minOrderAmount || undefined,
-    minQuantity:    form.kind === 'wholesale' ? (form.minQuantity || undefined) : undefined,
-    customerGroup:  form.kind === 'wholesale' && form.customerGroup ? form.customerGroup : undefined,
+    minQuantity:    form.customerGroup === 'wholesale' ? (form.minQuantity || undefined) : undefined,
+    customerGroup:  form.customerGroup || undefined,
     maxUsageCount:  form.maxUsageCount || undefined,
     priority:       form.priority ?? 0,
   }
@@ -707,7 +702,7 @@ async function loadEdit() {
     const { data } = await discountService.getById(route.params.id)
     const tt = data.targetType ?? 'all'
     Object.assign(form, {
-      kind:             data.kind,
+      customerGroup:    data.customerGroup ?? (data.kind === 'wholesale' ? 'wholesale' : ''),
       title:            data.title,
       description:      data.description ?? '',
       discountType:     data.discountType,
@@ -724,7 +719,6 @@ async function loadEdit() {
                           : [],
       minOrderAmount:   data.minOrderAmount ?? null,
       minQuantity:      data.minQuantity    ?? null,
-      customerGroup:    data.customerGroup  ?? '',
       maxUsageCount:    data.maxUsageCount  ?? null,
       priority:         data.priority ?? 0,
     })
@@ -782,6 +776,7 @@ onMounted(async () => {
 
 /* ── Kind cards ── */
 .kind-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.kind-grid--3 { grid-template-columns: repeat(3, 1fr); }
 .kind-card {
   display: flex; align-items: center; gap: 0.875rem;
   padding: 1rem 1.1rem; border-radius: 14px;
@@ -798,10 +793,14 @@ onMounted(async () => {
   display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
 }
-.kind-icon--red { background: rgba(239,68,68,0.12); color: #ef4444; }
-.kind-icon--blue { background: rgba(37,99,235,0.12); color: #2563eb; }
-html.dark .kind-icon--red  { background: rgba(239,68,68,0.18); }
-html.dark .kind-icon--blue { background: rgba(37,99,235,0.18); }
+.kind-icon--red    { background: rgba(239,68,68,0.12);  color: #ef4444; }
+.kind-icon--blue   { background: rgba(37,99,235,0.12);  color: #2563eb; }
+.kind-icon--green  { background: rgba(22,163,74,0.12);  color: #16a34a; }
+.kind-icon--purple { background: rgba(139,92,246,0.12); color: #7c3aed; }
+html.dark .kind-icon--red    { background: rgba(239,68,68,0.18); }
+html.dark .kind-icon--blue   { background: rgba(37,99,235,0.18); }
+html.dark .kind-icon--green  { background: rgba(22,163,74,0.18); }
+html.dark .kind-icon--purple { background: rgba(139,92,246,0.18); }
 
 .kind-text { flex: 1; min-width: 0; }
 .kind-title { display: block; font-size: 0.85rem; font-weight: 700; color: var(--color-text-primary); }
@@ -1092,7 +1091,7 @@ html.dark .target-summary { color: #93C5FD; background: rgba(147,197,253,0.08); 
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0,0,0,0); }
 
 @media (max-width: 540px) {
-  .kind-grid   { grid-template-columns: 1fr; }
+  .kind-grid, .kind-grid--3 { grid-template-columns: 1fr; }
   .two-col     { grid-template-columns: 1fr; }
   .date-grid   { grid-template-columns: 1fr; }
   .target-grid { grid-template-columns: repeat(2, 1fr); }

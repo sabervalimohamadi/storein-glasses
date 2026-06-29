@@ -79,8 +79,8 @@ export class CreateDiscountDto {
   @IsOptional() @IsNumber() @Min(1) @Type(() => Number)
   minQuantity?: number;
 
-  @IsOptional() @IsEnum(['wholesale', 'vip'])
-  customerGroup?: 'wholesale' | 'vip';
+  @IsOptional() @IsEnum(['wholesale', 'vip', 'retail'])
+  customerGroup?: 'wholesale' | 'vip' | 'retail';
 
   @IsOptional() @IsNumber() @Min(1) @Type(() => Number)
   maxUsageCount?: number;

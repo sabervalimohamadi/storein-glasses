@@ -62,8 +62,8 @@ export class Discount {
   @Prop({ type: Number, default: null })
   minQuantity: number | null;
 
-  @Prop({ type: String, default: null, enum: ['wholesale', 'vip', null] })
-  customerGroup: 'wholesale' | 'vip' | null;
+  @Prop({ type: String, default: null, enum: ['wholesale', 'vip', 'retail', null] })
+  customerGroup: 'wholesale' | 'vip' | 'retail' | null;
 
   @Prop({ type: Number, default: null })
   maxUsageCount: number | null;
