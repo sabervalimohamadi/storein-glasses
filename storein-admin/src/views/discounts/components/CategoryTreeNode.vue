@@ -16,7 +16,7 @@
       <span v-else class="ctn-chevron-space" />
 
       <!-- checkbox + label -->
-      <div class="ctn-label" @click="emit('toggle', node._id)">
+      <div class="ctn-label" @click="emit('toggle', node)">
         <span class="ctn-chk" :class="{ 'ctn-chk--on': isSelected }">
           <svg v-if="isSelected" width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>

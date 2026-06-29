@@ -281,7 +281,7 @@
               </div>
               <!-- flat search results -->
               <div v-else class="panel-list">
-                <label v-for="cat in filteredCategories" :key="cat._id" class="panel-item" @click.prevent="toggleCategory(cat._id)">
+                <label v-for="cat in filteredCategories" :key="cat._id" class="panel-item" @click.prevent="toggleCategory(cat)">
                   <span class="panel-checkbox" :class="{ 'panel-checkbox--on': form.targetIds.includes(cat._id) }">
                     <svg v-if="form.targetIds.includes(cat._id)" width="9" height="9" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24">
                       <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/>
@@ -592,10 +592,22 @@ function flattenTree(nodes, acc = []) {
   return acc
 }
 
-function toggleCategory(id) {
-  const idx = form.targetIds.indexOf(id)
-  if (idx === -1) form.targetIds.push(id)
-  else            form.targetIds.splice(idx, 1)
+function collectIds(node, acc = []) {
+  acc.push(node._id)
+  if (node.children?.length) node.children.forEach(c => collectIds(c, acc))
+  return acc
+}
+
+function toggleCategory(node) {
+  const ids = collectIds(node)
+  const isOn = form.targetIds.includes(node._id)
+  if (isOn) {
+    const remove = new Set(ids)
+    form.targetIds = form.targetIds.filter(id => !remove.has(id))
+  } else {
+    const existing = new Set(form.targetIds)
+    ids.forEach(id => { if (!existing.has(id)) form.targetIds.push(id) })
+  }
 }
 
 async function loadCategories() {
