@@ -12,7 +12,7 @@
         <div :class="['preview-badge', form.code ? 'preview-active' : '']">
           <code class="preview-code">{{ form.code || 'SUMMER20' }}</code>
           <span v-if="previewLabel" class="preview-pill"
-                :style="{ background: form.type === 'percentage' ? '#16a34a' : '#2563eb' }">
+                :style="{ background: form.discountType === 'percentage' ? '#16a34a' : '#2563eb' }">
             {{ previewLabel }}
           </span>
         </div>
@@ -65,16 +65,16 @@
           <div class="type-toggle">
             <button
               type="button"
-              :class="['toggle-btn', form.type === 'percentage' ? 'toggle-active' : '']"
-              @click="form.type = 'percentage'"
+              :class="['toggle-btn', form.discountType === 'percentage' ? 'toggle-active' : '']"
+              @click="form.discountType = 'percentage'"
             >
               <span class="toggle-symbol">٪</span>
               درصدی
             </button>
             <button
               type="button"
-              :class="['toggle-btn', form.type === 'fixed' ? 'toggle-active' : '']"
-              @click="form.type = 'fixed'"
+              :class="['toggle-btn', form.discountType === 'fixed' ? 'toggle-active' : '']"
+              @click="form.discountType = 'fixed'"
             >
               <span class="toggle-symbol">₮</span>
               مبلغ ثابت
@@ -85,18 +85,18 @@
         <!-- Value -->
         <div class="form-group">
           <label class="field-label">
-            {{ form.type === 'percentage' ? 'درصد تخفیف' : 'مبلغ تخفیف (تومان)' }}
+            {{ form.discountType === 'percentage' ? 'درصد تخفیف' : 'مبلغ تخفیف (تومان)' }}
             <span class="req">*</span>
           </label>
           <div class="value-wrap">
-            <span :class="['val-badge', form.type === 'percentage' ? 'val-pct' : 'val-fix']">
-              {{ form.type === 'percentage' ? '٪' : 'تومان' }}
+            <span :class="['val-badge', form.discountType === 'percentage' ? 'val-pct' : 'val-fix']">
+              {{ form.discountType === 'percentage' ? '٪' : 'تومان' }}
             </span>
             <input
               v-model.number="form.value"
               type="number" min="1" dir="ltr"
-              :max="form.type === 'percentage' ? 100 : undefined"
-              :placeholder="form.type === 'percentage' ? '20' : '500000'"
+              :max="form.discountType === 'percentage' ? 100 : undefined"
+              :placeholder="form.discountType === 'percentage' ? '20' : '500000'"
               :class="['val-input', errors.value ? 'input-error' : '']"
             />
           </div>
@@ -105,14 +105,14 @@
         </div>
 
         <!-- Max cap -->
-        <div v-if="form.type === 'percentage'" class="form-group optional-group">
+        <div v-if="form.discountType === 'percentage'" class="form-group optional-group">
           <label class="field-label">
             سقف تخفیف
             <span class="badge-opt">اختیاری</span>
           </label>
           <div class="value-wrap">
             <span class="val-badge val-fix">تومان</span>
-            <input v-model.number="form.maxDiscount" type="number" min="0" dir="ltr"
+            <input v-model.number="form.maxDiscountAmount" type="number" min="0" dir="ltr"
                    placeholder="بدون سقف" class="val-input" />
           </div>
           <p class="field-hint">حداکثر مبلغ تخفیف — اگر خالی باشد سقفی وجود ندارد</p>
@@ -176,7 +176,7 @@
           </div>
           <div class="form-group">
             <label class="field-label">سقف تعداد استفاده</label>
-            <input v-model.number="form.usageLimit" type="number" min="1" dir="ltr"
+            <input v-model.number="form.maxUsageCount" type="number" min="1" dir="ltr"
                    placeholder="نامحدود" class="field-input" />
           </div>
         </div>
@@ -215,7 +215,7 @@
 
 <script setup>
 import { ref, reactive, computed, watch } from 'vue'
-import { couponService } from '@/services/coupon.service'
+import { discountService } from '@/services/discount.service'
 import { useUiStore }      from '@/stores/ui.store'
 import { formatPrice }     from '@/utils/formatters'
 import AdminModal      from '@/components/common/AdminModal.vue'
@@ -235,9 +235,9 @@ const saving = ref(false)
 
 const form = reactive({
   code: '', description: '',
-  type: 'percentage', value: null,
-  maxDiscount: null, minOrderAmount: null,
-  usageLimit: null, startDate: '', endDate: '',
+  discountType: 'percentage', value: null,
+  maxDiscountAmount: null, minOrderAmount: null,
+  maxUsageCount: null, startDate: '', endDate: '',
   isActive: true,
 })
 const errors = reactive({ code: '', value: '', endDate: '' })
@@ -258,7 +258,7 @@ function toJalali(isoStr) {
 // ── Computeds ──
 const previewLabel = computed(() => {
   if (!form.value) return ''
-  return form.type === 'percentage'
+  return form.discountType === 'percentage'
     ? `${form.value}٪ تخفیف`
     : `${formatPrice(form.value)} تومان`
 })
@@ -266,7 +266,7 @@ const previewLabel = computed(() => {
 const valueHint = computed(() => {
   const v = form.value
   if (!v || v <= 0) return ''
-  if (form.type === 'percentage') {
+  if (form.discountType === 'percentage') {
     if (v > 100) return ''
     return `تخفیف ${v}٪ اعمال خواهد شد`
   }
@@ -288,21 +288,21 @@ watch(() => props.modelValue, (open) => {
   Object.keys(errors).forEach(k => (errors[k] = ''))
   if (props.discount) {
     const d = props.discount
-    form.code           = d.code           ?? ''
-    form.description    = d.description    ?? ''
-    form.type           = d.type           ?? 'percentage'
-    form.value          = d.value          ?? null
-    form.maxDiscount    = d.maxDiscount    ?? null
-    form.minOrderAmount = d.minOrderAmount ?? null
-    form.usageLimit     = d.usageLimit     ?? null
-    form.startDate      = d.startDate ? d.startDate.slice(0, 10) : ''
-    form.endDate        = d.endDate   ? d.endDate.slice(0, 10)   : ''
-    form.isActive       = d.isActive  ?? true
+    form.code              = d.code              ?? ''
+    form.description       = d.description       ?? ''
+    form.discountType      = d.discountType      ?? 'percentage'
+    form.value             = d.value             ?? null
+    form.maxDiscountAmount = d.maxDiscountAmount ?? null
+    form.minOrderAmount    = d.minOrderAmount    ?? null
+    form.maxUsageCount     = d.maxUsageCount     ?? null
+    form.startDate         = d.startDate ? d.startDate.slice(0, 10) : ''
+    form.endDate           = d.endDate   ? d.endDate.slice(0, 10)   : ''
+    form.isActive          = d.isActive  ?? true
   } else {
     form.code = form.description = form.startDate = form.endDate = ''
-    form.type = 'percentage'
+    form.discountType = 'percentage'
     form.value = null
-    form.maxDiscount = form.minOrderAmount = form.usageLimit = null
+    form.maxDiscountAmount = form.minOrderAmount = form.maxUsageCount = null
     form.isActive = true
   }
 })
@@ -326,7 +326,7 @@ function validate() {
     errors.value = 'مقدار تخفیف الزامی است'
     ok = false
   }
-  if (form.type === 'percentage' && form.value > 100) {
+  if (form.discountType === 'percentage' && form.value > 100) {
     errors.value = 'درصد تخفیف نمی‌تواند بیشتر از ۱۰۰ باشد'
     ok = false
   }
@@ -342,24 +342,26 @@ async function submit() {
   saving.value = true
   try {
     const dto = {
+      title:             form.code.trim(),
       code:              form.code.trim(),
       description:       form.description.trim() || undefined,
-      type:              form.type,
+      discountType:      form.discountType,
       value:             Number(form.value),
-      maxDiscountAmount: form.maxDiscount    ? Number(form.maxDiscount)    : null,
-      minOrderAmount:    form.minOrderAmount ? Number(form.minOrderAmount) : null,
-      usageLimit:        form.usageLimit     ? Number(form.usageLimit)     : null,
-      startDate:         form.startDate || null,
-      endDate:           form.endDate   || null,
+      maxDiscountAmount: form.maxDiscountAmount ? Number(form.maxDiscountAmount) : undefined,
+      minOrderAmount:    form.minOrderAmount    ? Number(form.minOrderAmount)    : undefined,
+      maxUsageCount:     form.maxUsageCount     ? Number(form.maxUsageCount)     : undefined,
+      targetType:        'all',
+      startDate:         form.startDate || undefined,
+      endDate:           form.endDate   || undefined,
       isActive:          form.isActive,
     }
     let result
     if (isEdit.value) {
-      const { data } = await couponService.update(props.discount._id, dto)
+      const { data } = await discountService.update(props.discount._id, dto)
       result = data
       ui.addToast('کد تخفیف ویرایش شد', 'success')
     } else {
-      const { data } = await couponService.create(dto)
+      const { data } = await discountService.create(dto)
       result = data
       ui.addToast('کد تخفیف ایجاد شد', 'success')
     }

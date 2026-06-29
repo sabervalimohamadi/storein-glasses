@@ -393,7 +393,6 @@ function validate() {
 
 function buildPayload() {
   return {
-    kind:         form.kind,
     title:        form.title.trim(),
     description:  form.description.trim() || undefined,
     discountType: form.discountType,
