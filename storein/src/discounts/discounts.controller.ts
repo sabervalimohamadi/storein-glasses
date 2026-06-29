@@ -27,8 +27,7 @@ export class DiscountsController {
 
   @Get('active')
   async getActive() {
-    const discounts = await this.service.getActiveDiscounts();
-    return { data: discounts };
+    return this.service.getActiveDiscounts();
   }
 
   // ── User: validate coupon code ────────────────────────────────
@@ -39,12 +38,11 @@ export class DiscountsController {
     @CurrentUser() user: any,
     @Body() dto: ValidateDiscountDto,
   ) {
-    const result = await this.service.validateCoupon(
+    return this.service.validateCoupon(
       user._id.toString(),
       dto.code,
       dto.cartTotal,
     );
-    return { data: result };
   }
 
   // ── Admin ─────────────────────────────────────────────────────
@@ -52,8 +50,7 @@ export class DiscountsController {
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Post()
   async create(@Body() dto: CreateDiscountDto) {
-    const discount = await this.service.create(dto);
-    return { data: discount };
+    return this.service.create(dto);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
@@ -65,35 +62,31 @@ export class DiscountsController {
     @Query('kind')     kind?:     string,
     @Query('hasCode')  hasCode?:  string,
   ) {
-    const result = await this.service.findAll({
+    return this.service.findAll({
       page:     Number(page),
       limit:    Number(limit),
       isActive: isActive === undefined ? undefined : isActive === 'true',
       kind,
       hasCode:  hasCode === undefined ? undefined : hasCode === 'true',
     });
-    return { data: result };
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Get(':id')
   async findOne(@Param('id') id: string) {
-    const discount = await this.service.findById(id);
-    return { data: discount };
+    return this.service.findById(id);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id')
   async update(@Param('id') id: string, @Body() dto: UpdateDiscountDto) {
-    const discount = await this.service.update(id, dto);
-    return { data: discount };
+    return this.service.update(id, dto);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
   @Patch(':id/toggle')
   async toggle(@Param('id') id: string) {
-    const discount = await this.service.toggle(id);
-    return { data: discount };
+    return this.service.toggle(id);
   }
 
   @UseGuards(JwtAuthGuard, AdminGuard)
