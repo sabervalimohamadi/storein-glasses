@@ -69,7 +69,7 @@ const authorName = computed(() => {
   const a = props.post.author
   if (!a) return ''
   if (a.firstName || a.lastName) return `${a.firstName ?? ''} ${a.lastName ?? ''}`.trim()
-  return a.phone ?? ''
+  return 'تیم تحریریه نیمرُخ اپتیک'
 })
 
 function formatDate(iso) {
