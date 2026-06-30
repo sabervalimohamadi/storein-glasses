@@ -63,27 +63,6 @@
       :category-slug="product.category?.slug"
       :exclude-id="product._id"
     />
-
-    <!-- Mobile sticky bar -->
-    <Transition name="slide-up">
-      <div
-        v-if="showStickyBar && product && !pending"
-        class="fixed bottom-0 left-0 right-0 z-header md:hidden border-t border-surface-border shadow-modal px-4 py-3 flex items-center gap-3"
-        style="background-color: var(--color-card);"
-      >
-        <div class="flex-1">
-          <div v-if="selectedVariant?.comparePrice > selectedVariant?.price" class="text-text-disabled line-through text-xs font-fanum">
-            {{ formatPrice(selectedVariant.comparePrice) }}
-          </div>
-          <div class="font-black text-text-primary font-fanum text-lg">
-            {{ formatPrice(selectedVariant?.price || product.minPrice) }}
-          </div>
-        </div>
-        <BaseButton :disabled="!isInStock" :loading="addingToCart" @click="quickAddToCart" class="flex-1">
-          {{ isInStock ? 'افزودن به سبد' : 'ناموجود' }}
-        </BaseButton>
-      </div>
-    </Transition>
   </div>
 </template>
 
