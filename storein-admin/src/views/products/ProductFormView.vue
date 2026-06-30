@@ -318,6 +318,7 @@ import { formatNumber, formatPrice } from '@/utils/formatters'
 import { frameAttributeService } from '@/services/frame-attribute.service'
 import { translationService }   from '@/services/translation.service'
 import { logger } from '@/utils/logger'
+import { persianToSlug, slugFrom, sanitizeSlugInput, SLUG_RE } from '@/utils/slugUtils'
 
 const CTX = 'ProductFormView'
 
@@ -388,47 +389,14 @@ watch(() => form.discountPct, (pct) => {
 const errors        = reactive({})
 const variantErrors = ref({})
 
-const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
 const slugError = computed(() => {
   if (!form.slug) return ''
   return SLUG_RE.test(form.slug) ? '' : 'فقط حروف انگلیسی کوچک، اعداد و خط‌تیره مجاز است'
 })
 
-// Persian character → Latin transliteration map
-const FA_MAP = {
-  'ا':'a','أ':'a','إ':'e','آ':'a','ء':'',
-  'ب':'b','پ':'p','ت':'t','ث':'s',
-  'ج':'j','چ':'ch','ح':'h','خ':'kh',
-  'د':'d','ذ':'z','ر':'r','ز':'z',
-  'ژ':'zh','س':'s','ش':'sh','ص':'s',
-  'ض':'z','ط':'t','ظ':'z','ع':'a',
-  'غ':'gh','ف':'f','ق':'q','ک':'k','ك':'k',
-  'گ':'g','ل':'l','م':'m','ن':'n',
-  'و':'v','ه':'h','ة':'h',
-  'ی':'i','ي':'i','ئ':'y','ى':'a',
-  '‌':'',  // ZWNJ
-  ' ':'-',
-}
-
-function persianToSlug(text) {
-  return text
-    .split('')
-    .map(c => (c in FA_MAP ? FA_MAP[c] : /[a-zA-Z0-9]/.test(c) ? c.toLowerCase() : ''))
-    .join('')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
-
 // true = slug is auto-derived from name; false = user manually typed it
 let _slugAutoMode   = true
 let _debounceTimer  = null
-
-function slugFrom(text) {
-  return text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/^-+|-+$/g, '')
-}
 
 async function autoGenSlug(name) {
   if (!_slugAutoMode || !name?.trim()) return
@@ -449,12 +417,7 @@ watch(() => form.name, (name) => {
 
 function onSlugInput(e) {
   _slugAutoMode = false
-  const sanitized = e.target.value
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '')
-    .replace(/-{2,}/g, '-')
-    .replace(/^-+|-+$/g, '')
+  const sanitized = sanitizeSlugInput(e.target.value)
   if (sanitized !== e.target.value) e.target.value = sanitized
   form.slug = sanitized
   logger.debug('Slug edited', { slug: form.slug }, CTX)
