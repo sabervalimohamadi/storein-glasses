@@ -1,6 +1,10 @@
 ﻿<template>
-  <div class="rounded-xl shadow-card px-4 py-3 mb-4
-              flex items-center justify-between gap-4 flex-wrap"
+  <div class="px-4 py-2.5 mb-4
+              flex items-center justify-between gap-4 flex-wrap
+              sticky top-14 z-20
+              border-b border-surface-border lg:border-b-0
+              -mx-4 lg:mx-0
+              lg:rounded-xl lg:shadow-card"
        style="background-color: var(--color-card);">
 
     <!-- Desktop: inline sort buttons -->
