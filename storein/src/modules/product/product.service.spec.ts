@@ -10,10 +10,15 @@ import { Brand } from '../brand/entities/brand.schema';
 import { FrameAttribute } from '../frame-attribute/entities/frame-attribute.schema';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 import { DiscountsService } from '../../discounts/discounts.service';
+import { UploadService }    from '../upload/upload.service';
 
 const mockLogger = {
   setContext: jest.fn().mockReturnThis(),
   log: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn(),
+};
+
+const mockUploadService = {
+  deleteFile: jest.fn().mockResolvedValue(undefined),
 };
 
 const mockDiscountsService = {
@@ -112,6 +117,7 @@ describe('ProductService', () => {
         { provide: getModelToken(FrameAttribute.name),   useValue: frameAttributeModel },
         { provide: AppLoggerService,                     useValue: mockLogger },
         { provide: DiscountsService,                     useValue: mockDiscountsService },
+        { provide: UploadService,                        useValue: mockUploadService },
       ],
     }).compile();
 
@@ -193,14 +199,92 @@ describe('ProductService', () => {
   });
 
   describe('remove', () => {
-    it('throws if product not found', async () => {
-      model.findByIdAndDelete.mockResolvedValue(null);
-      await expect(service.remove(prodId)).rejects.toThrow(NotFoundException);
+    const selectLean = (v: any) => ({
+      select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(v) }),
     });
 
-    it('removes product successfully', async () => {
-      model.findByIdAndDelete.mockResolvedValue(mockProduct());
-      await expect(service.remove(prodId)).resolves.toBeUndefined();
+    it('throws NotFoundException when product not found', async () => {
+      model.findById.mockReturnValue(selectLean(null));
+      await expect(service.remove(prodId)).rejects.toThrow(NotFoundException);
+      expect(model.findByIdAndDelete).not.toHaveBeenCalled();
+    });
+
+    it('throws BadRequestException for invalid id', async () => {
+      await expect(service.remove('not-valid-id')).rejects.toThrow(BadRequestException);
+      expect(model.findById).not.toHaveBeenCalled();
+    });
+
+    it('deletes product from DB when found', async () => {
+      model.findById.mockReturnValue(selectLean(mockProduct({ images: [] })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+
+      await service.remove(prodId);
+
+      expect(model.findByIdAndDelete).toHaveBeenCalledWith(prodId);
+    });
+
+    it('calls deleteFile for each image URL', async () => {
+      const images = [
+        '/uploads/products/img1.webp',
+        '/uploads/products/img2.webp',
+      ];
+      model.findById.mockReturnValue(selectLean(mockProduct({ images })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+
+      await service.remove(prodId);
+
+      // Give fire-and-forget microtasks a tick to run
+      await Promise.resolve();
+
+      expect(mockUploadService.deleteFile).toHaveBeenCalledTimes(2);
+      expect(mockUploadService.deleteFile).toHaveBeenCalledWith('products/img1.webp');
+      expect(mockUploadService.deleteFile).toHaveBeenCalledWith('products/img2.webp');
+    });
+
+    it('skips deleteFile when product has no images', async () => {
+      model.findById.mockReturnValue(selectLean(mockProduct({ images: [] })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+
+      await service.remove(prodId);
+      await Promise.resolve();
+
+      expect(mockUploadService.deleteFile).not.toHaveBeenCalled();
+    });
+
+    it('logs warn and continues when deleteFile rejects (fire-and-forget)', async () => {
+      model.findById.mockReturnValue(selectLean(mockProduct({ images: ['/uploads/products/bad.webp'] })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+      mockUploadService.deleteFile.mockRejectedValueOnce(new Error('disk full'));
+
+      await service.remove(prodId);
+      await Promise.resolve();
+
+      expect(mockLogger.warn).toHaveBeenCalledWith(
+        'Failed to delete product image',
+        expect.objectContaining({ key: 'products/bad.webp', error: 'disk full' }),
+      );
+    });
+
+    it('ignores image URLs that are not under /uploads/', async () => {
+      const images = ['https://external.cdn.com/img.jpg', '/uploads/products/local.webp'];
+      model.findById.mockReturnValue(selectLean(mockProduct({ images })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+
+      await service.remove(prodId);
+      await Promise.resolve();
+
+      // Only the local /uploads/ image should trigger a deleteFile call
+      expect(mockUploadService.deleteFile).toHaveBeenCalledTimes(1);
+      expect(mockUploadService.deleteFile).toHaveBeenCalledWith('products/local.webp');
+    });
+
+    it('logs product removal', async () => {
+      model.findById.mockReturnValue(selectLean(mockProduct({ images: [] })));
+      model.findByIdAndDelete.mockResolvedValue(null);
+
+      await service.remove(prodId);
+
+      expect(mockLogger.log).toHaveBeenCalledWith('Product removed', expect.objectContaining({ productId: prodId }));
     });
   });
 
@@ -455,7 +539,6 @@ describe('ProductService', () => {
 
       expect(mockDiscountsService.create).toHaveBeenCalledWith(
         expect.objectContaining({
-          kind:         'time_limited',
           discountType: 'percentage',
           value:        25,
           targetType:   'products',

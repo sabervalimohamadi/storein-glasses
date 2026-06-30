@@ -8,6 +8,7 @@ import { Color, ColorSchema } from '../color/entities/color.schema';
 import { Brand, BrandSchema } from '../brand/entities/brand.schema';
 import { FrameAttribute, FrameAttributeSchema } from '../frame-attribute/entities/frame-attribute.schema';
 import { DiscountsModule } from '../../discounts/discounts.module';
+import { UploadModule }   from '../upload/upload.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DiscountsModule } from '../../discounts/discounts.module';
       { name: FrameAttribute.name, schema: FrameAttributeSchema },
     ]),
     DiscountsModule,
+    UploadModule,
   ],
   controllers: [ProductController],
   providers: [ProductService],

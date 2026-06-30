@@ -18,6 +18,7 @@ import { ProductQueryDto } from './dto/product-query.dto';
 import { BulkDiscountDto } from './dto/bulk-discount.dto';
 import { AppLoggerService } from '../../common/logger/app-logger.service';
 import { DiscountsService } from '../../discounts/discounts.service';
+import { UploadService }    from '../upload/upload.service';
 
 @Injectable()
 export class ProductService {
@@ -29,6 +30,7 @@ export class ProductService {
     @InjectModel(FrameAttribute.name)  private frameAttributeModel:  Model<FrameAttributeDocument>,
     private readonly logger: AppLoggerService,
     private readonly discountsService: DiscountsService,
+    private readonly uploadService: UploadService,
   ) {
     this.logger.setContext('ProductService');
   }
@@ -487,9 +489,37 @@ export class ProductService {
   async remove(id: string): Promise<void> {
     if (!Types.ObjectId.isValid(id))
       throw new BadRequestException('شناسه معتبر نیست');
-    const deleted = await this.productModel.findByIdAndDelete(id);
-    if (!deleted) throw new NotFoundException('محصول یافت نشد');
+
+    const product = await this.productModel
+      .findById(id)
+      .select('images')
+      .lean<{ images?: string[] }>();
+
+    if (!product) throw new NotFoundException('محصول یافت نشد');
+
+    await this.productModel.findByIdAndDelete(id);
     this.logger.log('Product removed', { productId: id });
+
+    const keys = (product.images ?? [])
+      .map((url) => this.extractStorageKey(url))
+      .filter((k): k is string => !!k);
+
+    if (keys.length) {
+      this.logger.log('Deleting product images from storage', { productId: id, count: keys.length });
+      for (const key of keys) {
+        this.uploadService.deleteFile(key).catch((err: Error) =>
+          this.logger.warn('Failed to delete product image', {
+            productId: id, key, error: err.message,
+          }),
+        );
+      }
+    }
+  }
+
+  private extractStorageKey(url: string): string | null {
+    if (!url) return null;
+    const m = url.match(/^\/uploads\/(.+)$/);
+    return m ? m[1] : null;
   }
 
   // ── Variant Management ────────────────────────────────────────
