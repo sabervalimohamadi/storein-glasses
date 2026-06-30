@@ -102,10 +102,10 @@
             <span>قیمت عمده — حداقل {{ selectedVariant.wholesaleMinQty || 10 }} عدد</span>
           </div>
           <div class="text-2xl font-black text-amber-600 font-fanum">
-            {{ formatPrice(selectedVariant.wholesalePrice) }} تومان
+            {{ formatPrice(selectedVariant.wholesalePrice) }}
           </div>
           <div class="text-sm line-through mt-0.5 font-fanum" style="color: var(--color-text-disabled);">
-            قیمت خرده: {{ formatPrice(selectedVariant.price) }} تومان
+            قیمت خرده: {{ formatPrice(selectedVariant.price) }}
           </div>
         </template>
 
