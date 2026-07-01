@@ -101,9 +101,23 @@
             <span>🏪</span>
             <span>قیمت عمده — حداقل {{ selectedVariant.wholesaleMinQty || 10 }} عدد</span>
           </div>
-          <div class="text-2xl font-black text-amber-600 font-fanum">
-            {{ formatPrice(selectedVariant.wholesalePrice) }}
-          </div>
+          <!-- wholesale discount active: show crossed-out original wholesale price -->
+          <template v-if="wholesaleDiscountPct > 0">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-text-disabled line-through text-sm font-fanum">
+                {{ formatPrice(selectedVariant.wholesalePrice) }}
+              </span>
+              <BaseBadge variant="red" size="sm">{{ wholesaleDiscountPct }}٪ تخفیف</BaseBadge>
+            </div>
+            <div class="text-2xl font-black text-success font-fanum">
+              {{ formatPrice(wholesaleDiscountedPrice) }}
+            </div>
+          </template>
+          <template v-else>
+            <div class="text-2xl font-black text-amber-600 font-fanum">
+              {{ formatPrice(selectedVariant.wholesalePrice) }}
+            </div>
+          </template>
           <div class="text-sm line-through mt-0.5 font-fanum" style="color: var(--color-text-disabled);">
             قیمت خرده: {{ formatPrice(selectedVariant.price) }}
           </div>
@@ -408,7 +422,15 @@ const discountPercent = computed(() => {
   return calcDiscount(v.comparePrice, v.price)
 })
 
-const systemDiscountPct = computed(() => props.product?.discountPercentage ?? 0)
+const systemDiscountPct   = computed(() => props.product?.discountPercentage ?? 0)
+const wholesaleDiscountPct = computed(() => props.product?.wholesaleDiscountPercentage ?? 0)
+
+// Discounted wholesale price for the currently selected variant
+const wholesaleDiscountedPrice = computed(() => {
+  const base = selectedVariant.value?.wholesalePrice || 0
+  if (!base || wholesaleDiscountPct.value <= 0) return base
+  return Math.round(base * (1 - wholesaleDiscountPct.value / 100))
+})
 
 // The price the system discount yields for the selected variant
 const systemFinalPrice = computed(() => {

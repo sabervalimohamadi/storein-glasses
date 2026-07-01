@@ -220,7 +220,7 @@ export class ProductService {
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
-        .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount viewCount soldCount category brand tags specs createdAt variants')
+        .select('name slug images thumbnail minPrice maxPrice maxComparePrice minWholesalePrice totalStock avgRating reviewCount viewCount soldCount category brand tags specs createdAt variants')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
@@ -240,83 +240,88 @@ export class ProductService {
     const activeDiscounts = await this.discountsService.getActiveDiscounts();
     const now = new Date();
 
-    // Only public (no customerGroup, no minQuantity) and time-valid discounts matter on listing pages
-    const publicDiscounts = activeDiscounts.filter((d) => {
-      if (d.customerGroup) return false;
-      if (d.minQuantity)   return false;
+    const isTimeValid = (d: any) => {
+      if (d.minQuantity) return false;
       if (d.startDate && d.endDate) {
         if (now < new Date(d.startDate) || now > new Date(d.endDate)) return false;
       }
       return true;
-    });
+    };
 
-    if (!publicDiscounts.length) {
-      products.forEach((p) => { p.discountPercentage = p.discountPercentage ?? 0; p.finalPrice = p.finalPrice ?? p.minPrice; });
+    // Public: no customerGroup restriction (shown to all visitors)
+    const publicDiscounts = activeDiscounts.filter((d) => !d.customerGroup && isTimeValid(d));
+    // Wholesale: restricted to wholesale/vip customers
+    const wholesaleDiscounts = activeDiscounts.filter(
+      (d) => (d.customerGroup === 'wholesale' || d.customerGroup === 'vip') && isTimeValid(d),
+    );
+
+    if (!publicDiscounts.length && !wholesaleDiscounts.length) {
+      products.forEach((p) => {
+        p.discountPercentage          = 0;
+        p.finalPrice                  = p.minPrice;
+        p.wholesaleDiscountPercentage = 0;
+        p.wholesaleFinalPrice         = p.minWholesalePrice ?? p.minPrice;
+      });
       return;
     }
 
-    // Pre-build lookup maps for O(1) per-product matching
-    const byProduct:  Map<string, (typeof publicDiscounts)> = new Map();
-    const byCategory: Map<string, (typeof publicDiscounts)> = new Map();
-    const byBrand:    Map<string, (typeof publicDiscounts)> = new Map();
-    const forAll:     (typeof publicDiscounts) = [];
+    // Build lookup maps once for each discount bucket
+    const buildMaps = (discounts: any[]) => {
+      const byProduct:  Map<string, any[]> = new Map();
+      const byCategory: Map<string, any[]> = new Map();
+      const byBrand:    Map<string, any[]> = new Map();
+      const forAll:     any[]              = [];
 
-    for (const d of publicDiscounts) {
-      if (d.targetType === 'all') {
-        forAll.push(d);
-      } else if (d.targetType === 'products') {
-        d.targetIds.forEach((id) => {
-          const k = id.toString();
-          if (!byProduct.has(k)) byProduct.set(k, []);
-          byProduct.get(k)!.push(d);
-        });
-      } else if (d.targetType === 'categories') {
-        d.targetIds.forEach((id) => {
-          const k = id.toString();
-          if (!byCategory.has(k)) byCategory.set(k, []);
-          byCategory.get(k)!.push(d);
-        });
-      } else if (d.targetType === 'brands') {
-        (d.brandIds ?? []).forEach((id) => {
-          const k = id.toString();
-          if (!byBrand.has(k)) byBrand.set(k, []);
-          byBrand.get(k)!.push(d);
-        });
-      } else if (d.targetType === 'brand_category') {
-        d.targetIds.forEach((id) => {
-          const k = id.toString();
-          if (!byCategory.has(k)) byCategory.set(k, []);
-          byCategory.get(k)!.push(d);
-        });
-        (d.brandIds ?? []).forEach((id) => {
-          const k = id.toString();
-          if (!byBrand.has(k)) byBrand.set(k, []);
-          byBrand.get(k)!.push(d);
-        });
+      for (const d of discounts) {
+        if (d.targetType === 'all') {
+          forAll.push(d);
+        } else if (d.targetType === 'products') {
+          d.targetIds.forEach((id: any) => {
+            const k = id.toString();
+            if (!byProduct.has(k)) byProduct.set(k, []);
+            byProduct.get(k)!.push(d);
+          });
+        } else if (d.targetType === 'categories') {
+          d.targetIds.forEach((id: any) => {
+            const k = id.toString();
+            if (!byCategory.has(k)) byCategory.set(k, []);
+            byCategory.get(k)!.push(d);
+          });
+        } else if (d.targetType === 'brands') {
+          (d.brandIds ?? []).forEach((id: any) => {
+            const k = id.toString();
+            if (!byBrand.has(k)) byBrand.set(k, []);
+            byBrand.get(k)!.push(d);
+          });
+        } else if (d.targetType === 'brand_category') {
+          d.targetIds.forEach((id: any) => {
+            const k = id.toString();
+            if (!byCategory.has(k)) byCategory.set(k, []);
+            byCategory.get(k)!.push(d);
+          });
+          (d.brandIds ?? []).forEach((id: any) => {
+            const k = id.toString();
+            if (!byBrand.has(k)) byBrand.set(k, []);
+            byBrand.get(k)!.push(d);
+          });
+        }
       }
-    }
+      return { forAll, byProduct, byCategory, byBrand };
+    };
 
-    for (const product of products) {
-      const productId  = (product._id as any).toString();
-      const categoryId = (product.category as any)?.toString() ?? '';
-      const brandId    = (product.brand as any)?.toString() ?? '';
+    const publicMaps    = buildMaps(publicDiscounts);
+    const wholesaleMaps = buildMaps(wholesaleDiscounts);
 
+    const bestDiscount = (maps: ReturnType<typeof buildMaps>, productId: string, categoryId: string, brandId: string, basePrice: number) => {
       const applicable = [
-        ...forAll,
-        ...(byProduct.get(productId)   ?? []),
-        ...(byCategory.get(categoryId) ?? []),
-        ...(brandId ? (byBrand.get(brandId) ?? []) : []),
+        ...maps.forAll,
+        ...(maps.byProduct.get(productId)   ?? []),
+        ...(maps.byCategory.get(categoryId) ?? []),
+        ...(brandId ? (maps.byBrand.get(brandId) ?? []) : []),
       ];
+      if (!applicable.length || basePrice <= 0) return { pct: 0, finalPrice: basePrice };
 
-      if (!applicable.length) {
-        product.discountPercentage = 0;
-        product.finalPrice         = product.minPrice;
-        continue;
-      }
-
-      const basePrice = product.minPrice ?? 0;
-      let bestAmount  = 0;
-
+      let bestAmount = 0;
       for (const d of applicable) {
         let amount: number;
         if (d.discountType === 'percentage') {
@@ -327,9 +332,26 @@ export class ProductService {
         }
         if (amount > bestAmount) bestAmount = amount;
       }
+      return {
+        pct:        Math.round((bestAmount / basePrice) * 100),
+        finalPrice: Math.max(0, basePrice - bestAmount),
+      };
+    };
 
-      product.discountPercentage = basePrice > 0 ? Math.round((bestAmount / basePrice) * 100) : 0;
-      product.finalPrice         = Math.max(0, basePrice - bestAmount);
+    for (const product of products) {
+      const productId  = (product._id as any).toString();
+      const categoryId = (product.category as any)?.toString() ?? '';
+      const brandId    = (product.brand as any)?.toString() ?? '';
+
+      const retail = bestDiscount(publicMaps, productId, categoryId, brandId, product.minPrice ?? 0);
+      product.discountPercentage = retail.pct;
+      product.finalPrice         = retail.finalPrice;
+
+      // Wholesale base: use minWholesalePrice if set, fall back to minPrice
+      const wholesaleBase = product.minWholesalePrice ?? product.minPrice ?? 0;
+      const wholesale = bestDiscount(wholesaleMaps, productId, categoryId, brandId, wholesaleBase);
+      product.wholesaleDiscountPercentage = wholesale.pct;
+      product.wholesaleFinalPrice         = wholesale.finalPrice;
     }
   }
 
@@ -384,24 +406,38 @@ export class ProductService {
       colorMap = Object.fromEntries(colors.map((c) => [c.name, c.hex]));
     }
 
-    // Attach time-discount pricing
+    // Attach time-discount pricing — compute both retail and wholesale in parallel
     const categoryId = (product.category as any)?._id?.toString() ?? (product.category as any)?.toString() ?? '';
     const brandId    = (product.brand as any)?.toString() ?? '';
-    const priceInfo = await this.discountsService.calculateDiscountedPrice({
-      originalPrice: product.minPrice,
-      productId: (product._id as any).toString(),
-      categoryId,
-      brandId,
-    });
+    const pid        = (product._id as any).toString();
+
+    const [priceInfo, wholesalePriceInfo] = await Promise.all([
+      this.discountsService.calculateDiscountedPrice({
+        originalPrice: product.minPrice,
+        productId: pid,
+        categoryId,
+        brandId,
+      }),
+      this.discountsService.calculateDiscountedPrice({
+        originalPrice:  product.minPrice,
+        wholesalePrice: (product as any).minWholesalePrice ?? undefined,
+        productId:      pid,
+        categoryId,
+        brandId,
+        customerGroup:  'wholesale',
+      }),
+    ]);
 
     return {
       ...product,
       colorMap,
-      finalPrice: priceInfo.finalPrice,
-      discountAmount: priceInfo.discountAmount,
-      discountPercentage: priceInfo.discountPercentage,
-      activeDiscountId: priceInfo.activeDiscount?.id ?? null,
-      activeDiscount: priceInfo.activeDiscount,
+      finalPrice:                   priceInfo.finalPrice,
+      discountAmount:               priceInfo.discountAmount,
+      discountPercentage:           priceInfo.discountPercentage,
+      activeDiscountId:             priceInfo.activeDiscount?.id ?? null,
+      activeDiscount:               priceInfo.activeDiscount,
+      wholesaleDiscountPercentage:  wholesalePriceInfo.discountPercentage,
+      wholesaleDiscountAmount:      wholesalePriceInfo.discountAmount,
     };
   }
 
