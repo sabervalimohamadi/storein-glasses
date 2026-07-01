@@ -705,6 +705,73 @@ describe('ProductService', () => {
     });
   });
 
+  describe('costPrice', () => {
+    it('persists costPrice through create', async () => {
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({
+        ...mockProduct({ variants: [mockVariant({ costPrice: 8_000_000 })] }),
+        toObject: () => mockProduct({ variants: [mockVariant({ costPrice: 8_000_000 })] }),
+      });
+
+      await service.create({
+        name: 'محصول با قیمت خرید',
+        category: catId,
+        variants: [{ sku: 'SKU-001', price: 10_000_000, stock: 5, costPrice: 8_000_000 }],
+      });
+
+      expect(model.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          variants: expect.arrayContaining([
+            expect.objectContaining({ costPrice: 8_000_000 }),
+          ]),
+        }),
+      );
+    });
+
+    it('persists costPrice through addVariant', async () => {
+      const prod = mockProduct({ variants: [] });
+      model.findById.mockResolvedValue(prod);
+
+      await service.addVariant(prodId, {
+        sku: 'SKU-002', price: 12_000_000, stock: 3, costPrice: 9_000_000,
+      });
+
+      expect(prod.variants[0]).toMatchObject({ costPrice: 9_000_000 });
+    });
+
+    it('copies costPrice in duplicate', async () => {
+      const src = mockProduct({
+        slug: 'test-product',
+        variants: [mockVariant({ sku: 'SKU-123', costPrice: 7_500_000 })],
+      });
+      model.findById.mockReturnValue(lean(src));
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({ ...src, _id: new Types.ObjectId(), toObject: () => src });
+
+      await service.duplicate(prodId);
+
+      const createArg = model.create.mock.calls[0][0];
+      expect(createArg.variants[0].costPrice).toBe(7_500_000);
+    });
+
+    it('allows null costPrice (field is optional)', async () => {
+      model.findOne.mockReturnValue(lean(null));
+      model.create.mockResolvedValue({
+        ...mockProduct(),
+        toObject: () => mockProduct(),
+      });
+
+      await service.create({
+        name: 'محصول بدون قیمت خرید',
+        category: catId,
+        variants: [{ sku: 'SKU-001', price: 10_000_000, stock: 5 }],
+      });
+
+      const createArg = model.create.mock.calls[0][0];
+      expect(createArg.variants?.[0]?.costPrice).toBeUndefined();
+    });
+  });
+
   describe('duplicate', () => {
     it('uses original slug (no -copy suffix) when no collision', async () => {
       const src = mockProduct({ slug: 'rayban-aviator', variants: [mockVariant()] });

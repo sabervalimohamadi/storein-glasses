@@ -33,6 +33,9 @@ export class Variant {
   isActive: boolean;
 
   @Prop({ type: Number, min: 0, default: null })
+  costPrice: number | null;
+
+  @Prop({ type: Number, min: 0, default: null })
   wholesalePrice: number | null;
 
   @Prop({ type: Number, min: 1, default: 10 })

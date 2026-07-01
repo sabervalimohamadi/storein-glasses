@@ -50,14 +50,14 @@
             <p v-if="errors?.[idx]?.price" class="field-error">{{ errors[idx].price }}</p>
           </div>
           <div>
-            <label class="field-label">قیمت خرید (تومان)</label>
+            <label class="field-label">قیمت قبل از تخفیف (تومان)</label>
             <PriceInput
               v-model="variant.comparePrice"
               placeholder="1500000"
               class="field-input text-left"
             />
             <p v-if="variant.comparePrice > 0 && variant.comparePrice >= variant.price"
-               class="text-warning text-xs mt-1">قیمت خرید باید از قیمت فروش کمتر باشد</p>
+               class="text-warning text-xs mt-1">قیمت قبل از تخفیف باید از قیمت فروش بیشتر باشد</p>
           </div>
           <div>
             <label class="field-label">موجودی <span class="text-error">*</span></label>
@@ -65,6 +65,30 @@
                    placeholder="10"
                    :class="['field-input text-left', errors?.[idx]?.stock ? 'border-error' : '']" />
             <p v-if="errors?.[idx]?.stock" class="field-error">{{ errors[idx].stock }}</p>
+          </div>
+        </div>
+
+        <!-- Cost price (internal) -->
+        <div class="mb-4 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-slate-50 dark:bg-slate-800/30 p-3">
+          <p class="text-xs font-bold text-slate-600 dark:text-slate-400 mb-2">💰 قیمت خرید (بهای تمام‌شده — داخلی)</p>
+          <div class="grid grid-cols-2 gap-3">
+            <div>
+              <label class="field-label text-slate-600 dark:text-slate-400">قیمت خرید (تومان)</label>
+              <PriceInput
+                v-model="variant.costPrice"
+                placeholder="0"
+                class="field-input text-left"
+              />
+            </div>
+            <div class="flex items-end pb-1">
+              <p v-if="variant.costPrice > 0 && variant.price > 0"
+                 class="text-xs text-slate-500 dark:text-slate-400">
+                حاشیه سود:
+                <span :class="variant.price > variant.costPrice ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-error font-bold'">
+                  {{ Math.round((variant.price - variant.costPrice) / variant.costPrice * 100) }}٪
+                </span>
+              </p>
+            </div>
           </div>
         </div>
 
@@ -445,14 +469,14 @@ function clearVariantImages(variantIdx) {
 
 // ── Variant helpers ────────────────────────────────────────
 function newVariant() {
-  return { sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10, images: [] }
+  return { sku: '', price: 0, comparePrice: 0, costPrice: null, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10, images: [] }
 }
 function addVariant() {
   emit('update:modelValue', [...props.modelValue, newVariant()])
 }
 function duplicateVariant(idx) {
   const src = props.modelValue[idx]
-  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, stock: src.stock, attributes: { ...src.attributes }, wholesalePrice: src.wholesalePrice ?? null, wholesaleMinQty: src.wholesaleMinQty ?? 10, images: [...(src.images ?? [])] }
+  const copy = { sku: src.sku, price: src.price, comparePrice: src.comparePrice, costPrice: src.costPrice ?? null, stock: src.stock, attributes: { ...src.attributes }, wholesalePrice: src.wholesalePrice ?? null, wholesaleMinQty: src.wholesaleMinQty ?? 10, images: [...(src.images ?? [])] }
   const updated = [...props.modelValue]
   updated.splice(idx + 1, 0, copy)
   emit('update:modelValue', updated)
