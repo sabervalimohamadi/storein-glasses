@@ -220,7 +220,7 @@ export class ProductService {
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
-        .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount viewCount soldCount category tags specs createdAt variants')
+        .select('name slug images thumbnail minPrice maxPrice maxComparePrice totalStock avgRating reviewCount viewCount soldCount category brand tags specs createdAt variants')
         .sort(sortObj)
         .skip(skip)
         .limit(limit)
@@ -228,7 +228,109 @@ export class ProductService {
       this.productModel.countDocuments(filter),
     ]);
 
+    // Bulk-attach discountPercentage + finalPrice from active system discounts (single cache read)
+    await this.attachBulkDiscounts(products as any[]);
+
     return { products, total, page, totalPages: Math.ceil(total / limit) };
+  }
+
+  private async attachBulkDiscounts(products: any[]): Promise<void> {
+    if (!products.length) return;
+
+    const activeDiscounts = await this.discountsService.getActiveDiscounts();
+    const now = new Date();
+
+    // Only public (no customerGroup, no minQuantity) and time-valid discounts matter on listing pages
+    const publicDiscounts = activeDiscounts.filter((d) => {
+      if (d.customerGroup) return false;
+      if (d.minQuantity)   return false;
+      if (d.startDate && d.endDate) {
+        if (now < new Date(d.startDate) || now > new Date(d.endDate)) return false;
+      }
+      return true;
+    });
+
+    if (!publicDiscounts.length) {
+      products.forEach((p) => { p.discountPercentage = p.discountPercentage ?? 0; p.finalPrice = p.finalPrice ?? p.minPrice; });
+      return;
+    }
+
+    // Pre-build lookup maps for O(1) per-product matching
+    const byProduct:  Map<string, (typeof publicDiscounts)> = new Map();
+    const byCategory: Map<string, (typeof publicDiscounts)> = new Map();
+    const byBrand:    Map<string, (typeof publicDiscounts)> = new Map();
+    const forAll:     (typeof publicDiscounts) = [];
+
+    for (const d of publicDiscounts) {
+      if (d.targetType === 'all') {
+        forAll.push(d);
+      } else if (d.targetType === 'products') {
+        d.targetIds.forEach((id) => {
+          const k = id.toString();
+          if (!byProduct.has(k)) byProduct.set(k, []);
+          byProduct.get(k)!.push(d);
+        });
+      } else if (d.targetType === 'categories') {
+        d.targetIds.forEach((id) => {
+          const k = id.toString();
+          if (!byCategory.has(k)) byCategory.set(k, []);
+          byCategory.get(k)!.push(d);
+        });
+      } else if (d.targetType === 'brands') {
+        (d.brandIds ?? []).forEach((id) => {
+          const k = id.toString();
+          if (!byBrand.has(k)) byBrand.set(k, []);
+          byBrand.get(k)!.push(d);
+        });
+      } else if (d.targetType === 'brand_category') {
+        d.targetIds.forEach((id) => {
+          const k = id.toString();
+          if (!byCategory.has(k)) byCategory.set(k, []);
+          byCategory.get(k)!.push(d);
+        });
+        (d.brandIds ?? []).forEach((id) => {
+          const k = id.toString();
+          if (!byBrand.has(k)) byBrand.set(k, []);
+          byBrand.get(k)!.push(d);
+        });
+      }
+    }
+
+    for (const product of products) {
+      const productId  = (product._id as any).toString();
+      const categoryId = (product.category as any)?.toString() ?? '';
+      const brandId    = (product.brand as any)?.toString() ?? '';
+
+      const applicable = [
+        ...forAll,
+        ...(byProduct.get(productId)   ?? []),
+        ...(byCategory.get(categoryId) ?? []),
+        ...(brandId ? (byBrand.get(brandId) ?? []) : []),
+      ];
+
+      if (!applicable.length) {
+        product.discountPercentage = 0;
+        product.finalPrice         = product.minPrice;
+        continue;
+      }
+
+      const basePrice = product.minPrice ?? 0;
+      let bestAmount  = 0;
+
+      for (const d of applicable) {
+        let amount: number;
+        if (d.discountType === 'percentage') {
+          const raw = Math.floor((basePrice * d.value) / 100);
+          amount = d.maxDiscountAmount ? Math.min(raw, d.maxDiscountAmount) : raw;
+        } else {
+          amount = Math.min(d.value, basePrice);
+        }
+        if (amount > bestAmount) bestAmount = amount;
+      }
+
+      product.discountPercentage = basePrice > 0 ? Math.round((bestAmount / basePrice) * 100) : 0;
+      product.finalPrice         = Math.max(0, basePrice - bestAmount);
+    }
   }
 
   async findBrandsForFilter(category?: string, hasWholesalePrice = false): Promise<BrandDocument[]> {
@@ -284,10 +386,12 @@ export class ProductService {
 
     // Attach time-discount pricing
     const categoryId = (product.category as any)?._id?.toString() ?? (product.category as any)?.toString() ?? '';
+    const brandId    = (product.brand as any)?.toString() ?? '';
     const priceInfo = await this.discountsService.calculateDiscountedPrice({
       originalPrice: product.minPrice,
       productId: (product._id as any).toString(),
       categoryId,
+      brandId,
     });
 
     return {

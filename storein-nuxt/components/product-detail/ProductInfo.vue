@@ -111,7 +111,8 @@
 
         <!-- قیمت معمولی -->
         <template v-else>
-          <template v-if="selectedVariant?.comparePrice > selectedVariant?.price">
+          <!-- variant-level manual discount (comparePrice set on variant) -->
+          <template v-if="activeDiscountMode === 'variant'">
             <div class="flex items-center gap-2 mb-1">
               <span class="text-text-disabled line-through text-sm font-fanum">
                 {{ formatPrice(selectedVariant.comparePrice) }}
@@ -120,6 +121,18 @@
             </div>
             <div class="text-2xl font-black text-text-primary font-fanum">
               {{ formatPrice(selectedVariant?.price || product.minPrice) }}
+            </div>
+          </template>
+          <!-- system-level discount from admin discount panel -->
+          <template v-else-if="activeDiscountMode === 'system'">
+            <div class="flex items-center gap-2 mb-1">
+              <span class="text-text-disabled line-through text-sm font-fanum">
+                {{ formatPrice(selectedVariant?.price || product.minPrice) }}
+              </span>
+              <BaseBadge variant="red" size="sm">{{ product.discountPercentage }}٪ تخفیف</BaseBadge>
+            </div>
+            <div class="text-2xl font-black text-success font-fanum">
+              {{ formatPrice(systemFinalPrice) }}
             </div>
           </template>
           <template v-else>
@@ -393,6 +406,24 @@ const discountPercent = computed(() => {
   const v = selectedVariant.value
   if (!v?.comparePrice || !v?.price) return 0
   return calcDiscount(v.comparePrice, v.price)
+})
+
+const systemDiscountPct = computed(() => props.product?.discountPercentage ?? 0)
+
+// The price the system discount yields for the selected variant
+const systemFinalPrice = computed(() => {
+  const base = selectedVariant.value?.price || props.product?.minPrice || 0
+  return Math.round(base * (1 - systemDiscountPct.value / 100))
+})
+
+// Which discount source to show: 'variant' | 'system' | 'none'
+// Show whichever gives the customer a lower price; variant-based wins on tie.
+const activeDiscountMode = computed(() => {
+  const varPct = discountPercent.value
+  const sysPct = systemDiscountPct.value
+  if (varPct <= 0 && sysPct <= 0) return 'none'
+  if (varPct >= sysPct) return 'variant'
+  return 'system'
 })
 
 // ── Stock ─────────────────────────────────────────────────────────

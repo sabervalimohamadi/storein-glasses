@@ -360,10 +360,11 @@ export class DiscountsService {
     wholesalePrice?: number;
     productId:      string;
     categoryId:     string;
+    brandId?:       string;
     customerGroup?: 'wholesale' | 'vip';
     quantity?:      number;
   }): Promise<DiscountPriceResult> {
-    const { originalPrice, wholesalePrice, productId, categoryId, customerGroup, quantity } = params;
+    const { originalPrice, wholesalePrice, productId, categoryId, brandId, customerGroup, quantity } = params;
 
     const isWholesaleCustomer = customerGroup === 'wholesale' || customerGroup === 'vip';
     const basePrice = isWholesaleCustomer && wholesalePrice ? wholesalePrice : originalPrice;
@@ -376,7 +377,12 @@ export class DiscountsService {
       const targetMatch =
         d.targetType === 'all' ||
         (d.targetType === 'products'   && d.targetIds.some((id) => id.toString() === productId)) ||
-        (d.targetType === 'categories' && d.targetIds.some((id) => id.toString() === categoryId));
+        (d.targetType === 'categories' && d.targetIds.some((id) => id.toString() === categoryId)) ||
+        (d.targetType === 'brands'     && brandId && (d.brandIds ?? []).some((id) => id.toString() === brandId)) ||
+        (d.targetType === 'brand_category' && (
+          d.targetIds.some((id) => id.toString() === categoryId) ||
+          (brandId && (d.brandIds ?? []).some((id) => id.toString() === brandId))
+        ));
       if (!targetMatch) return false;
 
       // Time-limited check

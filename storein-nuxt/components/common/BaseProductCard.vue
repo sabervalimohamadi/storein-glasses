@@ -103,7 +103,7 @@
           <BaseBadge variant="red" size="sm">{{ discount }}%</BaseBadge>
         </div>
         <p class="text-base font-bold text-text-primary text-right font-fanum">
-          {{ formatPrice(product.minPrice) }}
+          {{ formatPrice(displayPrice) }}
         </p>
       </div>
 
@@ -202,12 +202,29 @@ const discountVariant = computed(() => {
   )
 })
 
-const maxComparePrice = computed(() => discountVariant.value?.comparePrice ?? 0)
-
-const discount = computed(() => {
+const variantDiscountPct = computed(() => {
   const dv = discountVariant.value
   if (!dv) return 0
   return Math.round((1 - dv.price / dv.comparePrice) * 100)
+})
+
+const systemDiscountPct = computed(() => props.product?.discountPercentage ?? 0)
+
+// Show the larger of the two discounts
+const discount = computed(() => Math.max(variantDiscountPct.value, systemDiscountPct.value))
+
+// When system discount wins, the "before" price is minPrice; otherwise use variant comparePrice
+const maxComparePrice = computed(() => {
+  if (systemDiscountPct.value > variantDiscountPct.value) return props.product?.minPrice ?? 0
+  return discountVariant.value?.comparePrice ?? 0
+})
+
+// When system discount wins, use finalPrice from API; otherwise minPrice is already the sale price
+const displayPrice = computed(() => {
+  if (systemDiscountPct.value > variantDiscountPct.value) {
+    return props.product?.finalPrice ?? props.product?.minPrice ?? 0
+  }
+  return props.product?.minPrice ?? 0
 })
 
 function handleClick() {
