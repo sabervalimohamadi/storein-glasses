@@ -325,6 +325,66 @@ export class NotificationService {
     await this.notifModel.findByIdAndDelete(notifId);
   }
 
+  // ── Segment broadcast (discount/promo notifications) ─────────
+  // Sends to wholesale-only or all users depending on customerGroup.
+  async broadcastToSegment(params: {
+    customerGroup: 'wholesale' | 'vip' | 'retail' | null;
+    type:          NotificationType;
+    title:         string;
+    body:          string;
+    data?:         Record<string, any>;
+  }): Promise<{ sent: number }> {
+    const { customerGroup, type, title, body, data } = params;
+
+    // wholesale/vip → only wholesale users; retail/null → all active users
+    const isWholesaleOnly = customerGroup === 'wholesale' || customerGroup === 'vip';
+    const roleFilter = isWholesaleOnly ? { role: 'wholesale' } : {};
+
+    const UserModel = this.notifModel.db.model('User');
+    const users: { _id: any }[] = await UserModel
+      .find({ isActive: true, ...roleFilter })
+      .select('_id')
+      .lean();
+
+    if (!users.length) {
+      this.logger.log(`Segment broadcast skipped — no eligible users (segment: ${customerGroup ?? 'all'})`);
+      return { sent: 0 };
+    }
+
+    const docs = users.map((u) => ({
+      userId: u._id,
+      type,
+      title,
+      body,
+      data:   data ?? null,
+      isRead: false,
+      readAt: null,
+    }));
+
+    await this.notifModel.insertMany(docs, { ordered: false });
+
+    // Real-time WebSocket emit — best-effort
+    try {
+      const wsPayload = {
+        type,
+        title,
+        body,
+        data:      data ?? null,
+        createdAt: new Date().toISOString(),
+      };
+      if (isWholesaleOnly) {
+        this.gateway.emitToWholesale(wsPayload);
+      } else {
+        this.gateway.emitBroadcast(wsPayload);
+      }
+    } catch (err: any) {
+      this.logger.warn(`Segment broadcast real-time emit failed (non-critical): ${err?.message}`);
+    }
+
+    this.logger.log(`Segment broadcast complete — segment: ${customerGroup ?? 'all'}, sent: ${users.length}`);
+    return { sent: users.length };
+  }
+
   // ── Admin: Delete broadcast log entry ────────────────────────
   async adminDeleteBroadcastLog(logId: string): Promise<{ deleted: boolean }> {
     if (!Types.ObjectId.isValid(logId)) {

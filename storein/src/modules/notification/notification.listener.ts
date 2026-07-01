@@ -26,7 +26,19 @@ export const EVENTS = {
   ORDER_STATUS_CHANGED: 'order.status.changed',
   PAYMENT_SUCCESS:      'payment.success',
   PAYMENT_FAILED:       'payment.failed',
+  DISCOUNT_CREATED:     'discount.created',
 } as const;
+
+export interface DiscountCreatedEvent {
+  discountId:    string;
+  title:         string;
+  discountType:  'percentage' | 'fixed';
+  value:         number;
+  customerGroup: 'wholesale' | 'vip' | 'retail' | null;
+  isCoupon:      boolean;
+  code:          string | null;
+  endDate:       Date | null;
+}
 
 const STATUS_LABELS: Record<string, string> = {
   confirmed:  'تایید شد',
@@ -97,6 +109,45 @@ export class NotificationListener {
       });
     } catch (err: any) {
       this.logger.error(`Failed payment notification failed: ${err.message}`);
+    }
+  }
+
+  @OnEvent(EVENTS.DISCOUNT_CREATED)
+  async handleDiscountCreated(event: DiscountCreatedEvent) {
+    const { discountId, title, discountType, value, customerGroup, isCoupon, code, endDate } = event;
+
+    const valueStr = discountType === 'percentage'
+      ? `${value}٪`
+      : `${value.toLocaleString('fa-IR')} تومان`;
+
+    const notifTitle = isCoupon ? 'کد تخفیف ویژه 🎁' : 'تخفیف ویژه 🎉';
+
+    let body = isCoupon
+      ? `کد تخفیف «${code}» با ${valueStr} تخفیف فعال شد`
+      : `تخفیف ${valueStr} برای «${title}» فعال شد`;
+
+    if (endDate) {
+      const formatted = new Intl.DateTimeFormat('fa-IR', {
+        month: 'long', day: 'numeric',
+      }).format(new Date(endDate));
+      body += ` — تا ${formatted}`;
+    }
+
+    try {
+      await this.notifService.broadcastToSegment({
+        customerGroup,
+        type:  NotificationType.PROMO,
+        title: notifTitle,
+        body,
+        data:  {
+          discountId,
+          isCoupon,
+          ...(isCoupon && code ? { code } : {}),
+        },
+      });
+      this.logger.log(`Discount notification broadcast complete — id: ${discountId}, segment: ${customerGroup ?? 'all'}`);
+    } catch (err: any) {
+      this.logger.error(`Discount notification broadcast failed: ${err.message}`);
     }
   }
 }

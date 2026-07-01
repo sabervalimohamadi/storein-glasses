@@ -34,7 +34,7 @@ describe('NotificationService', () => {
   let smsLogModel: any;
   let smsChannel: jest.Mocked<SmsNotificationChannel>;
   let pushChannel: jest.Mocked<PushNotificationChannel>;
-  let gateway: { emitToUser: jest.Mock; emitBroadcast: jest.Mock };
+  let gateway: { emitToUser: jest.Mock; emitBroadcast: jest.Mock; emitToWholesale: jest.Mock };
 
   const leanChain = (val: any) => ({ lean: jest.fn().mockResolvedValue(val) });
 
@@ -88,7 +88,7 @@ describe('NotificationService', () => {
 
     smsChannel  = { send: jest.fn().mockResolvedValue(undefined) } as any;
     pushChannel = { send: jest.fn().mockResolvedValue(undefined) } as any;
-    gateway     = { emitToUser: jest.fn(), emitBroadcast: jest.fn() };
+    gateway     = { emitToUser: jest.fn(), emitBroadcast: jest.fn(), emitToWholesale: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -416,6 +416,152 @@ describe('NotificationService', () => {
 
       const res = await service.adminListBroadcastLogs({ page: 1, limit: 20 });
       expect(res.totalPages).toBe(3);
+    });
+  });
+
+  // ── broadcastToSegment ────────────────────────────────────────
+  describe('broadcastToSegment', () => {
+    const allUsers = [
+      { _id: new Types.ObjectId() },
+      { _id: new Types.ObjectId() },
+    ];
+    const wholesaleUsers = [{ _id: new Types.ObjectId() }];
+
+    function mockUserModel(users: any[]) {
+      notifModel.db.model.mockReturnValue({
+        find: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue(leanChain(users)),
+        }),
+      });
+    }
+
+    it('inserts one notification per user when customerGroup is null', async () => {
+      mockUserModel(allUsers);
+      const res = await service.broadcastToSegment({
+        customerGroup: null,
+        type: NotificationType.PROMO,
+        title: 'تخفیف ویژه',
+        body: 'تخفیف ۲۰٪',
+      });
+      expect(res.sent).toBe(2);
+      expect(notifModel.insertMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ type: NotificationType.PROMO, title: 'تخفیف ویژه' }),
+        ]),
+        { ordered: false },
+      );
+    });
+
+    it('queries only wholesale users when customerGroup is wholesale', async () => {
+      const findMock = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue(leanChain(wholesaleUsers)),
+      });
+      notifModel.db.model.mockReturnValue({ find: findMock });
+
+      await service.broadcastToSegment({
+        customerGroup: 'wholesale',
+        type: NotificationType.PROMO,
+        title: 'تخفیف عمده',
+        body: 'ویژه عمده‌فروشان',
+      });
+
+      expect(findMock).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'wholesale' }),
+      );
+    });
+
+    it('queries only wholesale users when customerGroup is vip', async () => {
+      const findMock = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue(leanChain(wholesaleUsers)),
+      });
+      notifModel.db.model.mockReturnValue({ find: findMock });
+
+      await service.broadcastToSegment({
+        customerGroup: 'vip',
+        type: NotificationType.PROMO,
+        title: 'تخفیف VIP',
+        body: 'ویژه مشتریان VIP',
+      });
+
+      expect(findMock).toHaveBeenCalledWith(
+        expect.objectContaining({ role: 'wholesale' }),
+      );
+    });
+
+    it('queries all users (no role filter) when customerGroup is retail', async () => {
+      const findMock = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue(leanChain(allUsers)),
+      });
+      notifModel.db.model.mockReturnValue({ find: findMock });
+
+      await service.broadcastToSegment({
+        customerGroup: 'retail',
+        type: NotificationType.PROMO,
+        title: 'تخفیف تک',
+        body: 'برای همه',
+      });
+
+      expect(findMock).toHaveBeenCalledWith(
+        expect.not.objectContaining({ role: expect.anything() }),
+      );
+    });
+
+    it('calls emitToWholesale for wholesale segment', async () => {
+      mockUserModel(wholesaleUsers);
+      await service.broadcastToSegment({
+        customerGroup: 'wholesale',
+        type: NotificationType.PROMO,
+        title: 'تخفیف عمده',
+        body: 'ویژه',
+      });
+      expect(gateway.emitToWholesale).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'تخفیف عمده' }),
+      );
+      expect(gateway.emitBroadcast).not.toHaveBeenCalled();
+    });
+
+    it('calls emitBroadcast for all/retail/null segment', async () => {
+      mockUserModel(allUsers);
+      await service.broadcastToSegment({
+        customerGroup: null,
+        type: NotificationType.PROMO,
+        title: 'تخفیف همه',
+        body: 'برای همه',
+      });
+      expect(gateway.emitBroadcast).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'تخفیف همه' }),
+      );
+      expect(gateway.emitToWholesale).not.toHaveBeenCalled();
+    });
+
+    it('returns sent: 0 and skips insertMany when no users found', async () => {
+      mockUserModel([]);
+      const res = await service.broadcastToSegment({
+        customerGroup: 'wholesale',
+        type: NotificationType.PROMO,
+        title: 'تخفیف',
+        body: 'متن',
+      });
+      expect(res.sent).toBe(0);
+      expect(notifModel.insertMany).not.toHaveBeenCalled();
+      expect(gateway.emitToWholesale).not.toHaveBeenCalled();
+    });
+
+    it('includes optional data field in each notification doc', async () => {
+      mockUserModel([{ _id: new Types.ObjectId() }]);
+      await service.broadcastToSegment({
+        customerGroup: null,
+        type: NotificationType.PROMO,
+        title: 'تخفیف',
+        body: 'متن',
+        data: { discountId: 'abc123', isCoupon: false },
+      });
+      expect(notifModel.insertMany).toHaveBeenCalledWith(
+        expect.arrayContaining([
+          expect.objectContaining({ data: { discountId: 'abc123', isCoupon: false } }),
+        ]),
+        { ordered: false },
+      );
     });
   });
 

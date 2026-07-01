@@ -8,12 +8,17 @@ import {
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import Redis from 'ioredis';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { REDIS_CLIENT } from '../redis/redis.module';
 import { Discount, DiscountDocument } from './schemas/discount.schema';
 import { DiscountUsage, DiscountUsageDocument } from './schemas/discount-usage.schema';
 import { CreateDiscountDto } from './dto/create-discount.dto';
 import { UpdateDiscountDto } from './dto/update-discount.dto';
 import { AppLoggerService } from '../common/logger/app-logger.service';
+import {
+  EVENTS,
+  DiscountCreatedEvent,
+} from '../modules/notification/notification.listener';
 
 const CACHE_KEY = 'active_discounts';
 const CACHE_TTL = 300;
@@ -47,6 +52,7 @@ export class DiscountsService {
     private readonly usageModel: Model<DiscountUsageDocument>,
     @Inject(REDIS_CLIENT) private readonly redis: Redis,
     private readonly logger: AppLoggerService,
+    private readonly eventEmitter: EventEmitter2,
   ) {
     this.logger.setContext('DiscountsService');
   }
@@ -92,7 +98,28 @@ export class DiscountsService {
       code:  dto.code ?? 'auto-apply',
       title: dto.title,
     });
-    return discount.toObject() as DiscountDocument;
+
+    const discountObj = discount.toObject() as DiscountDocument;
+
+    // Fire-and-forget: notify eligible users about the new discount/coupon
+    const notifEvent: DiscountCreatedEvent = {
+      discountId:    (discount._id as any).toString(),
+      title:         discount.title,
+      discountType:  discount.discountType,
+      value:         discount.value,
+      customerGroup: (discount.customerGroup as any) ?? null,
+      isCoupon:      !!discount.code,
+      code:          discount.code ?? null,
+      endDate:       discount.endDate ?? null,
+    };
+    this.eventEmitter.emit(EVENTS.DISCOUNT_CREATED, notifEvent);
+    this.logger.log('Discount notification event emitted', {
+      id:           notifEvent.discountId,
+      isCoupon:     notifEvent.isCoupon,
+      customerGroup: notifEvent.customerGroup ?? 'all',
+    });
+
+    return discountObj;
   }
 
   async findAll(query: {

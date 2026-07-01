@@ -80,13 +80,18 @@ export class NotificationsGateway
         client.data.isAdmin = true;
         this.logger.log(`Admin WS connected: ${client.id}`);
       } else {
-        // Regular users join a per-user room (targeted) AND the broadcast room (all-users)
+        // Regular users join a per-user room (targeted) AND the broadcast room (all-users).
+        // Wholesale users also join the `wholesale` room for segment-targeted promos.
         const room = `user:${payload.sub}`;
         client.join(room);
         client.join('broadcast');
+        if (user.role === 'wholesale') {
+          client.join('wholesale');
+        }
         client.data.userId  = payload.sub;
+        client.data.role    = user.role;
         client.data.isAdmin = false;
-        this.logger.log(`User WS connected: ${client.id} → rooms ${room}, broadcast`);
+        this.logger.log(`User WS connected: ${client.id} → room ${room}, broadcast${user.role === 'wholesale' ? ', wholesale' : ''}`);
       }
     } catch {
       client.disconnect();
@@ -170,5 +175,22 @@ export class NotificationsGateway
     };
     this.server.to('broadcast').emit('notification', event);
     this.logger.log(`emitBroadcast → broadcast room: "${payload.title}"`);
+  }
+
+  // Emits a real-time promo event to wholesale users only (wholesale room).
+  emitToWholesale(payload: {
+    type:      string;
+    title:     string;
+    body:      string;
+    data:      Record<string, any> | null;
+    createdAt: string;
+  }) {
+    const event = {
+      _id:    `wholesale:${Date.now()}`,
+      isRead: false,
+      ...payload,
+    };
+    this.server.to('wholesale').emit('notification', event);
+    this.logger.log(`emitToWholesale → wholesale room: "${payload.title}"`);
   }
 }
