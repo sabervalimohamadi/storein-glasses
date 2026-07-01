@@ -405,7 +405,7 @@ watch(() => form.discountPct, (pct, oldPct) => {
   } else {
     // Discount removed: restore original prices and clear comparePrice.
     form.variants.forEach((v, i) => {
-      v.price        = _priceBase[i] ?? Number(v.comparePrice) || Number(v.price)
+      v.price        = _priceBase[i] ?? (Number(v.comparePrice) || Number(v.price))
       v.comparePrice = 0
     })
     _priceBase = []
