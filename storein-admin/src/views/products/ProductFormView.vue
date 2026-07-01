@@ -166,18 +166,18 @@
             </div>
 
             <!-- Live preview -->
-            <div v-if="form.discountPct > 0 && form.variants[0]?.price > 0"
+            <div v-if="form.discountPct > 0 && form.variants[0]?.comparePrice > 0"
               class="rounded-xl p-3 space-y-1.5 text-sm" style="background-color: var(--color-bg);">
               <div class="flex justify-between items-center">
                 <span class="text-text-secondary">قیمت اصلی</span>
-                <span class="font-fanum text-text-primary font-medium">
-                  {{ formatPrice(form.variants[0].price) }}
+                <span class="font-fanum line-through text-text-secondary">
+                  {{ formatPrice(form.variants[0].comparePrice) }}
                 </span>
               </div>
               <div class="flex justify-between items-center">
-                <span class="text-text-secondary">قیمت قبل از تخفیف</span>
-                <span class="font-fanum line-through text-text-secondary">
-                  {{ formatPrice(form.variants[0].comparePrice) }}
+                <span class="text-text-secondary">قیمت پس از تخفیف</span>
+                <span class="font-fanum text-success font-bold">
+                  {{ formatPrice(form.variants[0].price) }}
                 </span>
               </div>
             </div>
@@ -368,22 +368,48 @@ const form = reactive({
   categoryId:  '',
   brandId:     '',
   images:      [],
-  variants:    [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }],
+  variants:    [{ sku: '', price: 0, comparePrice: 0, costPrice: null, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }],
   tags:        [],
   status:      'active',
   discountPct: 0,
 })
 
-// When discountPct changes, recalculate comparePrice on all variants.
-// Guard: skip during fillForm so server-loaded comparePrices are not overwritten.
-watch(() => form.discountPct, (pct) => {
+// Stores the original (pre-discount) prices so changing discountPct multiple times
+// always discounts from the true base, not from an already-reduced price.
+let _priceBase = []
+
+// When discountPct changes:
+//   price     → becomes the discounted selling price (price × (1 − pct/100))
+//   comparePrice → set to the original base price (shown crossed-out to customers)
+// Guard: skip during fillForm so server-loaded values are not overwritten.
+watch(() => form.discountPct, (pct, oldPct) => {
   if (_fillingForm) return
-  const p = Math.max(0, Math.min(90, Number(pct) || 0))
-  form.variants.forEach(v => {
-    v.comparePrice = p > 0 && v.price > 0
-      ? Math.round(Number(v.price) / (1 - p / 100))
-      : 0
-  })
+  const p       = Math.max(0, Math.min(90, Number(pct)    || 0))
+  const wasZero = (Number(oldPct) || 0) === 0
+
+  if (p > 0) {
+    // Capture base prices on first non-zero entry (or when coming from 0).
+    // In edit mode the variant already has comparePrice > price → use comparePrice as base.
+    if (wasZero || !_priceBase.length) {
+      _priceBase = form.variants.map(v => {
+        const cp = Number(v.comparePrice)
+        const pr = Number(v.price)
+        return (cp > 0 && cp > pr) ? cp : pr
+      })
+    }
+    form.variants.forEach((v, i) => {
+      const base   = _priceBase[i] ?? Number(v.price)
+      v.comparePrice = base
+      v.price        = Math.round(base * (1 - p / 100))
+    })
+  } else {
+    // Discount removed: restore original prices and clear comparePrice.
+    form.variants.forEach((v, i) => {
+      v.price        = _priceBase[i] ?? Number(v.comparePrice) || Number(v.price)
+      v.comparePrice = 0
+    })
+    _priceBase = []
+  }
 })
 
 const errors        = reactive({})
@@ -523,6 +549,7 @@ function buildDto(statusOverride) {
       sku:             v.sku?.trim() || '',
       price:           Number(v.price),
       comparePrice:    Number(v.comparePrice) > 0 ? Number(v.comparePrice) : 0,
+      costPrice:       Number(v.costPrice) > 0 ? Number(v.costPrice) : null,
       stock:           Number(v.stock),
       wholesalePrice:  v.wholesalePrice > 0 ? Number(v.wholesalePrice) : null,
       wholesaleMinQty: Number(v.wholesaleMinQty) > 0 ? Number(v.wholesaleMinQty) : 10,
@@ -617,6 +644,7 @@ function fillForm(p) {
         sku:             v.sku             ?? '',
         price:           v.price           ?? 0,
         comparePrice:    v.comparePrice    ?? 0,
+        costPrice:       v.costPrice       ?? null,
         stock:           v.stock           ?? 0,
         wholesalePrice:  v.wholesalePrice  ?? null,
         wholesaleMinQty: v.wholesaleMinQty ?? 10,
@@ -625,7 +653,7 @@ function fillForm(p) {
           ? Object.fromEntries(v.attributes.map(a => [a.key, a.value]))
           : (v.attributes ?? {}),
       }))
-    : [{ sku: '', price: 0, comparePrice: 0, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }]
+    : [{ sku: '', price: 0, comparePrice: 0, costPrice: null, stock: 0, attributes: {}, wholesalePrice: null, wholesaleMinQty: 10 }]
 
   // nextTick runs after all queued watchers — reset flags then
   nextTick(() => {
